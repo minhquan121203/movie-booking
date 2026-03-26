@@ -6,9 +6,12 @@ const seatAvailabilitySchema = new Schema({
   seatNumber: { type: String, required: true },
   seatType: { type: String, enum: ["Thường", "VIP", "Ghế đôi"], required: true },
   isBooked: { type: Boolean, default: false },
-  bookedBy: { type: Schema.Types.ObjectId }, // User ID (khi hold) hoặc Booking ID (khi confirm booking)
-  holderType: { type: String, enum: ["user", "booking"], default: "user" }, // Track holder type
-  holdUntil: { type: Date }, // Thời gian giữ ghế tạm (khi đang đặt)
+  isAvailable: { type: Boolean, default: true }, // Thêm trường này giống trong DB
+  row: { type: String },    // Thêm trường này để vẽ map
+  column: { type: Number }, // Thêm trường này để vẽ map
+  bookedBy: { type: Schema.Types.ObjectId },
+  holderType: { type: String, enum: ["user", "booking"], default: "user" },
+  holdUntil: { type: Date },
   _id: false,
 });
 

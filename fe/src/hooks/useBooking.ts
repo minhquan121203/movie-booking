@@ -47,13 +47,26 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
 
   // --- AUTO-SELECT SCHEDULE FROM preSelectedScheduleId ---
   useEffect(() => {
-    if (preSelectedScheduleId && schedules.length > 0 && !selectedSchedule) {
-      const preSelected = schedules.find(s => s._id === preSelectedScheduleId)
-      if (preSelected) {
-        setSelectedSchedule(preSelected)
+    const fetchScheduleDetail = async () => {
+      if (!preSelectedScheduleId) return
+
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/schedules/${preSelectedScheduleId}`
+        )
+        const json = await res.json()
+
+        if (json?.data) {
+          console.log("DATA SCHEDULE ĐÂY FEN ƠI:", json.data) 
+          setSelectedSchedule(json.data)
+        }
+      } catch (err) {
+        console.error("Fetch schedule detail failed:", err)
       }
     }
-  }, [preSelectedScheduleId, schedules, selectedSchedule])
+
+    fetchScheduleDetail()
+  }, [preSelectedScheduleId])
 
   // --- WEBSOCKET SEAT MANAGEMENT ---
   const { realTimeSeats, viewerCount, isInRoom, holdSeats, releaseSeats } = useSeatSocket({

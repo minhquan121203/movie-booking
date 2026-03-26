@@ -378,23 +378,17 @@ const scheduleController = {
     try {
       const { id } = req.params;
 
-      const schedule = await Schedule.findById(id)
-        .populate("movie", "title posterUrl duration rating")
-        .populate("theater", "name address city")
-        .lean();
+      // 1. Tìm và xử lý release hold trước
+      const scheduleDoc = await Schedule.findById(id);
+      if (!scheduleDoc) return errorResponse(res, "Không tìm thấy lịch chiếu", 404);
 
-      if (!schedule) {
-        return errorResponse(res, "Không tìm thấy lịch chiếu", 404);
-      }
+      await scheduleDoc.releaseExpiredHolds();
 
-      // Release expired holds trước khi trả về
-      await Schedule.findById(id).then((s) => s.releaseExpiredHolds());
-
-      // Refresh data sau khi release
+      // 2. Trả về data đã được cập nhật
       const updatedSchedule = await Schedule.findById(id)
         .populate("movie", "title posterUrl duration rating")
         .populate("theater", "name address city")
-        .lean();
+        .lean(); // Dùng lean để lấy mảng ghế nhanh và đầy đủ
 
       return successResponse(res, updatedSchedule);
     } catch (error) {
@@ -495,7 +489,10 @@ const scheduleController = {
       const seatAvailability = room.seatMap.map((seat) => ({
         seatNumber: seat.seatNumber,
         seatType: seat.seatType,
+        row: seat.row,       // <--- PHẢI THÊM DÒNG NÀY
+        column: seat.column, // <--- PHẢI THÊM DÒNG NÀY
         isBooked: false,
+        isAvailable: true,   // <--- THÊM DÒNG NÀY CHO ĐỒNG BỘ
       }));
 
       console.log("Creating schedule with data...");

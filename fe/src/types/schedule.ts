@@ -23,6 +23,7 @@ export interface TicketPrices {
 // Dữ liệu 1 schedule
 export interface Schedule {
   _id: string
+  roomType?: string
 
   // Thông tin phim
   movie: Movie

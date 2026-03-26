@@ -24,7 +24,9 @@ export interface OrderedProduct {
 }
 
 // === Booked Seat ===
-export type BookedSeat = Seat
+export type BookedSeat = Seat & {
+  price: number
+}
 
 // === Main Booking Interface ===
 export interface Booking {

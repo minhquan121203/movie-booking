@@ -23,21 +23,66 @@ interface UseSeatSocketProps {
 }
 
 export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocketProps) {
+  // Ban đầu cứ để Map rỗng
   const [realTimeSeats, setRealTimeSeats] = useState<Map<string, Seat>>(new Map())
   const [viewerCount, setViewerCount] = useState(0)
   const [isInRoom, setIsInRoom] = useState(false)
+
+  // ==========================================
+  // TỰ ĐỘNG FETCH GHẾ (BẢN TỐI GIẢN - ĂN NGAY)
+  // ==========================================
+  useEffect(() => {
+    if (!scheduleId) return;
+
+    const fetchSeats = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/schedules/${scheduleId}`);
+        const json = await res.json();
+
+        // 1. Chỉ đích danh cái mảng ghế, không tìm kiếm mù mờ nữa
+        const seats = json?.data?.seatAvailability;
+        
+        console.log("👉 ĐÃ TÓM ĐƯỢC MẢNG GHẾ:", seats);
+
+        // 2. Nếu có ghế thì nạp thẳng vào Map
+        if (seats && seats.length > 0) {
+          const seatsMap = new Map<string, Seat>();
+          seats.forEach((seat: Seat) => {
+            if (seat && seat.seatNumber) {
+              seatsMap.set(seat.seatNumber, seat);
+            }
+          });
+          
+          setRealTimeSeats(seatsMap); 
+        } 
+        
+        // 3. LUÔN LUÔN TẮT LOADING DÙ CÓ GHẾ HAY KHÔNG
+        setIsInRoom(true); 
+
+      } catch (err) {
+        console.error("❌ Lỗi API:", err);
+        setIsInRoom(true); // Lỗi cũng phải tắt loading cho user thấy đường
+      }
+    };
+
+    fetchSeats();
+  }, [scheduleId]);
+  // ==========================================
+
   const joinSchedule = useCallback(() => {
     if (!socket || !scheduleId || !isConnected) return
 
     console.log('🔵 Joining schedule:', scheduleId)
     socket.emit('join-schedule', { scheduleId })
   }, [socket, scheduleId, isConnected])
+
   useEffect(() => {
     if (!socket) return
     const handleScheduleJoined = (data: any) => {
       if (data) {
         console.log('✅ Joined schedule successfully', data)
 
+        // Vẫn giữ logic update ghế nếu socket có trả về (dù hiện tại backend ko trả)
         if (data.seatAvailability && Array.isArray(data.seatAvailability)) {
           const seatsMap = new Map<string, Seat>()
           data.seatAvailability.forEach((seat: Seat) => {
@@ -60,11 +105,13 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       socket.off('schedule-joined', handleScheduleJoined)
     }
   }, [socket])
+
   const leaveSchedule = useCallback(() => {
     if (!socket || !scheduleId || !isInRoom) return
     console.log('🔴 Leaving schedule:', scheduleId)
     socket.emit('leave-schedule', { scheduleId })
   }, [socket, scheduleId, isInRoom])
+
   useEffect(() => {
     if (!socket) return
     const handleLeaveSchedule = (data: any) => {
@@ -78,6 +125,7 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       socket.off('viewer-left', handleLeaveSchedule)
     }
   }, [socket])
+
   const holdSeats = useCallback(
     (seatNumbers: string[]) => {
       if (!socket || !scheduleId || !isInRoom) {
@@ -86,13 +134,12 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       }
       socket.emit('hold-seats', {
         scheduleId,
-        seatNumbers: seatNumbers.map(s => {
-          return s.toLowerCase()
-        }),
+        seatNumbers: seatNumbers.map(s => s.toLowerCase()),
       })
     },
     [socket, scheduleId, isInRoom]
   )
+
   useEffect(() => {
     if (!socket || !scheduleId || !isInRoom) return
     const handleHoldSeats = (data: any) => {
@@ -126,7 +173,6 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
         return newMap
       })
 
-      // Update viewer count if provided
       if (data.viewerCount !== undefined) {
         setViewerCount(data.viewerCount)
       }
@@ -146,6 +192,7 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       socket.off('seats-status-changed', handleSeatsStatusChanged)
     }
   }, [socket, scheduleId, isInRoom])
+
   const releaseSeats = useCallback(
     (seatNumbers: string[]) => {
       if (!socket || !scheduleId || !isInRoom) return
@@ -157,6 +204,7 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
     },
     [socket, scheduleId, isInRoom]
   )
+
   useEffect(() => {
     if (!socket || !scheduleId || !isInRoom) return
     const handleSeatsRelease = (data: any) => {
@@ -171,11 +219,10 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       socket.off('seats-released', handleSeatsRelease)
     }
   }, [socket, scheduleId, isInRoom])
-  // Lắng nghe real-time updates
+
   useEffect(() => {
     if (!socket || !isInRoom) return
 
-    // Error handling
     const handleError = (error: any) => {
       console.error('🔴 Socket error:', error)
       toast.error(error.message || 'Có lỗi xảy ra')
@@ -186,6 +233,7 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       socket.off('error', handleError)
     }
   }, [socket, isInRoom])
+
   useEffect(() => {
     if (scheduleId && isConnected) {
       joinSchedule()
