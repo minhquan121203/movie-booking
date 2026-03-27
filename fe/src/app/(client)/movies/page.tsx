@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react' // Import thêm Suspense ở đây
 import PageHeader from '@/app/(client)/movies/components/PageHeader'
 import FilterCard from '@/app/(client)/movies/components/FilterCard'
 import { TopMovieCarousel } from '@/app/(client)/components/topMovieCarousel'
@@ -19,7 +19,8 @@ const movieTypes = ['Tất cả', 'Đang chiếu', 'Sắp chiếu']
 const ratings = ['P', 'C13', 'C16', 'C18']
 const sortOptions = ['Mới nhất', 'Mới cập nhật', 'Điểm IMDb', 'Lượt xem']
 
-export default function PhimLoc() {
+// Đổi tên function cũ thành MoviesContent (bỏ export default đi)
+function MoviesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
@@ -30,7 +31,7 @@ export default function PhimLoc() {
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')
   const [selectedType, setSelectedType] = useState('Tất cả')
   const [selectedRating, setSelectedRating] = useState('P')
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]) // ✅ LƯU ID thay vì name
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState('Tất cả')
   const [customYear, setCustomYear] = useState('')
   const [selectedSort, setSelectedSort] = useState('Mới nhất')
@@ -74,18 +75,15 @@ export default function PhimLoc() {
             ? 'showing'
             : 'coming_soon',
       country: selectedCountry === 'Tất cả' ? undefined : selectedCountry,
-      // ✅ Truyền genre IDs vào API
       genres: selectedGenreIds.length === 0 ? undefined : selectedGenreIds.join(','),
     }
 
-    // Xử lý năm
     if (customYear) {
       params.year = parseInt(customYear, 10)
     } else if (selectedYear !== 'Tất cả') {
       params.year = parseInt(selectedYear, 10)
     }
 
-    // Xử lý sắp xếp
     switch (selectedSort) {
       case 'Mới nhất':
         params.sortBy = 'releaseDate'
@@ -112,7 +110,6 @@ export default function PhimLoc() {
   }
 
   // --- 5. HANDLERS ---
-  // ✅ Toggle genre bằng ID
   const toggleGenreId = (genreId: string) => {
     if (selectedGenreIds.includes(genreId)) {
       setSelectedGenreIds(selectedGenreIds.filter(id => id !== genreId))
@@ -156,7 +153,6 @@ export default function PhimLoc() {
             ratings={ratings}
             selectedRating={selectedRating}
             onSelectRating={setSelectedRating}
-            // ✅ Truyền genres array với ID và name
             genres={genres}
             selectedGenreIds={selectedGenreIds}
             onToggleGenreId={toggleGenreId}
@@ -205,5 +201,14 @@ export default function PhimLoc() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Bọc cái khiên Suspense ở ngoài cùng này
+export default function PhimLoc() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Đang tải trang phim...</div>}>
+      <MoviesContent />
+    </Suspense>
   )
 }
