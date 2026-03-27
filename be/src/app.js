@@ -24,10 +24,14 @@ app.use(helmet());
 
 // CORS
 app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-  })
+    cors({
+      origin: [
+        "http://localhost:3000",
+        "https://movie-booking-cinema.vercel.app" // Thêm chính xác link này vào
+      ],
+      methods: ["GET", "POST", "PUT", "DELETE"], // Mở thêm các phương thức cho chắc
+      credentials: true,
+    })
 );
 
 // Body parser
