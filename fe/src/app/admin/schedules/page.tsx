@@ -1,15 +1,15 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 // API Hooks
 import { useSchedules } from '@/lib/api/schedules'
-import { useMovies } from '@/lib/api/movies' // [Mới] Fetch tại đây
-import { useTheaters } from '@/lib/api/theaters' // [Mới] Fetch tại đây
+import { useMovies } from '@/lib/api/movies'
+import { useTheaters } from '@/lib/api/theaters'
 import { useScheduleMutations } from './hooks/useScheduleMutations'
 
 import { ScheduleTable } from './components/ScheduleTable'
@@ -28,7 +28,8 @@ import {
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function ScheduleManagementPage() {
+// 1. Tách nội dung quản lý ra một Component riêng
+function ScheduleManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -48,7 +49,7 @@ export default function ScheduleManagementPage() {
 
   const formattedDate = date ? date.toLocaleDateString('en-CA') : undefined
 
-  // 1. Fetch Schedules (Dữ liệu chính)
+  // 1. Fetch Schedules
   const {
     data: scheduleData,
     isLoading,
@@ -60,8 +61,7 @@ export default function ScheduleManagementPage() {
     includePast: true,
   })
 
-  // 2. [Mới] Fetch Resource Data (Phim & Rạp) để truyền vào Dialog
-  // Chỉ fetch khi Dialog mở hoặc sắp mở để tối ưu (hoặc fetch luôn tuỳ chiến lược cache)
+  // 2. Fetch Resource Data (Phim & Rạp)
   const {
     data: moviesData,
     isLoading: isLoadingMovies,
@@ -123,7 +123,6 @@ export default function ScheduleManagementPage() {
   return (
     <main className="flex-1 p-8 bg-gray-50 min-h-screen">
       <div className="max-w-[1600px] mx-auto space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-gray-900 text-3xl font-bold">Quản Lý Lịch Chiếu</h1>
           <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
@@ -131,7 +130,6 @@ export default function ScheduleManagementPage() {
           </Button>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <Card className="bg-white border-gray-200 p-4 h-fit shadow-sm">
             <div className="flex mb-2">
@@ -191,12 +189,10 @@ export default function ScheduleManagementPage() {
         </div>
       </div>
 
-      {/* Dialogs: Truyền Data & Loading state xuống */}
       <ScheduleFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         scheduleToEdit={scheduleToEdit}
-        // [Mới] Props
         movies={moviesData?.movies || []}
         theaters={theatersData?.theaters || []}
         isReferenceLoading={isReferenceLoading}
@@ -220,5 +216,18 @@ export default function ScheduleManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function ScheduleManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <ScheduleManagementContent />
+    </Suspense>
   )
 }

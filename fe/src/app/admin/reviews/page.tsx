@@ -1,13 +1,14 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation' // [Import mới]
-import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useReviews } from '@/lib/api/reviews'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { ReviewToolbar } from './components/ReviewToolbar'
 import { ReviewTable } from './components/ReviewTable'
 import { RejectDialog } from './components/RejectDialog'
 import { useDebounce } from '@/hooks/useDebounce'
+import { Loader2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,19 +21,17 @@ import {
 } from '@/components/ui/alert-dialog'
 import { GetReviewsParams } from '@/lib/api/reviews'
 import { DEFAULT_REVIEWS_LIST } from '@/constants'
-// [Import mới] Component phân trang
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 
-export default function ReviewManagementPage() {
+// 1. Tách nội dung chính ra một Component riêng
+function ReviewManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // [Logic mới] Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
-  const itemsPerPage = 9 // Giữ nguyên limit 9 như code cũ của bạn
+  const itemsPerPage = 9
 
-  // State
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
 
@@ -43,16 +42,13 @@ export default function ReviewManagementPage() {
     rating: undefined,
   })
 
-  // Dialog State
   const [rejectId, setRejectId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // [Logic mới] Đồng bộ State khi URL thay đổi (VD: User bấm Back/Forward browser)
   useEffect(() => {
     setParams(prev => ({ ...prev, page: pageFromUrl }))
   }, [pageFromUrl])
 
-  // Fetch Data
   const {
     data: reviewData = DEFAULT_REVIEWS_LIST,
     isLoading,
@@ -62,33 +58,23 @@ export default function ReviewManagementPage() {
     search: debouncedSearch,
   })
 
-  // Lấy thông tin phân trang từ API response
   const totalPages = reviewData?.pagination?.totalPages || 1
   const totalReviews = reviewData?.pagination?.totalItems || 0
 
   const { approveMutation, deleteMutation } = useReviewMutations()
 
-  // [Logic mới] Hàm cập nhật URL
-  const updateUrlParams = (newPage: number, otherParams?: Partial<GetReviewsParams>) => {
+  const updateUrlParams = (newPage: number) => {
     const newSearchParams = new URLSearchParams(searchParams.toString())
-
-    // Set page
     newSearchParams.set('page', newPage.toString())
-
-    // Nếu có thay đổi params khác (status, rating...) thì update vào URL nếu cần thiết
-    // (Ở đây mình tập trung vào page, các filter khác nếu muốn lưu lên URL thì handle thêm)
-
     router.push(`?${newSearchParams.toString()}`, { scroll: false })
   }
 
-  // [Logic mới] Xử lý khi chuyển trang
   const handlePageChange = (page: number) => {
     setParams(prev => ({ ...prev, page }))
     updateUrlParams(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // [Logic mới] Xử lý khi thay đổi filter (Reset về trang 1)
   const handleFilterChange = (newParams: Partial<GetReviewsParams>) => {
     if (newParams.search !== undefined) {
       setSearch(newParams.search)
@@ -96,7 +82,6 @@ export default function ReviewManagementPage() {
 
     setParams(prev => {
       const updated = { ...prev, ...newParams, search: undefined }
-      // Nếu thay đổi filter (status, rating), reset về page 1
       if (newParams.status !== prev.status || newParams.rating !== prev.rating) {
         updated.page = 1
         updateUrlParams(1)
@@ -105,7 +90,6 @@ export default function ReviewManagementPage() {
     })
   }
 
-  // Handlers actions
   const handleApprove = (id: string) => {
     approveMutation.mutate(id)
   }
@@ -117,6 +101,7 @@ export default function ReviewManagementPage() {
       })
     }
   }
+
   const isTransitioning = useMemo(() => {
     return !isLoading && isFetching
   }, [isLoading, isFetching])
@@ -128,11 +113,9 @@ export default function ReviewManagementPage() {
 
         <ReviewToolbar params={{ ...params, search }} setParams={handleFilterChange} />
         {isLoading ? (
-          // Initial loading - show full skeleton
           <TableSkeleton />
         ) : (
           <>
-            {/* Show content */}
             <ReviewTable
               reviews={reviewData.reviews}
               isLoading={isLoading}
@@ -140,13 +123,10 @@ export default function ReviewManagementPage() {
               onRejectClick={setRejectId}
               onDeleteClick={setDeleteId}
             />
-
-            {/* Show overlay during transitions (page change, tab change) */}
             {isTransitioning && <LoadingOverlay />}
           </>
         )}
 
-        {/* [UI Mới] Phần phân trang */}
         <PaginationInfo
           currentPage={params.page || 1}
           totalPages={totalPages}
@@ -162,7 +142,6 @@ export default function ReviewManagementPage() {
         />
       </div>
 
-      {/* Dialogs */}
       <RejectDialog open={!!rejectId} onOpenChange={() => setRejectId(null)} reviewId={rejectId} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
@@ -185,5 +164,18 @@ export default function ReviewManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function ReviewManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <ReviewManagementContent />
+    </Suspense>
   )
 }

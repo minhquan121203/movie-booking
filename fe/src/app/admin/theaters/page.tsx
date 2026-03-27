@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation' // [Mới] Import router
-import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useTheaters } from '@/lib/api/theaters'
 import { useTheaterMutations } from './hooks/useTheaterMutations'
 import { TheaterTable } from './components/TheaterTable'
@@ -10,7 +10,7 @@ import { Theater } from '@/types/theater'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, Loader2 } from 'lucide-react' // Thêm Loader2
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,19 +22,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useDebounce } from '@/hooks/useDebounce'
-// [Mới] Import component phân trang
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 
-export default function TheaterManagementPage() {
+// 1. Tách nội dung quản lý ra một Component riêng
+function TheaterManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // [Mới] Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
-  const itemsPerPage = 10 // Giảm limit xuống để phân trang
+  const itemsPerPage = 10 
 
-  // State
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
@@ -43,12 +41,10 @@ export default function TheaterManagementPage() {
   const [theaterToEdit, setTheaterToEdit] = useState<Theater | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // [Mới] Đồng bộ state khi URL thay đổi
   useEffect(() => {
     setCurrentPage(pageFromUrl)
   }, [pageFromUrl])
 
-  // [Mới] Reset về trang 1 khi search thay đổi
   useEffect(() => {
     if (currentPage !== 1 && search !== '') {
       handlePageChange(1)
@@ -56,33 +52,28 @@ export default function TheaterManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
-  // Fetch Data
   const {
     data: theaterList,
     isLoading,
     isFetching,
   } = useTheaters({
     search: debouncedSearch,
-    page: currentPage, // [Mới] Truyền page
+    page: currentPage,
     limit: itemsPerPage,
   })
 
-  // [Mới] Lấy thông tin phân trang từ API response
-  // Giả định API trả về cấu trúc: { theaters: [], pagination: { totalPages, totalItems } }
   const theaters = theaterList?.theaters || []
   const totalPages = theaterList?.pagination?.totalPages || 1
   const totalItems = theaterList?.pagination?.totalItems || 0
 
   const { deleteMutation } = useTheaterMutations()
 
-  // [Mới] Hàm cập nhật URL
   const updateUrlParams = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', newPage.toString())
     router.push(`?${params.toString()}`, { scroll: false })
   }
 
-  // [Mới] Xử lý chuyển trang
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
     updateUrlParams(page)
@@ -113,7 +104,6 @@ export default function TheaterManagementPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <h1 className="text-gray-900 text-3xl font-bold">Quản Lý Rạp</h1>
 
-        {/* Toolbar */}
         <Card className="bg-white border-gray-200 p-4 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative flex-1 max-w-md">
@@ -132,26 +122,19 @@ export default function TheaterManagementPage() {
         </Card>
 
         {isLoading ? (
-          // Initial loading - show full skeleton
           <TableSkeleton />
         ) : (
           <>
-            {/* Show content */}
             <TheaterTable
               theaters={theaters}
               isLoading={isLoading}
               onEdit={handleEdit}
               onDelete={id => setDeleteId(id)}
             />
-
-            {/* Show overlay during transitions (page change, tab change) */}
             {isTransitioning && <LoadingOverlay />}
           </>
         )}
 
-        {/* Table */}
-
-        {/* [Mới] Phần phân trang */}
         <div className="flex flex-col gap-4 mt-4">
           <PaginationInfo
             currentPage={currentPage}
@@ -169,7 +152,6 @@ export default function TheaterManagementPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
       <TheaterFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
@@ -193,5 +175,18 @@ export default function TheaterManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function TheaterManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <TheaterManagementContent />
+    </Suspense>
   )
 }

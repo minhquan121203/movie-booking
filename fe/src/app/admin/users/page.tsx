@@ -1,6 +1,6 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useUsers } from '@/lib/api/user'
 import { useUserMutations } from './hooks/useUserMutations'
 import { UserTable } from './components/UserTable'
@@ -11,6 +11,7 @@ import { AssignTheaterModal } from './components/AssignTheaterModal'
 import { useDebounce } from '@/hooks/useDebounce'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { User } from '@/types/user'
+import { Loader2 } from 'lucide-react' // Import icon loading
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,23 +24,21 @@ import {
 } from '@/components/ui/alert-dialog'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function UserManagementPage() {
+// 1. Tách nội dung chính ra UserManagementContent
+function UserManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Lấy giá trị từ URL params
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   const typeUserFromUrl = searchParams.get('type-user') || 'customer'
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const itemsPerPage = 10
 
-  // State
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
   const [typeUser, setTypeUser] = useState(typeUserFromUrl)
 
-  // Dialog State
   const [viewUserId, setViewUserId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
@@ -53,7 +52,6 @@ export default function UserManagementPage() {
     return () => clearTimeout(timer)
   }, [pageFromUrl, typeUserFromUrl])
 
-  // Fetch API
   const {
     data: userData,
     isLoading,
@@ -64,10 +62,12 @@ export default function UserManagementPage() {
     search: debouncedSearch,
     role: typeUser,
   })
+  
   const users = userData?.users
   const totalPages = userData?.pagination?.totalPages || 1
   const totalBookings = userData?.pagination.totalItems || 0
   const { deleteMutation } = useUserMutations()
+  
   const isTransitioning = useMemo(() => {
     return !isLoading && isFetching
   }, [isLoading, isFetching])
@@ -120,14 +120,11 @@ export default function UserManagementPage() {
           onAddStaff={handleOpenCreateStaffModal}
         />
 
-        {/* Table with loading states */}
         <div className="relative">
           {isLoading ? (
-            // Initial loading - show full skeleton
             <TableSkeleton />
           ) : (
             <>
-              {/* Show content */}
               <UserTable
                 users={users || []}
                 onViewDetail={user => setViewUserId(user._id)}
@@ -135,14 +132,11 @@ export default function UserManagementPage() {
                 onAssignTheater={handleAssignTheater}
                 showAssignTheater={typeUser === 'staff'}
               />
-
-              {/* Show overlay during transitions (page change, tab change) */}
               {isTransitioning && <LoadingOverlay />}
             </>
           )}
         </div>
 
-        {/* Only show pagination when data is loaded */}
         {!isLoading && (
           <>
             <PaginationInfo
@@ -162,24 +156,20 @@ export default function UserManagementPage() {
         )}
       </div>
 
-      {/* User Detail Sheet */}
       <UserDetailSheet
         open={!!viewUserId}
         onOpenChange={() => setViewUserId(null)}
         userId={viewUserId}
       />
 
-      {/* Create Staff Modal */}
       <CreateStaffModal open={showCreateStaffModal} onOpenChange={setShowCreateStaffModal} />
 
-      {/* Assign Theater Modal */}
       <AssignTheaterModal
         open={!!assignTheaterStaff}
         onOpenChange={() => setAssignTheaterStaff(null)}
         staff={assignTheaterStaff}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="bg-gray-50 text-gray-900">
           <AlertDialogHeader>
@@ -197,5 +187,18 @@ export default function UserManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function UserManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <UserManagementContent />
+    </Suspense>
   )
 }

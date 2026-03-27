@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation' // [Mới] Import router
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useMemo, useRef, useEffect, Suspense } from 'react' // Thêm Suspense
 import { useTheaters } from '@/lib/api/theaters'
 import { useRoomMutations } from './hooks/useRoomMutations'
 import { RoomTable } from './components/RoomTable'
@@ -10,6 +10,7 @@ import { RoomFormDialog, FlatRoom } from './components/RoomFormDialog'
 import { AdminSeatMap } from './components/AdminSeatMap'
 import { Seat } from '@/types/theater'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react' // Thêm icon loading
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,15 +24,14 @@ import {
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function ScreeningRoomPage() {
+// 1. Tách nội dung chính ra một Component riêng
+function ScreeningRoomContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // [Mới] Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   const itemsPerPage = 10
 
-  // State
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const [search, setSearch] = useState('')
   const [selectedTheater, setSelectedTheater] = useState('all')
@@ -39,18 +39,14 @@ export default function ScreeningRoomPage() {
   const [roomToEdit, setRoomToEdit] = useState<FlatRoom | null>(null)
   const [deleteInfo, setDeleteInfo] = useState<{ tid: string; rid: string } | null>(null)
 
-  // State cho SeatMap
   const [viewingRoom, setViewingRoom] = useState<FlatRoom | null>(null)
   const seatMapRef = useRef<HTMLDivElement>(null)
 
-  // Fetch Data
-  // Lưu ý: Vẫn lấy limit lớn để có đủ dữ liệu flatten, phân trang sẽ xử lý ở client
   const { data: theaterList, isLoading, isFetching } = useTheaters({ limit: 100 })
   const theaters = useMemo(() => {
     return theaterList?.theaters || []
   }, [theaterList])
 
-  // Flatten Data
   const allRooms: FlatRoom[] = useMemo(() => {
     if (!theaters) return []
     const rooms: FlatRoom[] = []
@@ -69,7 +65,6 @@ export default function ScreeningRoomPage() {
     return rooms
   }, [theaters])
 
-  // Filter
   const filteredRooms = useMemo(() => {
     return allRooms.filter(room => {
       const matchSearch = room.roomName.toLowerCase().includes(search.toLowerCase())
@@ -78,7 +73,6 @@ export default function ScreeningRoomPage() {
     })
   }, [allRooms, search, selectedTheater])
 
-  // [Mới] Logic Phân trang Client-side
   const totalItems = filteredRooms.length
   const totalPages = Math.ceil(totalItems / itemsPerPage)
 
@@ -89,7 +83,6 @@ export default function ScreeningRoomPage() {
 
   const { deleteMutation, updateMutation, updateSeatMutation } = useRoomMutations()
 
-  // [Mới] Đồng bộ URL khi page thay đổi
   const updateUrlParams = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', newPage.toString())
@@ -102,22 +95,17 @@ export default function ScreeningRoomPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // [Mới] Đồng bộ state từ URL (nếu user back/forward browser)
   useEffect(() => {
     setCurrentPage(pageFromUrl)
   }, [pageFromUrl])
 
-  // [Mới] Reset về trang 1 khi filter thay đổi
   useEffect(() => {
     if (currentPage !== 1) {
-      // Cập nhật URL về trang 1 mà không cần gọi router.push ngay lập tức nếu muốn tối ưu,
-      // nhưng ở đây ta gọi để đồng bộ
       updateUrlParams(1)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedTheater])
 
-  // Handlers
   const handleAdd = () => {
     setRoomToEdit(null)
     setIsDialogOpen(true)
@@ -181,11 +169,9 @@ export default function ScreeningRoomPage() {
           onOpenAdd={handleAdd}
         />
         {isLoading ? (
-          // Initial loading - show full skeleton
           <TableSkeleton />
         ) : (
           <>
-            {/* Show content */}
             <RoomTable
               rooms={paginatedRooms}
               isLoading={isLoading}
@@ -193,14 +179,10 @@ export default function ScreeningRoomPage() {
               onDelete={(tid, rid) => setDeleteInfo({ tid, rid })}
               onView={handleViewSeatMap}
             />
-
-            {/* Show overlay during transitions (page change, tab change) */}
             {isTransitioning && <LoadingOverlay />}
           </>
         )}
-        {/* Truyền dữ liệu đã phân trang vào Table */}
 
-        {/* [Mới] UI Phân trang */}
         <div className="flex flex-col gap-4 mt-4">
           <PaginationInfo
             currentPage={currentPage}
@@ -217,11 +199,10 @@ export default function ScreeningRoomPage() {
           />
         </div>
 
-        {/* SECTION: ADMIN SEAT MAP */}
         {viewingRoom && (
           <div ref={seatMapRef} className="pt-4 border-t border-gray-200 mt-6">
             <AdminSeatMap
-              room={viewingRoom}
+              room={viewingRoom as any}
               onClose={() => setViewingRoom(null)}
               onSave={handleSaveSeatMap}
               isSaving={updateMutation.isPending}
@@ -254,5 +235,18 @@ export default function ScreeningRoomPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function ScreeningRoomPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <ScreeningRoomContent />
+    </Suspense>
   )
 }

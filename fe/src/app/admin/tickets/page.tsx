@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useAdminBookings } from '@/lib/api/booking'
 import { useTicketMutations } from './hooks/useTicketMutations'
 import { TicketTable } from './components/TicketTable'
@@ -9,6 +9,7 @@ import { TicketToolbar } from './components/TicketToolbar'
 import { TicketStatusDialog } from './components/TicketStatusDialog'
 import { Booking } from '@/types/booking'
 import { useDebounce } from '@/hooks/useDebounce'
+import { Loader2 } from 'lucide-react' // Thêm icon loading
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,8 @@ import { GetAdminBookingsParams } from '@/lib/api/booking'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 
-export default function TicketManagementPage() {
+// 1. Tách nội dung quản lý ra một Component riêng
+function TicketManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -80,19 +82,16 @@ export default function TicketManagementPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // [ĐÃ SỬA LỖI] Tách logic side effect ra khỏi setParams
   const handleFilterChange = (newParams: Partial<GetAdminBookingsParams & { search?: string }>) => {
     if (newParams.search !== undefined) {
       setSearch(newParams.search)
     }
 
-    // 1. Tính toán điều kiện reset page TRƯỚC
     const shouldResetPage =
       (newParams.status !== undefined && newParams.status !== params.status) ||
       (newParams.showDate !== undefined && newParams.showDate !== params.showDate) ||
       (newParams.search !== undefined && newParams.search !== search)
 
-    // 2. Cập nhật State (Pure function)
     setParams(prev => ({
       ...prev,
       ...newParams,
@@ -100,7 +99,6 @@ export default function TicketManagementPage() {
       page: shouldResetPage ? 1 : prev.page,
     }))
 
-    // 3. Thực hiện Side Effect (Update URL) SAU và NGOÀI setParams
     if (shouldResetPage) {
       updateUrlParams(1)
     }
@@ -123,7 +121,6 @@ export default function TicketManagementPage() {
         <TicketToolbar params={{ ...params, search }} setParams={handleFilterChange} />
         <div className="relative">
           {isLoading ? (
-            // Initial loading - show full skeleton
             <TableSkeleton />
           ) : (
             <>
@@ -133,8 +130,6 @@ export default function TicketManagementPage() {
                 onEditStatus={setEditTicket}
                 onDelete={setDeleteId}
               />
-
-              {/* Show overlay during transitions (page change, tab change) */}
               {isTransitioning && <LoadingOverlay />}
             </>
           )}
@@ -178,5 +173,18 @@ export default function TicketManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function TicketManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <TicketManagementContent />
+    </Suspense>
   )
 }
