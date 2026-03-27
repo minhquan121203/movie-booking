@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation' // [Mới] Import router
-import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useGenres } from '@/lib/api/genres'
 import { useGenreMutations } from './hooks/useGenreMutations'
 import { GenreTable } from './components/GenreTable'
@@ -10,7 +10,7 @@ import { Genre } from '@/types/genre'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, Loader2 } from 'lucide-react' // Thêm Loader2 cho đẹp
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,15 +25,14 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function GenreManagementPage() {
+// 1. Tách nội dung quản lý ra một Component riêng
+function GenreManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // [Mới] Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
-  const itemsPerPage = 10 // Số lượng items trên 1 trang
+  const itemsPerPage = 10 
 
-  // --- State ---
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
@@ -42,20 +41,17 @@ export default function GenreManagementPage() {
   const [genreToEdit, setGenreToEdit] = useState<Genre | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // [Mới] Đồng bộ state khi URL thay đổi (VD: User bấm Back browser)
   useEffect(() => {
     setCurrentPage(pageFromUrl)
   }, [pageFromUrl])
 
-  // [Mới] Reset về trang 1 khi thay đổi từ khóa tìm kiếm
   useEffect(() => {
     if (currentPage !== 1) {
       handlePageChange(1)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
-  // --- Data Fetching ---
   const {
     data: genreData,
     isLoading,
@@ -65,24 +61,19 @@ export default function GenreManagementPage() {
     limit: itemsPerPage,
     search: debouncedSearch,
   })
-  // [Mới] Lấy dữ liệu an toàn cho phân trang
-  // Giả sử API trả về: { genres: [], pagination: { totalPages: number, totalItems: number } }
+
   const genres = genreData?.items ?? []
   const totalPages = genreData ? genreData.pagination.totalPages : 1
   const totalItems = genreData ? genreData.pagination.totalItems : 0
 
   const { deleteMutation } = useGenreMutations()
 
-  // --- Handlers ---
-
-  // [Mới] Hàm cập nhật URL
   const updateUrlParams = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', newPage.toString())
     router.push(`?${params.toString()}`, { scroll: false })
   }
 
-  // [Mới] Xử lý chuyển trang
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
     updateUrlParams(page)
@@ -113,12 +104,10 @@ export default function GenreManagementPage() {
   return (
     <main className="flex-1 p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-gray-900 text-3xl font-bold">Quản Lý Thể Loại</h1>
         </div>
 
-        {/* Toolbar */}
         <Card className="bg-white border-gray-200 p-4 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4 justify-between">
             <div className="relative flex-1 max-w-md">
@@ -135,26 +124,21 @@ export default function GenreManagementPage() {
             </Button>
           </div>
         </Card>
+
         {isLoading ? (
-          // Initial loading - show full skeleton
           <TableSkeleton />
         ) : (
           <>
-            {/* Show content */}
             <GenreTable
               genres={genres}
               isLoading={isLoading}
               onEdit={handleEdit}
               onDelete={id => setDeleteId(id)}
             />
-
-            {/* Show overlay during transitions (page change, tab change) */}
             {isTransitioning && <LoadingOverlay />}
           </>
         )}
-        {/* Table */}
 
-        {/* [Mới] Pagination UI */}
         <PaginationInfo
           currentPage={currentPage}
           totalPages={totalPages}
@@ -170,7 +154,6 @@ export default function GenreManagementPage() {
         />
       </div>
 
-      {/* Dialogs */}
       <GenreFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
@@ -200,5 +183,18 @@ export default function GenreManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function GenreManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    }>
+      <GenreManagementContent />
+    </Suspense>
   )
 }
