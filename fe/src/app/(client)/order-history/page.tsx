@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react' // Nhớ thêm Suspense ở đây
 import { useRouter, useSearchParams } from 'next/navigation'
 import Filters, { type BookingStatus } from './components/Filters'
 import BookingList from './components/BookingList'
 import { useMyBookings } from '@/lib/api/booking'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import Link from 'next/link'
-export default function OrderHistoryPage() {
+
+// Đổi tên function cũ thành OrderHistoryContent (bỏ export default đi)
+function OrderHistoryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -145,5 +147,14 @@ export default function OrderHistoryPage() {
         )}
       </div>
     </div>
+  )
+}
+
+// Bọc cái khiên Suspense ở ngoài cùng này
+export default function OrderHistoryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Đang tải lịch sử đặt vé...</div>}>
+      <OrderHistoryContent />
+    </Suspense>
   )
 }
