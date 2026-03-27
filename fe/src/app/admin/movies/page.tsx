@@ -1,13 +1,14 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation' // [Mới]
-import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useMovies, GetMoviesParams } from '@/lib/api/movies'
 import { MovieTable } from './components/MovieTable'
 import { MovieToolbar } from './components/MovieToolbar'
 import { MovieFormDialog } from './components/MovieFormDialog'
 import { Movie } from '@/types/movie'
 import { useMovieMutations } from './hooks/useMovieMutations'
+import { Loader2 } from 'lucide-react' // Thêm icon loading
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,15 +22,14 @@ import {
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function MovieManagementPage() {
+// 1. Tách nội dung chính ra MovieManagementContent
+function MovieManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // [Mới] Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   const itemsPerPage = 10
 
-  // State quản lý params API
   const [params, setParams] = useState<GetMoviesParams>({
     page: pageFromUrl,
     limit: itemsPerPage,
@@ -37,63 +37,52 @@ export default function MovieManagementPage() {
     order: 'desc',
   })
 
-  // State quản lý UI
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [movieToEdit, setMovieToEdit] = useState<Movie | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // [Mới] Đồng bộ state khi URL thay đổi (VD: User bấm Back browser)
   useEffect(() => {
     setParams(prev => ({ ...prev, page: pageFromUrl }))
   }, [pageFromUrl])
 
-  // Fetch Data
   const { data: listMovies, isLoading, isFetching } = useMovies(params)
 
-  // [Mới] Lấy thông tin phân trang từ API response
   const movies = listMovies?.movies || []
   const totalPages = listMovies?.pagination?.totalPages || 1
   const totalItems = listMovies?.pagination?.totalItems || 0
 
   const { deleteMutation } = useMovieMutations()
 
-  // [Mới] Helper update URL
   const updateUrlParams = (newPage: number) => {
     const newSearchParams = new URLSearchParams(searchParams.toString())
     newSearchParams.set('page', newPage.toString())
     router.push(`?${newSearchParams.toString()}`, { scroll: false })
   }
 
-  // [Mới] Xử lý chuyển trang
   const handlePageChange = (page: number) => {
     setParams(prev => ({ ...prev, page }))
     updateUrlParams(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // [Mới] Xử lý logic lọc (Search/Sort) -> Reset về trang 1
   const handleFilterChange = (newParams: Partial<GetMoviesParams>) => {
-    // 1. Tính toán điều kiện reset page (nếu search hoặc sort thay đổi)
     const shouldResetPage =
       (newParams.search !== undefined && newParams.search !== params.search) ||
       (newParams.status !== undefined && newParams.status !== params.status) ||
       (newParams.sortBy !== undefined && newParams.sortBy !== params.sortBy) ||
       (newParams.order !== undefined && newParams.order !== params.order)
 
-    // 2. Cập nhật State
     setParams(prev => ({
       ...prev,
       ...newParams,
       page: shouldResetPage ? 1 : prev.page,
     }))
 
-    // 3. Update URL (nếu cần reset)
     if (shouldResetPage) {
       updateUrlParams(1)
     }
   }
 
-  // Handlers
   const handleAdd = () => {
     setMovieToEdit(null)
     setIsDialogOpen(true)
@@ -124,27 +113,21 @@ export default function MovieManagementPage() {
         </div>
       </div>
 
-      {/* Truyền handleFilterChange vào setParams của Toolbar để xử lý logic reset page */}
       <MovieToolbar params={params} setParams={handleFilterChange} onOpenAdd={handleAdd} />
       {isLoading ? (
-        // Initial loading - show full skeleton
         <TableSkeleton />
       ) : (
         <>
-          {/* Show content */}
           <MovieTable
             movies={movies}
             isLoading={isLoading}
             onEdit={handleEdit}
             onDelete={id => setDeleteId(id)}
           />
-
-          {/* Show overlay during transitions (page change, tab change) */}
           {isTransitioning && <LoadingOverlay />}
         </>
       )}
 
-      {/* [Mới] UI Phân trang */}
       <div className="flex flex-col gap-4 mt-4">
         <PaginationInfo
           currentPage={params.page || 1}
@@ -161,14 +144,12 @@ export default function MovieManagementPage() {
         />
       </div>
 
-      {/* Add/Edit Dialog */}
       <MovieFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         movieToEdit={movieToEdit}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="bg-gray-50 text-gray-900">
           <AlertDialogHeader>
@@ -191,5 +172,18 @@ export default function MovieManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function MovieManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    }>
+      <MovieManagementContent />
+    </Suspense>
   )
 }
