@@ -136,7 +136,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                 <DetailItem
                   icon={<MonitorPlay className="w-4 h-4" />}
                   label="Phòng chiếu"
-                  value={booking.schedule.room.name || 'Đang cập nhật'}
+                  value={(booking.schedule.room as any)?.name || 'Đang cập nhật'}
                 />
                 <DetailItem
                   icon={<Armchair className="w-4 h-4" />}
