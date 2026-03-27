@@ -1,10 +1,10 @@
 'use client'
-import { useGoogleAuth } from '@/hooks/useGoogleAuth' // Import hook mới
+import { useGoogleAuth } from '@/hooks/useGoogleAuth'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, Suspense } from 'react' // Import thêm Suspense ở đây
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Lock, Eye, EyeOff, Film, AlertCircle } from 'lucide-react' // 1. Import AlertCircle
+import { Lock, Eye, EyeOff, Film, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback'
 import { useLogin } from '@/hooks/useLogin'
@@ -12,7 +12,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 
-// 2. Định nghĩa Schema Validate với Zod
 const loginSchema = z.object({
   email: z
     .string()
@@ -23,10 +22,10 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+// Đổi tên function cũ thành LoginContent (bỏ export default đi)
+function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const { login: googleLogin, isPending: isGoogleLoading } = useGoogleAuth()
-  // 3. Lấy thêm `error` và `isError` từ hook
   const { mutate: login, isPending, error, isError } = useLogin()
 
   const {
@@ -91,7 +90,7 @@ export default function LoginPage() {
           <Button
             variant="outline"
             className="w-full h-12 border-2 hover:bg-gray-50 text-gray-700 hover:text-gray-700/50 relative"
-            onClick={() => googleLogin()} // Gọi hàm login
+            onClick={() => googleLogin()}
             disabled={isGoogleLoading}
             type="button"
           >
@@ -188,12 +187,11 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            {/* 4. THÔNG BÁO LỖI TỪ API (HIỂN THỊ KHI LOGIN THẤT BẠI) */}
+            {/* Error Message */}
             {isError && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-1">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>
-                  {/* Lấy message lỗi từ API hoặc hiển thị lỗi mặc định */}
                   {(error as any)?.response?.data?.message ||
                     'Email hoặc mật khẩu không chính xác. Vui lòng thử lại!'}
                 </span>
@@ -220,5 +218,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Bọc cái khiên Suspense ở ngoài cùng này
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
