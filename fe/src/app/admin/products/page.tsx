@@ -1,13 +1,14 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
 import { useProducts, GetProductsParams } from '@/lib/api/products'
 import { ProductTable } from './components/ProductTable'
 import { ProductToolbar } from './components/ProductToolbar'
 import { ProductFormDialog } from './components/ProductFormDialog'
 import { Product } from '@/types/product'
 import { useProductMutations } from './hooks/useProductMutations'
+import { Loader2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,15 +22,14 @@ import {
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-export default function ProductManagementPage() {
+// 1. Tách nội dung quản lý ra một Component riêng
+function ProductManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Lấy page từ URL
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   const itemsPerPage = 10
 
-  // State quản lý params API
   const [params, setParams] = useState<GetProductsParams>({
     page: pageFromUrl,
     limit: itemsPerPage,
@@ -37,63 +37,52 @@ export default function ProductManagementPage() {
     order: 'desc',
   })
 
-  // State quản lý UI
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [productToEdit, setProductToEdit] = useState<Product | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  // Đồng bộ state khi URL thay đổi
   useEffect(() => {
     setParams(prev => ({ ...prev, page: pageFromUrl }))
   }, [pageFromUrl])
 
-  // Fetch Data
   const { data: listProducts, isLoading, isFetching } = useProducts(params)
 
-  // Lấy thông tin phân trang từ API response
   const products = listProducts ?? []
   const totalPages = listProducts ? Math.ceil(listProducts.length / itemsPerPage) : 1
   const totalItems = listProducts ? listProducts.length : 0
 
   const { deleteMutation } = useProductMutations()
 
-  // Helper update URL
   const updateUrlParams = (newPage: number) => {
     const newSearchParams = new URLSearchParams(searchParams.toString())
     newSearchParams.set('page', newPage.toString())
     router.push(`?${newSearchParams.toString()}`, { scroll: false })
   }
 
-  // Xử lý chuyển trang
   const handlePageChange = (page: number) => {
     setParams(prev => ({ ...prev, page }))
     updateUrlParams(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Xử lý logic lọc (Search/Sort) -> Reset về trang 1
   const handleFilterChange = (newParams: Partial<GetProductsParams>) => {
-    // Tính toán điều kiện reset page
     const shouldResetPage =
       (newParams.search !== undefined && newParams.search !== params.search) ||
       (newParams.category !== undefined && newParams.category !== params.category) ||
       (newParams.sortBy !== undefined && newParams.sortBy !== params.sortBy) ||
       (newParams.order !== undefined && newParams.order !== params.order)
 
-    // Cập nhật State
     setParams(prev => ({
       ...prev,
       ...newParams,
       page: shouldResetPage ? 1 : prev.page,
     }))
 
-    // Update URL (nếu cần reset)
     if (shouldResetPage) {
       updateUrlParams(1)
     }
   }
 
-  // Handlers
   const handleAdd = () => {
     setProductToEdit(null)
     setIsDialogOpen(true)
@@ -125,7 +114,6 @@ export default function ProductManagementPage() {
         </div>
       </div>
 
-      {/* Toolbar */}
       <ProductToolbar params={params} setParams={handleFilterChange} onOpenAdd={handleAdd} />
 
       {isLoading ? (
@@ -138,12 +126,10 @@ export default function ProductManagementPage() {
             onEdit={handleEdit}
             onDelete={id => setDeleteId(id)}
           />
-
           {isTransitioning && <LoadingOverlay />}
         </>
       )}
 
-      {/* Pagination UI */}
       <div className="flex flex-col gap-4 mt-4">
         <PaginationInfo
           currentPage={params.page || 1}
@@ -160,14 +146,12 @@ export default function ProductManagementPage() {
         />
       </div>
 
-      {/* Add/Edit Dialog */}
       <ProductFormDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         productToEdit={productToEdit}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="bg-gray-50 text-gray-900">
           <AlertDialogHeader>
@@ -190,5 +174,18 @@ export default function ProductManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+// 2. Export default bọc trong Suspense
+export default function ProductManagementPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    }>
+      <ProductManagementContent />
+    </Suspense>
   )
 }
