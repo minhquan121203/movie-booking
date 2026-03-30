@@ -15,8 +15,8 @@ const authController = {
         const refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         res.cookie("refreshToken", refreshToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production", // true in production
-          sameSite: "strict", // Prevent CSRF
+          secure: true,
+          sameSite: "none",
           expires: refreshTokenExpires,
         });
       };
@@ -155,8 +155,8 @@ const authController = {
       const refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "none",
         expires: refreshTokenExpires,
       });
 
@@ -239,8 +239,8 @@ const authController = {
       const refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "none",
         expires: refreshTokenExpires,
       });
 
@@ -471,8 +471,8 @@ const authController = {
       const refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "none",
         expires: refreshTokenExpires,
       });
 

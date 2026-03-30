@@ -569,6 +569,7 @@ const bookingController = {
           const finalizedSchedule = await Schedule.findOneAndUpdate(
               {
                 _id: booking.schedule,
+                seatAvailability: { $exists: true, $not: { $size: 0 } }, // Đảm bảo trường này tồn tại và không rỗng
                 $and: seatNumbers.map((seatNum) => ({
                   seatAvailability: {
                     $elemMatch: { seatNumber: seatNum, isBooked: false },
