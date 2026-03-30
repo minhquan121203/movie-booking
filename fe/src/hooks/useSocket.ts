@@ -13,8 +13,8 @@ export default function useSocket() {
     const token = Cookies.get('authToken')
 
     // 2. Lấy API URL và đảm bảo không có trailing slash
-    const apiUrl = 'http://localhost:5000'.replace(/\/$/, '')
-    // const apiUrl = 'https://movie-booking-api-bcfe.onrender.com'.replace(/\/$/, '')
+    // const apiUrl = 'http://localhost:5000'.replace(/\/$/, '')
+    const apiUrl = 'https://movie-booking-api-bcfe.onrender.com'.replace(/\/$/, '')
 
     console.log('🔌 Connecting to WebSocket:', apiUrl)
     // 3. Khởi tạo socket với cấu hình đúng
