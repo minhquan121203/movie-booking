@@ -883,6 +883,9 @@ router.get(
 // PAYMENT ROUTES
 // ============================================
 
+// PayOS Webhook
+router.post("/bookings/payos-webhook", bookingController.payosWebhook);
+
 // VNPay
 router.post("/bookings/:bookingId/payment/vnpay", authenticateToken, paymentController.createVNPayPayment);
 router.get("/payment/vnpay-return", paymentController.handleVNPayReturn);

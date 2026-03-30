@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 const paymentDetailSchema = new Schema({
   paymentMethod: {
     type: String,
-    enum: ["pending", "VNPAY", "MoMo", "ZaloPay", "Tại quầy", "Thẻ tín dụng"],
+    enum: ["pending", "VNPAY", "MoMo", "ZaloPay", "Tại quầy", "Thẻ tín dụng", "bank_transfer"],
     default: "pending",
   },
   transactionId: { type: String }, // Mã giao dịch từ bên thứ 3
