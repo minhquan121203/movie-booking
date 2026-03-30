@@ -25,11 +25,11 @@ export const useGoogleAuth = () => {
     onSuccess: response => {
       const { accessToken, user } = response.data
 
-      Cookies.set('authToken', accessToken, {
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-      })
+      Cookies.set('authToken', accessToken, { 
+        expires: 7,  
+        secure: true, 
+        sameSite: 'none' 
+      });
 
       setUser(user)
       showSuccess('Đăng nhập Google thành công!')

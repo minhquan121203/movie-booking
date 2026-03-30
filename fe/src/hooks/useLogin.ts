@@ -24,11 +24,11 @@ export const useLogin = () => {
     onSuccess: async (response: LoginResponse) => {
       const { accessToken, user } = response.data
       // 1. Lưu Cookie
-      Cookies.set('authToken', accessToken, {
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-      })
+      Cookies.set('authToken', accessToken, { 
+        expires: 7,  
+        secure: true, 
+        sameSite: 'none' 
+      });
 
       // 2. Cập nhật Store Client
       setUser(user)

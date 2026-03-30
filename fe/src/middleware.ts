@@ -162,8 +162,8 @@ export async function middleware(request: NextRequest) {
       if (isTokenRefreshed) {
         response.cookies.set('authToken', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          secure: true,
+          sameSite: 'none',
           maxAge: 60 * 60,
         })
       }
@@ -177,8 +177,8 @@ export async function middleware(request: NextRequest) {
       if (isTokenRefreshed) {
         accessRedirect.cookies.set('authToken', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          secure: true,
+          sameSite: 'none',
           maxAge: 60 * 60,
         })
       }
