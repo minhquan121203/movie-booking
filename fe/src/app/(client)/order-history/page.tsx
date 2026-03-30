@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react' // Nhớ thêm Suspense ở đây
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Filters, { type BookingStatus } from './components/Filters'
 import BookingList from './components/BookingList'
 import { useMyBookings } from '@/lib/api/booking'
@@ -12,6 +12,16 @@ import Link from 'next/link'
 function OrderHistoryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    const currentStatus = searchParams.get('status')
+    // Nếu phát hiện URL có đuôi từ PayOS trả về
+    if (currentStatus === 'PAID' || currentStatus === 'CANCELLED') {
+      // Xóa sạch toàn bộ đuôi lằng nhằng, trả về trang /order-history gốc
+      router.replace(pathname) 
+    }
+  }, [pathname, router, searchParams])
 
   // Lấy giá trị từ URL params
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
