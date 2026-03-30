@@ -71,19 +71,36 @@ export function StepCombo({ cartItems, updateCartItem }: StepComboProps) {
   if (!products) {
     return <>No data</>
   }
+
+  //Xử lý sắp xếp Nổi bật (Featured) lên đầu
+
+  const sortedProducts = [...products].sort((a, b) => {
+    // Ưu tiên 1: Thằng nào Nổi bật (featured) thì đẩy lên trước
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+    
+    // Ưu tiên 2: Nhóm Combo lên trước, rồi mới đến Nước, Bắp...
+    if (a.category === 'Combo' && b.category !== 'Combo') return -1;
+    if (a.category !== 'Combo' && b.category === 'Combo') return 1;
+    
+    return 0; // Cùng loại thì giữ nguyên vị trí
+  });
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <h2 className="mb-6 text-text-primary text-xl font-bold">Bắp nước & Combo</h2>
 
       {/* 4. Empty State */}
-      {products.length === 0 ? (
+      {sortedProducts.length === 0 ? (
         <div className="text-center py-12 bg-surface border-2 border-dashed border-border rounded-2xl">
           <PackageOpen className="w-12 h-12 text-text-secondary mx-auto mb-3 opacity-50" />
           <p className="text-text-secondary font-medium">Hiện chưa có sản phẩm nào.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {products.map(product => {
+          
+          {/* Đã thay đổi: Lặp qua mảng sortedProducts thay vì mảng products gốc */}
+          {sortedProducts.map(product => {
             const currentItem = cartItems.find(item => item.product._id === product._id)
             const quantity = currentItem?.quantity || 0
             const isSelected = quantity > 0
@@ -130,11 +147,7 @@ export function StepCombo({ cartItems, updateCartItem }: StepComboProps) {
                     <span className="text-accent font-bold text-lg">
                       {formatPrice(product.price)}
                     </span>
-                    {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-xs text-text-secondary line-through decoration-red-500/50">
-                        {formatPrice(product.originalPrice)}
-                      </span>
-                    )}
+                    {/* ĐÃ XÓA CODE HIỂN THỊ GIÁ BỊ GẠCH NGANG Ở ĐÂY */}
                   </div>
                 </div>
 

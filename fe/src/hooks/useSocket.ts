@@ -14,6 +14,7 @@ export default function useSocket() {
 
     // 2. Lấy API URL và đảm bảo không có trailing slash
     const apiUrl = 'http://localhost:5000'.replace(/\/$/, '')
+    // const apiUrl = 'https://movie-booking-api-bcfe.onrender.com'.replace(/\/$/, '')
 
     console.log('🔌 Connecting to WebSocket:', apiUrl)
     // 3. Khởi tạo socket với cấu hình đúng
@@ -50,12 +51,17 @@ export default function useSocket() {
       }
     })
 
-    socketInstance.on('connect_error', error => {
+    // socketInstance.on('connect_error', error => {
+    //   console.error('🔴 Connection Error:', error.message)
+    //   console.error('📋 Error details:', {
+    //     type: error.type,
+    //     description: error.description,
+    //   })
+    //   setIsConnected(false)
+    // })
+
+    socketInstance.on('connect_error', (error: any) => {
       console.error('🔴 Connection Error:', error.message)
-      console.error('📋 Error details:', {
-        type: error.type,
-        description: error.description,
-      })
       setIsConnected(false)
     })
 

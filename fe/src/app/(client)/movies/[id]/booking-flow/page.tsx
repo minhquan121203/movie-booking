@@ -85,6 +85,7 @@ export default function BookingPage() {
             paymentUrl={paymentUrl}
             bookingCode={createdBookingData?.bookingCode}
             totalAmount={totalAmount}
+            paymentMethod={paymentMethod}
           />
         )
       default:

@@ -41,7 +41,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [selectedSeats, setSelectedSeats] = useState<BookedSeat[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [paymentMethod, setPaymentMethod] = useState<'vnpay' | 'momo' | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'vnpay' | 'momo' | 'bank_transfer' | null>(null)
   const [createdBookingData, setCreatedBookingData] = useState<BookingResponseData | null>(null)
   const [paymentUrl, setPaymentUrl] = useState<string>('')
 
@@ -225,6 +225,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         size: item.product.size || 'L',
       })),
       voucherCode: '',
+      paymentMethod: paymentMethod
     }
 
     try {
@@ -232,18 +233,35 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const bookingData = bookingRes.data as BookingResponseData
 
       setCreatedBookingData(bookingData)
-      toast.success('Đã tạo đơn hàng!')
+      
+      // ĐỔI DÒNG NÀY: Thay loading bằng info hoặc success để nó tự biến mất
+      toast.info('Thông tin đặt vé đã được ghi nhận!', { 
+        icon: '📝',
+        duration: 2000 // Nó sẽ tự biến mất sau 2 giây
+      })
 
       return bookingData
     } catch (error) {
       console.error(error)
+      toast.error('Không thể tạo đơn hàng, fen kiểm tra lại kết nối nhé!')
       return null
     }
   }
 
   // --- CORE LOGIC: TẠO LINK THANH TOÁN (BƯỚC 4 -> 5) ---
   const handleCreatePayment = (bookingId: string) => {
+    toast.dismiss();
     if (!paymentMethod) return toast.error('Vui lòng chọn phương thức thanh toán')
+
+    if (paymentMethod === 'bank_transfer') {
+      setCurrentStep(5)
+      // Dùng toast.info hoặc toast với icon đồng hồ cho nó "pending"
+      toast.info('Vui lòng quét mã QR để hoàn tất thanh toán', {
+        icon: '⏳',
+        duration: 5000
+      })
+      return
+    }
 
     const onSuccessHandler = (res: any, method: string) => {
       setPaymentUrl(res.paymentUrl)
@@ -295,11 +313,20 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         const bookingData = await handleCreateBooking()
 
         if (bookingData) {
-          const bookingId = bookingData.bookingId || (bookingData as any)._id
+          // 🚀 KIỂM TRA NẾU LÀ PAYOS THÌ BAY THẲNG LUÔN
+          if (paymentMethod === 'bank_transfer' && (bookingData as any).payosCheckoutUrl) {
+            // Đá văng khách sang trang PayOS xịn xò
+            window.location.href = (bookingData as any).payosCheckoutUrl;
+            return; // Dừng luôn ở đây, không thèm chạy tiếp sang Step 5 nữa
+          }
+
+          // Dành cho VNPAY hoặc MOMO (Logic cũ của fen)
+          const bookingId = (bookingData as any)._id || (bookingData as any).bookingId
           handleCreatePayment(bookingId)
         }
       } catch (error) {
         console.error('Error creating booking:', error)
+        toast.error('Không thể tạo đơn hàng, fen thử lại nhé!')
       }
       return
     }
