@@ -1,8 +1,9 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 import { useUserStore } from '@/store/userStore'
+
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -83,8 +84,8 @@ api.interceptors.response.use(
         // Lưu token mới
         Cookies.set('authToken', newAccessToken, {
           expires: 1 / 24, // 1 giờ
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          secure: true, 
+          sameSite: 'none',
         })
 
         // Cập nhật header mặc định
