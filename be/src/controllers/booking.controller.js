@@ -913,11 +913,18 @@ const bookingController = {
   //WEBHOOK PAYOS XỬ LÝ THANH TOÁN TỰ ĐỘNG
   payosWebhook: async (req, res) => {
     try {
-      const webhookData = payos.webhooks.verify(req.body);
+      console.log("============= [WEBHOOK PAYOS START] =============");
 
-      // code === "00" nghĩa là tiền đã vào thành công
-      if (webhookData.code === "00") {
+      // Lấy data từ PayOS
+      const webhookData = payos.verifyPaymentWebhookData ? payos.verifyPaymentWebhookData(req.body) : payos.webhooks.verify(req.body);
+
+      console.log("Dữ liệu PayOS gửi về (WebhookData):", JSON.stringify(webhookData, null, 2));
+
+      // Dùng == thay vì === để tránh lỗi lệch kiểu dữ liệu (String vs Number)
+      // Thêm req.body.code để phòng hờ PayOS bọc code ở ngoài
+      if (webhookData.code == "00" || req.body.code == "00") {
         const orderCodeStr = webhookData.orderCode.toString();
+        console.log(`[WEBHOOK] Đang tìm đơn hàng với TransactionID: ${orderCodeStr}`);
 
         // 1. Tìm đơn hàng
         const booking = await Booking.findOne({
@@ -926,38 +933,46 @@ const bookingController = {
         });
 
         if (booking) {
-          // Gắn paymentMethod = 'bank_transfer' để dùng lại hàm confirmPayment
-          // (Fen có thể gọi trực tiếp logic confirm ở đây hoặc thông qua hàm phụ trợ)
-          console.log(`[WEBHOOK] Nhận được tiền cho đơn: ${booking.bookingCode}`);
+          console.log(`[WEBHOOK] TÌM THẤY ĐƠN: ${booking.bookingCode}. Tiến hành auto-duyệt...`);
 
-          // Để gọi lại hàm confirmPayment nội bộ, mình tạo req và res giả lập:
           const fakeReq = {
             params: { id: booking._id.toString() },
             body: {
               paymentMethod: "bank_transfer",
-              transactionId: webhookData.reference // Mã giao dịch của NH
+              transactionId: webhookData.reference || orderCodeStr // Lấy mã giao dịch NH
             },
-            userId: booking.customer.toString(), // Coi như chính khách hàng đang tự xác nhận
-            userRole: "admin" // Bơm quyền admin để vượt qua bảo mật
+            userId: booking.customer.toString(),
+            userRole: "admin"
           };
 
           const fakeRes = {
-            status: function() { return this; },
+            status: function(code) {
+              console.log(`[WEBHOOK] FakeRes nhận Status: ${code}`);
+              return this;
+            },
             json: function(data) {
-              console.log("[WEBHOOK RESULT]:", JSON.stringify(data, null, 2));
+              console.log("[WEBHOOK] FakeRes nhận Data:", JSON.stringify(data, null, 2));
               return this;
             }
           };
 
+          // Chạy hàm duyệt
           await bookingController.confirmPayment(fakeReq, fakeRes);
+          console.log(`[WEBHOOK] Đã duyệt xong đơn ${booking.bookingCode}!`);
+
+        } else {
+          console.log(`[WEBHOOK - CẢNH BÁO] Không tìm thấy đơn nào đang chờ thanh toán có mã ${orderCodeStr}. Có thể đơn đã được duyệt từ trước!`);
         }
+      } else {
+        console.log(`[WEBHOOK] Bị chặn lại vì Code không phải 00. Code nhận được: ${webhookData.code}`);
       }
 
-      // Trả về 200 OK cho PayOS để nó ngừng gọi lại
+      console.log("============= [WEBHOOK PAYOS END] =============");
       return res.json({ error: 0, message: "Ok", data: webhookData });
 
     } catch (error) {
-      console.error("Lỗi Webhook PayOS:", error);
+      console.error("============= [WEBHOOK LỖI NẶNG] =============");
+      console.error(error);
       return res.status(500).json({ error: 1, message: "Webhook lỗi" });
     }
   }
