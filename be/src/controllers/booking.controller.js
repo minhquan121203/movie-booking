@@ -942,8 +942,11 @@ const bookingController = {
           };
 
           const fakeRes = {
-            status: () => fakeRes,
-            json: (data) => console.log("[WEBHOOK RESULT]:", data)
+            status: function() { return this; },
+            json: function(data) {
+              console.log("[WEBHOOK RESULT]:", JSON.stringify(data, null, 2));
+              return this;
+            }
           };
 
           await bookingController.confirmPayment(fakeReq, fakeRes);
