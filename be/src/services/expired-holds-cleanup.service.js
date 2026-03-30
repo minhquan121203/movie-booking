@@ -185,7 +185,10 @@ class ExpiredHoldsCleanupService {
 
               // 2. Release seats
               await Schedule.updateOne(
-                { _id: booking.schedule },
+                {
+                  _id: booking.schedule,
+                  seatAvailability: { $exists: true, $not: { $size: 0 } }
+                },
                 {
                   $set: booking.seats.reduce((update, seat, index) => {
                     update[`seatAvailability.$[seat${index}].holdUntil`] = null;
