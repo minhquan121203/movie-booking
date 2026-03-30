@@ -9,7 +9,7 @@ class VNPayService {
     this.vnpUrl = process.env.VNPAY_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     this.tmnCode = process.env.VNPAY_TMN_CODE;
     this.hashSecret = process.env.VNPAY_HASH_SECRET;
-    this.returnUrl = process.env.VNPAY_RETURN_URL || "http://localhost:3000/payment/vnpay-return";
+    this.returnUrl = process.env.VNPAY_RETURN_URL || "https://movie-booking-cinema.vercel.app/payment/vnpay-return";
 
     if (this.tmnCode && this.hashSecret) {
       console.log("VNPay initialized");

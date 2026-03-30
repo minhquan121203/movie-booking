@@ -397,8 +397,8 @@ const bookingController = {
           orderCode: payosOrderCode,
           amount: newBooking.totalAmount,
           description: `BUNNY ${newBooking.bookingCode}`.substring(0, 25),
-          returnUrl: `http://localhost:3000/order-history`,
-          cancelUrl: `http://localhost:3000/order-history`
+          returnUrl: `https://movie-booking-cinema.vercel.app/order-history`,
+          cancelUrl: `https://movie-booking-cinema.vercel.app/order-history`
         };
 
         try {
