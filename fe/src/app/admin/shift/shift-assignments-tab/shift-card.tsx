@@ -66,7 +66,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
   }, [])
 
   return (
-    <> {/* 👈 Bọc toàn bộ vào thẻ Fragment này */}
+    <> 
       <Card className="border-gray-100 shadow-sm rounded-2xl overflow-hidden bg-white">
         <div
           className="px-4 py-3 flex items-center justify-between"
@@ -190,7 +190,6 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
         </CardContent>
       </Card>
 
-      {/* 👇 MODAL ÉP ĐÓNG CA ĐƯỢC CHÈN VÀO ĐÂY (NẰM NGOÀI THẺ CARD) 👇 */}
       {isModalOpen && selectedEmp && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
@@ -236,9 +235,39 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                 Hủy
               </button>
               <button
-                onClick={() => {
-                  console.log("🚀 GỌI API ÉP ĐÓNG CA:", selectedEmp.assignmentId, checkOutTime, note)
-                  setIsModalOpen(false)
+                onClick={async () => {
+                  try {
+                    // Tùy vào project của fen đang dùng fetch hay axios thì chỉnh lại tí nhé.
+                    // Dưới đây là mẫu dùng fetch tiêu chuẩn:
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/assignments/force-checkout`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        // Nhớ truyền token nếu hệ thống fen yêu cầu đăng nhập Admin
+                        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                      },
+                      body: JSON.stringify({
+                        assignmentId: selectedEmp.assignmentId,
+                        manualCheckOutTime: checkOutTime,
+                        managerNote: note
+                      })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                      alert("Đã ép đóng ca thành công!");
+                      setIsModalOpen(false);
+                      
+                      // F5 lại trang để danh sách cập nhật (Hoặc gọi hàm fetch lại data nếu fen có sẵn)
+                      window.location.reload(); 
+                    } else {
+                      alert("Lỗi: " + (result.message || "Không thể đóng ca"));
+                    }
+                  } catch (error) {
+                    console.error("Lỗi khi gọi API:", error);
+                    alert("Đã xảy ra lỗi hệ thống!");
+                  }
                 }}
                 className="flex-1 py-2.5 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-700 transition-all"
               >
