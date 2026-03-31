@@ -718,38 +718,36 @@
 /**
  * @swagger
  * /assignments/force-checkout:
- * post:
- * tags: [ShiftAssignments]
- * summary: Quản lý ép đóng ca thủ công
- * description: Dành cho Admin/Manager ép đóng ca khi nhân viên quên Check-out.
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required:
- * - assignmentId
- * properties:
- * assignmentId:
- * type: string
- * description: ID của phân công ca làm việc cần ép đóng
- * manualCheckOutTime:
- * type: string
- * format: date-time
- * description: (Tùy chọn) Thời gian Check-out. Bỏ trống sẽ lấy giờ kết thúc ca.
- * managerNote:
- * type: string
- * description: (Tùy chọn) Ghi chú của quản lý
- * responses:
- * 200:
- * description: Đã ép đóng ca thành công
- * 400:
- * description: Ca không ở trạng thái Đang làm
- * 404:
- * description: Không tìm thấy ca làm việc
+ *    post:
+ *     tags: [ShiftAssignments]
+ *     summary: Quản lý ép đóng ca thủ công
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *              schema:
+ *              type: object
+ *          required:
+ *            - assignmentId
+ *          properties:
+ *          assignmentId:
+ *             type: string
+ *          manualCheckOutTime:
+ *             type: string
+ *          managerNote:
+ *             type: string
+ *    responses:
+ *      200:
+ *        description: Đã ép đóng ca thành công
+ *      400:
+ *        description: Lỗi logic
+ *      404:
+ *        description: Không tìm thấy ca
+ *      500:
+ *        description: Lỗi server
  */
+
 
 export default {};
