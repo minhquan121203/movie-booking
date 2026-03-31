@@ -527,22 +527,17 @@ const bookingController = {
 
           // Generate QR code
           try {
-            const qrData = JSON.stringify({
-              bookingId: booking._id.toString(),
-              bookingCode: booking.bookingCode,
-              movieTitle: booking.movieTitle,
-              theaterName: booking.theaterName,
-              roomName: booking.roomName,
-              showDate: booking.showDate.toISOString().split("T")[0],
-              showTime: booking.showTime,
-              seats: booking.seats.map((s) => s.seatNumber).join(", "),
-              totalAmount: booking.totalAmount,
-              timestamp: new Date().toISOString(),
-            });
+            // Chỉ lấy đúng mã vé
+            const qrData = booking.bookingCode;
 
+            // Tạo mã QR cực nét
             const qrCodeUrl = await QRCode.toDataURL(qrData, {
-              errorCorrectionLevel: "M", type: "image/png", quality: 0.92, margin: 1,
-              color: { dark: "#000000", light: "#FFFFFF" }, width: 256,
+              errorCorrectionLevel: "M",
+              type: "image/png",
+              quality: 0.92,
+              margin: 1,
+              color: { dark: "#000000", light: "#FFFFFF" },
+              width: 256,
             });
 
             booking.qrCode = qrCodeUrl;
@@ -891,7 +886,7 @@ const bookingController = {
       if (booking.customer.toString() !== req.userId) return errorResponse(res, "Bạn không có quyền thực hiện hành động này", 403);
       if (booking.status !== BOOKING_STATUS.COMPLETED) return errorResponse(res, "Chỉ có thể tạo QR code cho booking đã hoàn tất", 400);
 
-      const qrData = JSON.stringify({ bookingId: booking._id.toString(), bookingCode: booking.bookingCode, movieTitle: booking.movieTitle, theaterName: booking.theaterName, roomName: booking.roomName, showDate: booking.showDate.toISOString().split("T")[0], showTime: booking.showTime, seats: booking.seats.map((s) => s.seatNumber).join(", "), totalAmount: booking.totalAmount, timestamp: new Date().toISOString() });
+      const qrData = booking.bookingCode;
       const qrCodeUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "M", type: "image/png", quality: 0.92, margin: 1, color: { dark: "#000000", light: "#FFFFFF" }, width: 256 });
       booking.qrCode = qrCodeUrl; await booking.save();
       return successResponse(res, { qrCode: qrCodeUrl }, "QR code đã được tạo lại thành công");
