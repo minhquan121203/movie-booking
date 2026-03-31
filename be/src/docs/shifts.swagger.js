@@ -721,7 +721,7 @@
  * post:
  * tags: [ShiftAssignments]
  * summary: Quản lý ép đóng ca thủ công
- * description: Dành cho Admin/Manager ép đóng ca khi nhân viên quên Check-out. Hệ thống sẽ tự tính toán thời gian làm việc thực tế.
+ * description: Dành cho Admin/Manager ép đóng ca khi nhân viên quên Check-out.
  * security:
  * - bearerAuth: []
  * requestBody:
@@ -736,26 +736,20 @@
  * assignmentId:
  * type: string
  * description: ID của phân công ca làm việc cần ép đóng
- * example: "65e4a3b1c2d..."
  * manualCheckOutTime:
  * type: string
  * format: date-time
- * description: (Tùy chọn) Thời gian Check-out thực tế. Bỏ trống sẽ lấy giờ kết thúc ca.
+ * description: (Tùy chọn) Thời gian Check-out. Bỏ trống sẽ lấy giờ kết thúc ca.
  * managerNote:
  * type: string
  * description: (Tùy chọn) Ghi chú của quản lý
- * example: "Nhân viên quên bấm check-out lúc về"
  * responses:
  * 200:
  * description: Đã ép đóng ca thành công
  * 400:
  * description: Ca không ở trạng thái Đang làm
- * 403:
- * description: Không có quyền thực hiện
  * 404:
  * description: Không tìm thấy ca làm việc
- * 500:
- * description: Lỗi server
  */
 
 export default {};
