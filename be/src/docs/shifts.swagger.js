@@ -731,13 +731,13 @@
  *              type: object
  *          required:
  *            - assignmentId
- *          properties:
- *          assignmentId:
- *             type: string
- *          manualCheckOutTime:
- *             type: string
- *          managerNote:
- *             type: string
+ *            properties:
+ *            assignmentId:
+ *               type: string
+ *            manualCheckOutTime:
+ *               type: string
+ *            managerNote:
+ *               type: string
  *    responses:
  *      200:
  *        description: Đã ép đóng ca thành công
