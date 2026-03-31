@@ -51,6 +51,7 @@ export function ShiftCard({
   onCheckOut,
   skipTimeCheck = false,
 }: ShiftCardProps) {
+  console.log("Dữ liệu ca làm này:", assignment);
   const isCompleted =
     assignment.status === 'completed' || (assignment.checkInTime && assignment.checkOutTime)
   const isOngoing =
