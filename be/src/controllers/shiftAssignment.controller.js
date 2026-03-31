@@ -470,10 +470,10 @@ const shiftAssignmentController = {
         return errorResponse(res, "Không thể hủy phân công này vì nhân viên đã check-in hoặc hoàn thành ca.", 400);
       }
       // 3. Soft Delete
-      assignment.isDeleted = true;
-      assignment.updatedBy = req.userId;
-      await assignment.save();
-      // await ShiftAssignment.findByIdAndDelete(id);
+      // assignment.isDeleted = true;
+      // assignment.updatedBy = req.userId;
+      // await assignment.save();
+      await ShiftAssignment.findByIdAndDelete(id);
       return successResponse(res, null, "Đã hủy phân công thành công");
     } catch (err) {
       console.error("Remove assignment error:", err);
