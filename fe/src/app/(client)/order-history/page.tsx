@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react' // Nhớ thêm Suspense ở đây
+import { useState, useEffect, Suspense } from 'react' 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Filters, { type BookingStatus } from './components/Filters'
 import BookingList from './components/BookingList'
@@ -8,39 +8,30 @@ import { useMyBookings } from '@/lib/api/booking'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import Link from 'next/link'
 
-// Đổi tên function cũ thành OrderHistoryContent (bỏ export default đi)
 function OrderHistoryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
 
-  // 1. LẤY PARAMS (Lấy số trang)
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   
-  // 2. BẮT QUẢ TANG THẰNG PAYOS TRƯỚC KHI VÀO STATE
   let rawStatus = searchParams.get('status')
-  // Nếu thấy rác của PayOS (PAID hoặc CANCELLED), ép nó về chữ 'all' (Tất cả) luôn!
   if (rawStatus === 'PAID' || rawStatus === 'CANCELLED') {
     rawStatus = 'all'
   }
   const statusFromUrl = (rawStatus || 'all') as BookingStatus | 'all'
 
-  // 3. KHỞI TẠO STATE (Lúc này state chắc chắn là 'all' sạch sẽ)
   const [status, setStatus] = useState<BookingStatus | 'all'>(statusFromUrl)
   const [currentPage, setCurrentPage] = useState(pageFromUrl)
   const itemsPerPage = 10
 
-  // 4. DỌN DẸP TRỰC QUAN TRÊN THANH ĐỊA CHỈ URL
   useEffect(() => {
     const currentStatus = searchParams.get('status')
     if (currentStatus === 'PAID' || currentStatus === 'CANCELLED') {
-      // Xóa URL rác đi, thêm scroll: false để web không bị giật lên đầu trang
       router.replace(pathname, { scroll: false }) 
     }
   }, [pathname, router, searchParams])
 
-  // ==========================================
-  // Đoạn code Sync state với URL của fen giữ nguyên từ đây trở xuống
   useEffect(() => {
     const timer = setTimeout(() => {
       setCurrentPage(pageFromUrl)
