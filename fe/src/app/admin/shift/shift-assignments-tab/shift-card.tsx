@@ -51,19 +51,47 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
         showPulse: false,
       }
     }
+    
     if (hasCheckedIn) {
+      const [startHour] = shift.shift.startTime.split(':').map(Number)
+      const [endHour, endMinute] = shift.shift.endTime.split(':').map(Number)
+
+      const now = new Date()
+      const endDate = new Date()
+      endDate.setHours(endHour, endMinute, 0, 0)
+
+      // Xử lý ca làm qua đêm (Ví dụ: 22:00 -> 02:00 sáng)
+      if (endHour < startHour) {
+        endDate.setDate(endDate.getDate() + 1)
+      }
+
+      // 1. Kiểm tra xem quá giờ chưa (Nếu quá => BÁO ĐỎ)
+      if (now > endDate) {
+        return {
+          label: 'Quên Check-out',
+          className: 'bg-red-100 text-red-700 border-red-200',
+          showPulse: true,
+          pulseColor: 'bg-red-600',    
+          pulsePing: 'bg-red-400'      
+        }
+      }
+
+      // 2. Nếu chưa quá giờ => VẪN ĐANG LÀM BÌNH THƯỜNG (XANH)
       return {
         label: 'Đang làm',
         className: 'bg-green-50 text-green-700 border-green-100',
         showPulse: true,
+        pulseColor: 'bg-green-500',   
+        pulsePing: 'bg-green-400'
       }
     }
+    
     return {
       label: 'Chờ làm',
       className: 'bg-gray-100 text-gray-600 border-gray-200',
       showPulse: false,
     }
-  }, [])
+  }, [shift.shift.startTime, shift.shift.endTime]) 
 
   return (
     <> 
@@ -237,13 +265,10 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
               <button
                 onClick={async () => {
                   try {
-                    // Tùy vào project của fen đang dùng fetch hay axios thì chỉnh lại tí nhé.
-                    // Dưới đây là mẫu dùng fetch tiêu chuẩn:
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/assignments/force-checkout`, {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com/api'}/assignments/force-checkout`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
-                        // Nhớ truyền token nếu hệ thống fen yêu cầu đăng nhập Admin
                         'Authorization': `Bearer ${localStorage.getItem('token')}` 
                       },
                       body: JSON.stringify({
@@ -259,7 +284,6 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                       alert("Đã ép đóng ca thành công!");
                       setIsModalOpen(false);
                       
-                      // F5 lại trang để danh sách cập nhật (Hoặc gọi hàm fetch lại data nếu fen có sẵn)
                       window.location.reload(); 
                     } else {
                       alert("Lỗi: " + (result.message || "Không thể đóng ca"));
@@ -281,5 +305,4 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
   )
 }
 
-// Memoize component để tránh re-render khi props không đổi
 export default memo(ShiftCard)
