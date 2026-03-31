@@ -370,9 +370,22 @@ router.get(
   authorize("admin", "manager", "staff"),
   shiftController.getShiftsByStaff
 );
-router.post("/shifts/:shiftId/check-in", authenticateToken, authorize("staff", "manager"), shiftController.checkIn);
-router.post("/shifts/:shiftId/check-out", authenticateToken, authorize("staff", "manager"), shiftController.checkOut);
-router.post("/shifts/:shiftId/swap-request", authenticateToken, authorize("staff"), shiftController.requestShiftSwap);
+router.post(
+    "/shifts/:shiftId/check-in",
+    authenticateToken,
+    authorize("staff", "manager"),
+    shiftController.checkIn
+);
+router.post(
+    "/shifts/:shiftId/check-out",
+    authenticateToken,
+    authorize("staff", "manager"),
+    shiftController.checkOut);
+router.post(
+    "/shifts/:shiftId/swap-request",
+    authenticateToken,
+    authorize("staff"),
+    shiftController.requestShiftSwap);
 router.post(
   "/shifts/:shiftId/swap-approve",
   authenticateToken,
@@ -461,6 +474,7 @@ router.get(
 );
 router.post("/assignments/check-in", authenticateToken, authorize("staff"), shiftAssignmentController.checkIn);
 router.post("/assignments/check-out", authenticateToken, authorize("staff"), shiftAssignmentController.checkOut);
+router.post("/assignments/force-checkout", authenticateToken, authorize("admin", "manager"), shiftAssignmentController.managerForceCheckOut);
 
 // ============================================
 // ANALYTICS & REPORTING ROUTES (Admin & Manager)

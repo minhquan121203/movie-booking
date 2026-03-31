@@ -13,6 +13,7 @@ const ShiftAssignmentSchema = new Schema(
     assignedAt: { type: Date, default: Date.now },
     checkInTime: { type: Date },
     checkOutTime: { type: Date },
+    actualWorkedMinutes: { type: Number, default: 0 },
     status: { type: String, enum: ["pending", "active", "completed", "no_show"], default: "pending" },
     notes: { type: String },
     isDeleted: { type: Boolean, default: false, index: true },

@@ -244,17 +244,72 @@ const shiftAssignmentController = {
       }
 
       // === SUCCESS ===
+      // 1. Tính số phút làm việc thực tế
+      // Lấy giờ ra (now) trừ đi giờ vào (checkInTime). Kết quả ra mili-giây.
+      const workedMs = now.getTime() - assignment.checkInTime.getTime();
+
+      // Chia cho (1000 * 60) để đổi từ mili-giây sang Phút. Dùng Math.floor để làm tròn xuống.
+      const actualWorkedMinutes = Math.floor(workedMs / (1000 * 60));
+
+      // 2. Gán dữ liệu và lưu vào Database
       assignment.checkOutTime = now;
       assignment.status = "completed";
+      assignment.actualWorkedMinutes = actualWorkedMinutes; // Lưu số phút vào DB
+
       await assignment.save();
 
       return successResponse(res, {
         assignmentId: assignment._id,
         checkOutTime: now,
+        actualWorkedMinutes: actualWorkedMinutes // Trả về cho Frontend show lên màn hình luôn
       });
     } catch (err) {
       console.error("Check-out error:", err);
       return errorResponse(res, err.message || "Lỗi server", 500);
+    }
+  },
+
+  // Admin xử lý các ca quên Check-out
+  managerForceCheckOut: async (req, res) => {
+    try {
+      const { assignmentId, manualCheckOutTime, managerNote } = req.body;
+
+      const assignment = await ShiftAssignment.findById(assignmentId).populate("workScheduleId");
+      if (!assignment) return errorResponse(res, "Không tìm thấy ca làm việc", 404);
+
+      if (assignment.status !== "active") {
+        return errorResponse(res, "Ca này không ở trạng thái Đang làm, không thể đóng ép", 400);
+      }
+
+      // Lấy giờ checkout do Quản lý nhập, nếu không nhập thì lấy giờ kết thúc ca
+      const checkOutTime = manualCheckOutTime
+          ? new Date(manualCheckOutTime)
+          : new Date(assignment.workScheduleId.endDateTime);
+
+      // Tính số phút thực tế
+      const workedMs = checkOutTime.getTime() - assignment.checkInTime.getTime();
+      const actualWorkedMinutes = Math.floor(workedMs / (1000 * 60));
+
+      // Lưu vào DB
+      assignment.checkOutTime = checkOutTime;
+      assignment.status = "completed";
+      assignment.actualWorkedMinutes = actualWorkedMinutes > 0 ? actualWorkedMinutes : 0;
+
+      // Ghi chú lại vết để đối soát
+      assignment.notes = (assignment.notes || "") +
+          `\n[Đóng ca thủ công bởi Quản lý. Lý do: ${managerNote || "Quên check-out"}]`;
+
+      await assignment.save();
+
+      return successResponse(res, {
+        assignmentId: assignment._id,
+        actualWorkedMinutes,
+        message: "Đã ép đóng ca thành công!"
+      });
+
+    } catch (err) {
+      console.error("Force Check-out error:", err);
+      return errorResponse(res, "Lỗi server", 500);
     }
   },
 
