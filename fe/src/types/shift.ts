@@ -31,6 +31,7 @@ export interface ShiftAssignment {
 
 export type ShiftTemplateResponse = ApiResponse<ShiftTemplate[]>
 export interface AssignedEmployee {
+  notes: any
   _id: string
   role: string
   shiftTemplateId: string
