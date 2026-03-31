@@ -265,11 +265,20 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
               <button
                 onClick={async () => {
                   try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com/api'}/assignments/force-checkout`, {
+                    const getCookie = (name: string) => {
+                      const value = `; ${document.cookie}`;
+                      const parts = value.split(`; ${name}=`);
+                      if (parts.length === 2) return parts.pop()?.split(';').shift();
+                      return '';
+                    };
+
+                    const token = getCookie('authToken');
+
+                    const response = await fetch('https://movie-booking-api-bcfe.onrender.com/api/assignments/force-checkout', {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                        'Authorization': `Bearer ${token}` 
                       },
                       body: JSON.stringify({
                         assignmentId: selectedEmp.assignmentId,
@@ -283,7 +292,6 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                     if (response.ok) {
                       alert("Đã ép đóng ca thành công!");
                       setIsModalOpen(false);
-                      
                       window.location.reload(); 
                     } else {
                       alert("Lỗi: " + (result.message || "Không thể đóng ca"));
