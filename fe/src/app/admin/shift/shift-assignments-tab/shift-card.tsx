@@ -215,7 +215,6 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                             className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-2"
                             onClick={() => {
                               if (window.confirm(`Bạn có chắc chắn muốn hủy phân công của nhân viên ${emp.fullName} khỏi ca này không?`)) {
-                                console.log("🔥 KIỂM TRA ID CHUẨN BỊ XÓA:", emp.assignmentId);
                                 onDelete(emp); 
                               }
                             }}
