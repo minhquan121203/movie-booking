@@ -192,20 +192,35 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                           {statusBadge.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right">=
                         {emp.checkInTime && !emp.checkOutTime && (
                           <Button
                             variant="outline"
                             size="sm"
                             className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 h-8 px-2"
                             onClick={() => {
-                              console.log("🔥 ĐÃ BẤM NÚT ĐÓNG CA CHO:", emp.fullName);
                               setSelectedEmp(emp);
                               setIsModalOpen(true);
                             }}
                           >
                             <LogOut className="w-4 h-4 mr-1" />
                             Đóng ca
+                          </Button>
+                        )}
+=
+                        {!emp.checkInTime && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-2"
+                            onClick={() => {
+                              if (window.confirm(`Bạn có chắc chắn muốn hủy phân công của nhân viên ${emp.fullName} khỏi ca này không?`)) {
+                                onDelete(emp); 
+                              }
+                            }}
+                          >
+                            <UserX className="w-4 h-4 mr-1" />
+                            Hủy ca
                           </Button>
                         )}
                       </TableCell>
