@@ -175,7 +175,6 @@ export function useAssignmentMutations() {
       queryClient.invalidateQueries({ queryKey: ['daily-roster'] })
       queryClient.invalidateQueries({ queryKey: ['user-assignments'] })
       showSuccess('Xóa phân công thành công')
-      window.location.reload()
     },
     onError: (error: any) => {
       showError('Lỗi xóa!', error.response?.data?.message || 'Vui lòng thử lại')
