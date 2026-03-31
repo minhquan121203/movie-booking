@@ -192,7 +192,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                           {statusBadge.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">=
+                      <TableCell className="text-right">
                         {emp.checkInTime && !emp.checkOutTime && (
                           <Button
                             variant="outline"
