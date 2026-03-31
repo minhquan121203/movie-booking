@@ -718,35 +718,40 @@
 /**
  * @swagger
  * /assignments/force-checkout:
- *    post:
- *     tags: [ShiftAssignments]
+ *   post:
+ *     tags:
+ *       - ShiftAssignments
  *     summary: Quản lý ép đóng ca thủ công
  *     security:
  *       - bearerAuth: []
  *     requestBody:
- *        required: true
- *        content:
- *          application/json:
- *              schema:
- *              type: object
- *          required:
- *            - assignmentId
- *            properties:
- *            assignmentId:
- *               type: string
- *            manualCheckOutTime:
- *               type: string
- *            managerNote:
- *               type: string
- *    responses:
- *      200:
- *        description: Đã ép đóng ca thành công
- *      400:
- *        description: Lỗi logic
- *      404:
- *        description: Không tìm thấy ca
- *      500:
- *        description: Lỗi server
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assignmentId
+ *             properties:
+ *               assignmentId:
+ *                 type: string
+ *                 example: "65fd123abc456xyz"
+ *               manualCheckOutTime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2026-03-31T17:30:00Z"
+ *               managerNote:
+ *                 type: string
+ *                 example: "Đóng ca thủ công do nhân viên quên checkout"
+ *     responses:
+ *       200:
+ *         description: Đã ép đóng ca thành công
+ *       400:
+ *         description: Lỗi logic
+ *       404:
+ *         description: Không tìm thấy ca
+ *       500:
+ *         description: Lỗi server
  */
 
 

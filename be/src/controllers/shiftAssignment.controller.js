@@ -411,6 +411,7 @@ const shiftAssignmentController = {
                 checkInTime: 1,
                 checkOutTime: 1,
                 assignedAt: 1,
+                notes: 1,
 
                 workScheduleId: "$schedule._id",
                 theaterId: "$theater._id",
