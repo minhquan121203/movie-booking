@@ -170,8 +170,9 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                           size="sm"
                           className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 h-8 px-2"
                           onClick={() => {
-                            setSelectedEmp(emp)
-                            setIsModalOpen(true)
+                            console.log("🔥 ĐÃ BẤM NÚT ĐÓNG CA CHO:", emp.fullName);
+                            setSelectedEmp(emp);
+                            setIsModalOpen(true);
                           }}
                         >
                           <LogOut className="w-4 h-4 mr-1" />
