@@ -282,7 +282,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                       },
                       body: JSON.stringify({
                         assignmentId: selectedEmp.assignmentId,
-                        manualCheckOutTime: checkOutTime,
+                        manualCheckOutTime: new Date(checkOutTime).toISOString(),
                         managerNote: note
                       })
                     });
