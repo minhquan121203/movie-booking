@@ -49,9 +49,11 @@ export interface AssignedEmployee {
   checkOutTime?: string // ISO string
   assignedAt: string // ISO string
   date: string
-  fullName?: string
   startDateTime: string
   endDateTime: string
+  fullName?: string;
+  email?: string;
+  avatar?: string;
 }
 // Shift with Employees
 export interface ShiftWithEmployees {

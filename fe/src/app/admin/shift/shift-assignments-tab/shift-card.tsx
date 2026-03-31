@@ -1,7 +1,7 @@
 // app/(admin)/shift-manager/components/shift-card.tsx
 'use client'
 
-import { useCallback, memo } from 'react'
+import { useCallback, memo, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { UserPlus, MoreVertical, Edit3, UserX } from 'lucide-react'
+import { UserPlus, MoreVertical, Edit3, UserX, LogOut, X, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
 import { ShiftWithEmployees, AssignedEmployee } from '@/types/shift'
 
@@ -34,6 +34,12 @@ interface ShiftCardProps {
 }
 
 function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedEmp, setSelectedEmp] = useState<AssignedEmployee | null>(null)
+  const [note, setNote] = useState('Đóng ca thủ công do nhân viên quên checkout')
+  const [checkOutTime, setCheckOutTime] = useState(
+    new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  )
   const getStatusBadge = useCallback((employee: AssignedEmployee) => {
     const hasCheckedIn = !!employee.checkInTime
     const hasCheckedOut = !!employee.checkOutTime
@@ -102,6 +108,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                 <TableHead className="font-medium text-gray-500">Nhân Viên</TableHead>
                 <TableHead className="font-medium text-gray-500">Check-in / Out</TableHead>
                 <TableHead className="font-medium text-gray-500">Trạng Thái</TableHead>
+                <TableHead className="text-right w-[120px]">Hành động</TableHead>
                 <TableHead className="text-right w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -118,7 +125,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                         <Avatar className="w-9 h-9 border border-gray-200">
                           <AvatarImage src={emp.avatar} />
                           <AvatarFallback className="bg-indigo-50 text-[#6C63FF]">
-                            {emp.fullName.charAt(0)}
+                            {emp.fullName ? emp.fullName.charAt(0) : 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -156,37 +163,22 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                         {statusBadge.label}
                       </Badge>
                     </TableCell>
-                    {/* <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-gray-400 hover:text-gray-900"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="rounded-xl shadow-lg border-gray-100 w-[180px]"
+                    <TableCell className="text-right">
+                      {emp.checkInTime && !emp.checkOutTime && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 h-8 px-2"
+                          onClick={() => {
+                            setSelectedEmp(emp)
+                            setIsModalOpen(true)
+                          }}
                         >
-                          <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => onEdit(emp)}
-                            className="cursor-pointer gap-2"
-                          >
-                            <Edit3 className="w-4 h-4" /> Cập nhật
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => onDelete(emp)}
-                            className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                          >
-                            <UserX className="w-4 h-4" /> Hủy phân công
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell> */}
+                          <LogOut className="w-4 h-4 mr-1" />
+                          Đóng ca
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 )
               })}
