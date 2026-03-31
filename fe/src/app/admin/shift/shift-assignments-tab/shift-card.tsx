@@ -207,7 +207,7 @@ function ShiftCard({ shift, onAssignNew, onEdit, onDelete }: ShiftCardProps) {
                             Đóng ca
                           </Button>
                         )}
-=
+
                         {!emp.checkInTime && (
                           <Button
                             variant="outline"
