@@ -18,7 +18,6 @@ import { useNotification } from '@/providers/NotificationProvider'
 import { useMemo, useState } from 'react'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 
-// 1. Nâng cấp Validate Zod
 const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/
 
 const createStaffSchema = z.object({
@@ -30,7 +29,7 @@ const createStaffSchema = z.object({
   assignedTheater: z.string().min(1, 'Vui lòng chọn rạp'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Mật khẩu nhập lại không khớp",
-  path: ["confirmPassword"], // Trỏ lỗi vào field confirmPassword
+  path: ["confirmPassword"], 
 })
 
 type CreateStaffFormData = z.infer<typeof createStaffSchema>
@@ -44,7 +43,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
   const { showSuccess, showError } = useNotification()
   const createStaffMutation = useCreateStaff()
 
-  // State cho 2 con mắt
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -63,7 +61,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
 
   const onSubmit = async (data: CreateStaffFormData) => {
     try {
-      // 2. Tách confirmPassword ra, chỉ gửi những gì backend cần
       const { confirmPassword, ...submitData } = data
 
       await createStaffMutation.mutateAsync(submitData)
@@ -93,14 +90,13 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4" autoComplete="off">
           
-          {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
               Email <span className="text-red-500">*</span>
             </Label>
             <Input
               id="email"
-              type="text" // Chuyển sang text để trị triệt để auto-fill của Chrome
+              type="text" 
               autoComplete="off"
               placeholder="staff@cinema.com"
               className={`${errors.email ? 'border-red-500' : ''}`}
@@ -109,7 +105,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
-          {/* Password */}
           <div className="space-y-2">
             <Label htmlFor="password" className="text-sm font-medium">
               Mật khẩu <span className="text-red-500">*</span>
@@ -135,7 +130,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
           </div>
 
-          {/* Confirm Password */}
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="text-sm font-medium">
               Nhập lại mật khẩu <span className="text-red-500">*</span>
@@ -161,7 +155,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
           </div>
 
-          {/* Full Name */}
           <div className="space-y-2">
             <Label htmlFor="fullName" className="text-sm font-medium">
               Họ và tên <span className="text-red-500">*</span>
@@ -176,7 +169,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
           </div>
 
-          {/* Phone Number */}
           <div className="space-y-2">
             <Label htmlFor="phoneNumber" className="text-sm font-medium">
               Số điện thoại <span className="text-red-500">*</span>
@@ -193,7 +185,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             )}
           </div>
 
-          {/* Assigned Theater */}
           <div className="space-y-2">
             <Label htmlFor="assignedTheater" className="text-sm font-medium">
               Rạp được phân công <span className="text-red-500">*</span>
@@ -234,7 +225,6 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             )}
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

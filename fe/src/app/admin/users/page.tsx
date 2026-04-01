@@ -8,7 +8,6 @@ import { UserToolbar } from './components/UserToolbar'
 import { UserDetailSheet } from './components/UserDetailSheet'
 import { CreateStaffModal } from './components/CreateStaffModal'
 import { AssignTheaterModal } from './components/AssignTheaterModal'
-// 🆕 1. Import EditStaffModal
 import { EditStaffModal } from './components/EditStaffModal' 
 import { useDebounce } from '@/hooks/useDebounce'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
@@ -45,7 +44,6 @@ function UserManagementContent() {
   const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
   const [assignTheaterStaff, setAssignTheaterStaff] = useState<User | null>(null)
   
-  // 🆕 2. Thêm state quản lý người đang được Edit
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
   useEffect(() => {
@@ -127,7 +125,6 @@ function UserManagementContent() {
                 onDelete={id => setDeleteId(id)}
                 onAssignTheater={setAssignTheaterStaff}
                 showAssignTheater={typeUser === 'staff'}
-                // 🆕 3. Truyền state vào bảng để hiện "Cây Bút"
                 onEdit={setEditingUser} 
               />
               {isTransitioning && <LoadingOverlay />}
@@ -162,7 +159,6 @@ function UserManagementContent() {
 
       <CreateStaffModal open={showCreateStaffModal} onOpenChange={setShowCreateStaffModal} />
 
-      {/* 🆕 4. Nhúng cái Form Edit vào giao diện */}
       <EditStaffModal 
         open={!!editingUser} 
         onOpenChange={(open) => !open && setEditingUser(null)} 

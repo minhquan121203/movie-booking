@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye, Trash2, Building2, Pencil } from 'lucide-react' // 1. Thêm Pencil
+import { Eye, Trash2, Building2, Pencil } from 'lucide-react'
 import { User } from '@/types/user'
 
 interface UserTableProps {
@@ -17,7 +17,7 @@ interface UserTableProps {
   onViewDetail: (user: User) => void
   onDelete: (id: string) => void
   onAssignTheater?: (user: User) => void
-  onEdit?: (user: User) => void // 2. Thêm prop onEdit
+  onEdit?: (user: User) => void 
   showAssignTheater?: boolean
 }
 
@@ -102,7 +102,6 @@ export function UserTable({
                     <Eye className="w-4 h-4" />
                   </Button>
                   
-                  {/* 3. Nút Edit màu Cam đây fen */}
                   {onEdit && (
                     <Button
                       size="icon"

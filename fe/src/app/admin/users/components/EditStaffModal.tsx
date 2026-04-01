@@ -12,8 +12,8 @@ import { User } from '@/types/user'
 
 const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/
 
-// 1. Schema bỏ Mật Khẩu và Gắn Rạp đi
 const editStaffSchema = z.object({
+  email: z.string().min(1, 'Email không được để trống').email('Email không đúng định dạng'),
   fullName: z.string().min(1, 'Họ tên không được để trống'),
   phoneNumber: z.string().regex(phoneRegex, 'Số điện thoại không hợp lệ (VD: 0912345678)'),
 })
@@ -23,7 +23,7 @@ type EditStaffFormData = z.infer<typeof editStaffSchema>
 interface EditStaffModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  user: User | null // Nhận data user để pre-fill
+  user: User | null 
 }
 
 export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps) {
@@ -39,10 +39,10 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
     resolver: zodResolver(editStaffSchema),
   })
 
-  // 2. Pre-fill dữ liệu khi mở form
   useEffect(() => {
     if (user && open) {
       reset({
+        email: user.email || '',
         fullName: user.fullName || '',
         phoneNumber: user.phoneNumber || '',
       })
@@ -69,17 +69,23 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4" autoComplete="off">
           
-          {/* Email (Chỉ đọc - Không cho sửa) */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-500">Email (Không thể thay đổi)</Label>
-            <Input disabled value={user?.email || ''} className="bg-gray-100 cursor-not-allowed" />
+            <Label htmlFor="email" className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
+            <Input 
+              id="email" 
+              type="text"
+              autoComplete="off"
+              className={`${errors.email ? 'border-red-500' : ''}`}
+              {...register('email')} 
+            />
+            {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
-          {/* Full Name */}
           <div className="space-y-2">
             <Label htmlFor="fullName" className="text-sm font-medium">Họ và tên <span className="text-red-500">*</span></Label>
             <Input
               id="fullName"
+              autoComplete="off"
               placeholder="Nguyễn Văn A"
               className={`${errors.fullName ? 'border-red-500' : ''}`}
               {...register('fullName')}
@@ -87,11 +93,11 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
             {errors.fullName && <p className="text-red-500 text-sm">{errors.fullName.message}</p>}
           </div>
 
-          {/* Phone Number */}
           <div className="space-y-2">
             <Label htmlFor="phoneNumber" className="text-sm font-medium">Số điện thoại <span className="text-red-500">*</span></Label>
             <Input
               id="phoneNumber"
+              autoComplete="off"
               placeholder="0901234567"
               className={`${errors.phoneNumber ? 'border-red-500' : ''}`}
               {...register('phoneNumber')}
@@ -99,7 +105,6 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
             {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber.message}</p>}
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1" disabled={isSubmitting}>
               Hủy
