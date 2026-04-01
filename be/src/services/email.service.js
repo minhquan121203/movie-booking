@@ -14,7 +14,7 @@ class EmailService {
     console.log("✅ Nodemailer (Gmail) Ready!");
   }
 
-  // Hàm gửi mail xác nhận đặt vé (Xịn xò)
+  // Hàm gửi mail xác nhận đặt vé
   async sendBookingConfirmation(booking, user) {
     try {
       console.log("--- DEBUG DATE ---");
@@ -134,6 +134,35 @@ class EmailService {
       console.log(`✅ Đã gửi lịch làm việc tới staff: ${staff.email}`);
     } catch (error) {
       console.error("❌ Lỗi gửi mail cho staff:", error);
+    }
+  }
+
+  // Gửi thông báo hủy ca làm việc cho Staff
+  async sendShiftCancellation(staff, scheduleData) {
+    try {
+      const mailOptions = {
+        from: `"Hệ thống Quản lý" <quankm1520@gmail.com>`,
+        to: staff.email,
+        subject: `❌ THÔNG BÁO HỦY CA LÀM VIỆC - ${scheduleData.date}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #dc2626;">THÔNG BÁO HỦY CA</h2>
+            <p>Chào <b>${staff.fullName}</b>,</p>
+            <p>Ca làm việc dưới đây của bạn đã được quản lý <b>HỦY BỎ</b> khỏi hệ thống:</p>
+            <div style="background: #fef2f2; padding: 15px; border-radius: 5px; border-left: 4px solid #dc2626;">
+              <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
+              <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
+              <p>📍 <b>Vị trí:</b> ${scheduleData.position}</p>
+            </div>
+            <p style="margin-top: 15px; color: #4b5563;"><i>Bạn không cần có mặt tại rạp vào ca này. Vui lòng kiểm tra lại lịch làm việc mới nhất trên hệ thống để biết thêm chi tiết.</i></p>
+          </div>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Đã gửi mail HỦY ca tới: ${staff.email}`);
+    } catch (error) {
+      console.error("❌ Lỗi gửi mail hủy ca:", error);
     }
   }
 }

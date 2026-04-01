@@ -210,11 +210,9 @@ const shiftAssignmentController = {
 
       let assignment = null;
       if (workScheduleId) {
-        // assignment = await ShiftAssignment.findOne({ userId, workScheduleId, status: "active" });
         assignment = await ShiftAssignment.findOne({ userId, workScheduleId, status: "active", isDeleted: false }).populate(
           "workScheduleId"
         );
-        // Debug: check if assignment exists with different status
         if (!assignment) {
           const anyAssignment = await ShiftAssignment.findOne({ userId, workScheduleId });
           console.log("Check-out debug:", {
@@ -225,7 +223,6 @@ const shiftAssignmentController = {
           });
         }
       } else {
-        // assignment = await ShiftAssignment.findOne({ userId, status: "active" }).sort({ checkInTime: -1 });
         assignment = await ShiftAssignment.findOne({ userId, status: "active" })
           .populate("workScheduleId")
           .sort({ checkInTime: -1 });
@@ -233,51 +230,36 @@ const shiftAssignmentController = {
 
       if (!assignment) return errorResponse(res, "No active assignment found", 404);
 
-      // assignment.checkOutTime = new Date();
-      // assignment.status = "completed";
-      // await assignment.save();
-
-      // return successResponse(res, { assignmentId: assignment._id, checkOutTime: assignment.checkOutTime });
-
       const now = new Date();
       const start = new Date(assignment.workScheduleId.startDateTime);
       const end = new Date(assignment.workScheduleId.endDateTime);
 
-      // ==== CHECK 1: Không checkout nếu chưa check-in ====
       if (assignment.status !== "active") {
         return errorResponse(res, "Bạn chưa check-in ca này", 400);
       }
 
-      // ==== CHECK 2: Không được checkout trước giờ bắt đầu ====
       if (now < start) {
         return errorResponse(res, "Chưa đến giờ checkout", 400);
       }
 
-      // ==== CHECK 3: Cho phép checkout trong vòng 2 giờ sau ca ====
       const allowedLate = 2 * 60 * 60 * 1000;
       if (now > end.getTime() + allowedLate) {
         return errorResponse(res, "Đã quá giờ checkout cho phép", 400);
       }
 
-      // === SUCCESS ===
-      // 1. Tính số phút làm việc thực tế
-      // Lấy giờ ra (now) trừ đi giờ vào (checkInTime). Kết quả ra mili-giây.
       const workedMs = now.getTime() - assignment.checkInTime.getTime();
-
-      // Chia cho (1000 * 60) để đổi từ mili-giây sang Phút. Dùng Math.floor để làm tròn xuống.
       const actualWorkedMinutes = Math.floor(workedMs / (1000 * 60));
 
-      // 2. Gán dữ liệu và lưu vào Database
       assignment.checkOutTime = now;
       assignment.status = "completed";
-      assignment.actualWorkedMinutes = actualWorkedMinutes; // Lưu số phút vào DB
+      assignment.actualWorkedMinutes = actualWorkedMinutes;
 
       await assignment.save();
 
       return successResponse(res, {
         assignmentId: assignment._id,
         checkOutTime: now,
-        actualWorkedMinutes: actualWorkedMinutes // Trả về cho Frontend show lên màn hình luôn
+        actualWorkedMinutes: actualWorkedMinutes
       });
     } catch (err) {
       console.error("Check-out error:", err);
@@ -297,21 +279,17 @@ const shiftAssignmentController = {
         return errorResponse(res, "Ca này không ở trạng thái Đang làm, không thể đóng ép", 400);
       }
 
-      // Lấy giờ checkout do Quản lý nhập, nếu không nhập thì lấy giờ kết thúc ca
       const checkOutTime = manualCheckOutTime
           ? new Date(manualCheckOutTime)
           : new Date(assignment.workScheduleId.endDateTime);
 
-      // Tính số phút thực tế
       const workedMs = checkOutTime.getTime() - assignment.checkInTime.getTime();
       const actualWorkedMinutes = Math.floor(workedMs / (1000 * 60));
 
-      // Lưu vào DB
       assignment.checkOutTime = checkOutTime;
       assignment.status = "completed";
       assignment.actualWorkedMinutes = actualWorkedMinutes > 0 ? actualWorkedMinutes : 0;
 
-      // Ghi chú lại vết để đối soát
       assignment.notes = (assignment.notes || "") +
           `\n[Đóng ca thủ công bởi Quản lý. Lý do: ${managerNote || "Quên check-out"}]`;
 
@@ -338,18 +316,14 @@ const shiftAssignmentController = {
       const limitNum = parseInt(limit);
       const skip = (pageNum - 1) * limitNum;
 
-      // 1. Điều kiện lọc cơ bản: Phải đúng User
       const matchStage = {
         userId: new mongoose.Types.ObjectId(userId),
         ...getDeleteFilter(req.query),
       };
 
-      // 2. Pipeline Aggregation
       const pipeline = [
-        // Bước 1: Lọc theo userId
         { $match: matchStage },
 
-        // Bước 2: Join với bảng WorkSchedule để lấy thông tin lịch
         {
           $lookup: {
             from: "workschedules",
@@ -475,21 +449,47 @@ const shiftAssignmentController = {
   remove: async (req, res) => {
     try {
       const { id } = req.params;
-      // 1. Tìm phân công
-      const assignment = await ShiftAssignment.findById(id);
+
+      const assignment = await ShiftAssignment.findById(id)
+          .populate("userId", "email fullName")
+          .populate("workScheduleId", "startDateTime endDateTime date");
+
       if (!assignment) {
         return errorResponse(res, "Không tìm thấy phân công", 404);
       }
-      // 2. Kiểm tra điều kiện an toàn
-      // Nếu nhân viên đã check-in hoặc đang làm, không cho xóa cứng để bảo toàn lịch sử lương
+
       if (assignment.checkInTime || assignment.status === "active" || assignment.status === "completed") {
         return errorResponse(res, "Không thể hủy phân công này vì nhân viên đã check-in hoặc hoàn thành ca.", 400);
       }
-      // 3. Soft Delete
-      // assignment.isDeleted = true;
-      // assignment.updatedBy = req.userId;
-      // await assignment.save();
+
+      const staff = assignment.userId;
+      const schedule = assignment.workScheduleId;
+      const roleName = assignment.role;
+
       await ShiftAssignment.findByIdAndDelete(id);
+
+      try {
+        if (staff && staff.email && schedule) {
+          const emailService = (await import("../services/email.service.js")).default;
+
+          const dateObj = new Date(schedule.startDateTime);
+          const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+          const endObj = new Date(schedule.endDateTime);
+          const endTimeStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+          emailService.sendShiftCancellation(staff, {
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            position: roleName || 'Quầy vé/Sảnh'
+          }).catch(e => console.error("Lỗi gửi mail ngầm hủy ca:", e));
+        }
+      } catch (mailErr) {
+        console.error("Lỗi chuẩn bị mail hủy ca:", mailErr);
+      }
+
       return successResponse(res, null, "Đã hủy phân công thành công");
     } catch (err) {
       console.error("Remove assignment error:", err);
