@@ -29,6 +29,8 @@ const shiftAssignmentController = {
         throw new Error("Danh sách phân công không được để trống");
       }
 
+      const emailService = (await import("../services/email.service.js")).default;
+      const User = (await import("../models/user.model.js")).default;
       const createdResults = [];
 
       for (const item of assignments) {
@@ -71,6 +73,30 @@ const shiftAssignmentController = {
         );
 
         createdResults.push(created);
+        // 4. BẮN MAIL THÔNG BÁO CHO NHÂN VIÊN
+        try {
+          // Lấy email của staff
+          const staff = await User.findById(item.userId).session(session);
+
+          if (staff && staff.email) {
+            const dateObj = new Date(schedule.startDateTime);
+            const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            const endObj = new Date(schedule.endDateTime);
+            const endTimeStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            emailService.sendStaffSchedule(staff, {
+              date: dateStr,
+              shiftName: item.role, // Tạm lấy vai trò làm tên ca
+              startTime: startTimeStr,
+              endTime: endTimeStr,
+              position: item.role
+            }).catch(e => console.error("Lỗi gửi mail ngầm cho staff:", e));
+          }
+        } catch (mailErr) {
+          console.error("Lỗi chuẩn bị mail cho staff:", mailErr);
+        }
       }
 
       await session.commitTransaction();

@@ -106,6 +106,35 @@ class EmailService {
       console.error("❌ Lỗi gửi mail:", error);
     }
   }
+
+  // Gửi lịch làm việc/Giao ca cho Staff
+  async sendStaffSchedule(staff, scheduleData) {
+    try {
+      const mailOptions = {
+        from: `"Hệ thống Quản lý" <quankm1520@gmail.com>`,
+        to: staff.email, // Email của nhân viên
+        subject: `📅 Thông báo lịch làm việc mới - ${scheduleData.date}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #2563eb;">THÔNG BÁO GIAO CA</h2>
+            <p>Chào <b>${staff.fullName}</b>,</p>
+            <p>Bạn có lịch làm việc mới vừa được cập nhật trên hệ thống:</p>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 5px;">
+              <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
+              <p>⏰ <b>Ca làm:</b> ${scheduleData.shiftName} (${scheduleData.startTime} - ${scheduleData.endTime})</p>
+              <p>📍 <b>Vị trí:</b> ${scheduleData.position || 'Quầy vé/Sảnh'}</p>
+            </div>
+            <p style="margin-top: 15px;">Vui lòng có mặt đúng giờ để thực hiện bàn giao ca.</p>
+          </div>
+        `
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Đã gửi lịch làm việc tới staff: ${staff.email}`);
+    } catch (error) {
+      console.error("❌ Lỗi gửi mail cho staff:", error);
+    }
+  }
 }
 
 export default new EmailService();
