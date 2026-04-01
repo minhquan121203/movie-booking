@@ -147,7 +147,7 @@ notificationSchema.statics.createNotification = async function (data) {
           service: 'gmail',
           auth: {
             user: 'quankm1520@gmail.com',
-            pass: 'wkghykyxyrifhoq'
+            pass: 'wkghykyxyrifhoqf'
           }
         });
 

@@ -9,7 +9,7 @@ class EmailService {
       service: 'gmail',
       auth: {
         user: 'quankm1520@gmail.com',
-        pass: 'wkghykyxyrifhoq'
+        pass: 'wkghykyxyrifhoqf'
       }
     });
 
