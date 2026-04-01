@@ -112,7 +112,7 @@ class EmailService {
     try {
       const mailOptions = {
         from: `"Hệ thống Quản lý" <quankm1520@gmail.com>`,
-        to: staff.email, // Email của nhân viên
+        to: staff.email,
         subject: `📅 Thông báo lịch làm việc mới - ${scheduleData.date}`,
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">

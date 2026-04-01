@@ -457,7 +457,7 @@ const shiftAssignmentController = {
 
       const assignment = await ShiftAssignment.findById(id)
           .populate("userId", "email fullName")
-          .populate("workScheduleId", "startDateTime endDateTime date");
+          .populate("workScheduleId", "startDateTime endDateTime date theaterId");
 
       if (!assignment) {
         return errorResponse(res, "Không tìm thấy phân công", 404);
