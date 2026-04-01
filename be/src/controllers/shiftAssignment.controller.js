@@ -78,11 +78,16 @@ const shiftAssignmentController = {
           const theaterName = theaterInfo ? theaterInfo.name : "Rạp CineBooking";
 
           if (staff && staff.email) {
+            // Thay vì viết dài, mình gộp luôn options có timeZone vào
+            const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' };
+            const dateOpts = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' };
+
             const dateObj = new Date(schedule.startDateTime);
-            const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const dateStr = dateObj.toLocaleDateString('vi-VN', dateOpts);
+            const startTimeStr = dateObj.toLocaleTimeString('vi-VN', timeOpts);
+
             const endObj = new Date(schedule.endDateTime);
-            const endTimeStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const endTimeStr = endObj.toLocaleTimeString('vi-VN', timeOpts);
 
             emailService.sendStaffSchedule(staff, {
               date: dateStr,
@@ -476,12 +481,15 @@ const shiftAssignmentController = {
           const theaterInfo = await Theater.findById(schedule.theaterId);
           const theaterName = theaterInfo ? theaterInfo.name : "Rạp CineBooking";
 
+          const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' };
+          const dateOpts = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' };
+
           const dateObj = new Date(schedule.startDateTime);
-          const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const dateStr = dateObj.toLocaleDateString('vi-VN', dateOpts);
+          const startTimeStr = dateObj.toLocaleTimeString('vi-VN', timeOpts);
 
           const endObj = new Date(schedule.endDateTime);
-          const endTimeStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const endTimeStr = endObj.toLocaleTimeString('vi-VN', timeOpts);
 
           emailService.sendShiftCancellation(staff, {
             date: dateStr,
