@@ -143,12 +143,11 @@ notificationSchema.statics.createNotification = async function (data) {
       if (user && user.email) {
         let emailSubject = notification.title || "Thông báo từ CineBooking";
 
-        // 2. Cấu hình bưu tá Gmail (Dán mã 16 chữ cái vào đây)
         const transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
             user: 'quankm1520@gmail.com',
-            pass: 'wkghykyxyrifhoq' // Viết liền không dấu cách
+            pass: 'wkghykyxyrifhoq'
           }
         });
 
