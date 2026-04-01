@@ -17,28 +17,27 @@ class EmailService {
   // Hàm gửi mail xác nhận đặt vé (Xịn xò)
   async sendBookingConfirmation(booking, user) {
     try {
-      // 1. XỬ LÝ LỖI INVALID DATE & FORMAT 2 HÀNG
+      console.log("--- DEBUG DATE ---");
+      console.log("Giá trị showTime nhận được:", booking.showTime);
+
       let dateStr = "Chưa xác định";
       let timeStr = "Chưa xác định";
 
       if (booking.showTime) {
-        const dateObj = new Date(booking.showTime);
+        let dateObj = new Date(booking.showTime);
 
-        // Kiểm tra xem dateObj có hợp lệ không
         if (!isNaN(dateObj.getTime())) {
-          // Format ngày: 01/04/2026
           dateStr = dateObj.toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
+            day: '2-digit', month: '2-digit', year: 'numeric'
           });
-
-          // Format giờ: 16:22
           timeStr = dateObj.toLocaleTimeString('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
+            hour: '2-digit', minute: '2-digit', hour12: false
           });
+        }
+        else if (typeof booking.showTime === 'string') {
+          timeStr = booking.showTime.substring(0, 5);
+          const now = new Date();
+          dateStr = now.toLocaleDateString('vi-VN');
         }
       }
 
@@ -47,69 +46,64 @@ class EmailService {
         to: user.email,
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; background-color: #111827; color: white; border-radius: 15px; overflow: hidden; border: 1px solid #374151;">
-            <div style="background-color: #f97316; padding: 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 22px; color: white; text-transform: uppercase;">Đặt vé thành công</h1>
+          <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: auto; background-color: #1a1c23; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;">
+            <div style="background: linear-gradient(90deg, #f97316, #ea580c); padding: 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">ĐẶT VÉ THÀNH CÔNG</h1>
             </div>
             
             <div style="padding: 25px;">
-              <h2 style="color: #f97316; margin-top: 0;">${booking.movieTitle}</h2>
+              <h2 style="color: #f97316; margin-bottom: 20px; font-size: 22px;">${booking.movieTitle}</h2>
               
-              <table style="width: 100%; color: #d1d5db; border-collapse: collapse; margin-top: 15px;">
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151;">📅 <b>Ngày chiếu:</b></td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; color: white;">${dateStr}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151;">⏰ <b>Giờ chiếu:</b></td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151;">📍 <b>Rạp:</b></td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; color: white;">${booking.theaterName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151;">📺 <b>Phòng chiếu:</b></td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; color: white;">${booking.roomName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151;">💺 <b>Ghế ngồi:</b></td>
-                  <td style="padding: 10px 0; border-bottom: 1px solid #374151; text-align: right; color: #f97316; font-weight: bold;">
-                    ${booking.seats.map(s => s.seatNumber).join(", ")}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 15px 0; font-size: 18px;">💰 <b>Tổng tiền:</b></td>
-                  <td style="padding: 15px 0; text-align: right; font-size: 20px; color: #f97316;"><b>${booking.totalAmount.toLocaleString()}đ</b></td>
-                </tr>
-              </table>
+              <div style="background-color: #262936; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">📅 Ngày chiếu:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">⏰ Giờ chiếu:</td>
+                    <td style="padding: 8px 0; text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td>
+                  </tr>
+                  <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
+                  <tr>
+                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📍 Rạp:</td>
+                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Sense City'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📺 Phòng:</td>
+                    <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">💺 Ghế ngồi:</td>
+                    <td style="padding: 12px 0; text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
+                  </tr>
+                </table>
+              </div>
 
-              <div style="margin-top: 25px; text-align: center; background-color: white; padding: 20px; border-radius: 10px;">
-                <p style="color: #111827; margin: 0 0 10px 0; font-weight: bold;">MÃ QR VÉ VÀO CỬA</p>
-                <img src="cid:ticket_qr" style="width: 200px; height: 200px;" alt="QR Code"/>
-                <p style="color: #6b7280; font-size: 12px; margin: 10px 0 0 0;">Mã vé: ${booking.bookingCode}</p>
+              <div style="background-color: white; padding: 25px; border-radius: 15px; text-align: center;">
+                <p style="color: #111827; margin: 0 0 15px 0; font-weight: bold;">QUÉT MÃ ĐỂ VÀO RẠP</p>
+                <img src="cid:ticket_qr" style="width: 180px; height: 180px;" alt="QR Code"/>
+                <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Mã vé: <b>${booking.bookingCode}</b></p>
               </div>
             </div>
             
-            <div style="background-color: #1f2937; padding: 15px; text-align: center; font-size: 11px; color: #6b7280;">
-              Vui lòng đến rạp trước 15 phút để làm thủ tục check-in.
+            <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
+              Vui lòng đến rạp trước 15 phút để làm thủ tục.
             </div>
           </div>
         `,
-        attachments: [
-          {
-            filename: 'ticket-qr.png',
-            content: booking.qrCode.split("base64,")[1],
-            encoding: 'base64',
-            cid: 'ticket_qr'
-          }
-        ]
+        attachments: [{
+          filename: 'ticket-qr.png',
+          content: booking.qrCode.split("base64,")[1],
+          encoding: 'base64',
+          cid: 'ticket_qr'
+        }]
       };
 
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ [GMAIL] Đã bùng mail thành công tới: ${user.email}`);
+      console.log(`✅ Đã gửi mail vé cho: ${user.email}`);
     } catch (error) {
-      console.error("❌ [GMAIL] Lỗi gửi mail:", error);
+      console.error("❌ Lỗi gửi mail:", error);
     }
   }
 }
