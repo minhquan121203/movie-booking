@@ -153,6 +153,7 @@ class EmailService {
               <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
               <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
               <p>📍 <b>Vị trí:</b> ${scheduleData.position}</p>
+              <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'Chưa xác định'}</p>
             </div>
             <p style="margin-top: 15px; color: #4b5563;"><i>Bạn không cần có mặt tại rạp vào ca này. Vui lòng kiểm tra lại lịch làm việc mới nhất trên hệ thống để biết thêm chi tiết.</i></p>
           </div>

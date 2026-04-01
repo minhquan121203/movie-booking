@@ -472,6 +472,10 @@ const shiftAssignmentController = {
         if (staff && staff.email && schedule) {
           const emailService = (await import("../services/email.service.js")).default;
 
+          const Theater = (await import("../models/theater.model.js")).default;
+          const theaterInfo = await Theater.findById(schedule.theaterId);
+          const theaterName = theaterInfo ? theaterInfo.name : "Rạp CineBooking";
+
           const dateObj = new Date(schedule.startDateTime);
           const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
           const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -483,7 +487,8 @@ const shiftAssignmentController = {
             date: dateStr,
             startTime: startTimeStr,
             endTime: endTimeStr,
-            position: roleName || 'Quầy vé/Sảnh'
+            position: roleName || 'Quầy vé/Sảnh',
+            theaterName: theaterName
           }).catch(e => console.error("Lỗi gửi mail ngầm hủy ca:", e));
         }
       } catch (mailErr) {
