@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye, Trash2, Building2 } from 'lucide-react'
+import { Eye, Trash2, Building2, Pencil } from 'lucide-react' // 1. Thêm Pencil
 import { User } from '@/types/user'
 
 interface UserTableProps {
@@ -17,6 +17,7 @@ interface UserTableProps {
   onViewDetail: (user: User) => void
   onDelete: (id: string) => void
   onAssignTheater?: (user: User) => void
+  onEdit?: (user: User) => void // 2. Thêm prop onEdit
   showAssignTheater?: boolean
 }
 
@@ -25,6 +26,7 @@ export function UserTable({
   onViewDetail,
   onDelete,
   onAssignTheater,
+  onEdit, // Nhận prop
   showAssignTheater = false,
 }: UserTableProps) {
   if (users.length === 0)
@@ -73,7 +75,6 @@ export function UserTable({
                   {user.staffInfo?.assignedTheater ? (
                     <div className="flex flex-col">
                       <span className="font-medium">{user.staffInfo.assignedTheater.name}</span>
-                      {/* <span className="text-xs text-gray-500">{user.staffInfo.assignedTheater.name}</span> */}
                     </div>
                   ) : (
                     <span className="text-gray-400 italic">Chưa gắn</span>
@@ -100,6 +101,20 @@ export function UserTable({
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
+                  
+                  {/* 3. Nút Edit màu Cam đây fen */}
+                  {onEdit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-orange-600 hover:bg-orange-50"
+                      onClick={() => onEdit(user)}
+                      title="Sửa thông tin"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
+
                   {showAssignTheater && onAssignTheater && (
                     <Button
                       size="icon"
