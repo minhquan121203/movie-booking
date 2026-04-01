@@ -198,136 +198,136 @@ notificationSchema.statics.createNotification = async function (data) {
     }
   }
 
-  if (data.channels?.sms || notification.channels?.sms) {
-    try {
-      const smsService = (await import("../services/sms.service.js")).default;
-      const User = (await import("./user.model.js")).default;
-      const user = await User.findById(notification.user);
+/*if (data.channels?.sms || notification.channels?.sms) {
+  try {
+    const smsService = (await import("../services/sms.service.js")).default;
+    const User = (await import("./user.model.js")).default;
+    const user = await User.findById(notification.user);
 
-      if (user && user.phoneNumber) {
-        const smsMessage = `${notification.title}: ${notification.message}`;
+    if (user && user.phoneNumber) {
+      const smsMessage = `${notification.title}: ${notification.message}`;
 
-        // Use bulkSendSMS for single message or create generic method
-        const smsResult = await smsService.bulkSendSMS([user.phoneNumber], smsMessage);
+      // Use bulkSendSMS for single message or create generic method
+      const smsResult = await smsService.bulkSendSMS([user.phoneNumber], smsMessage);
 
-        if (smsResult.success && smsResult.results && smsResult.results[0]) {
-          notification.deliveryStatus.sms = smsResult.results[0].success ? "sent" : "failed";
-        } else {
-          notification.deliveryStatus.sms = "failed";
-        }
-        await notification.save();
+      if (smsResult.success && smsResult.results && smsResult.results[0]) {
+        notification.deliveryStatus.sms = smsResult.results[0].success ? "sent" : "failed";
+      } else {
+        notification.deliveryStatus.sms = "failed";
       }
-    } catch (smsError) {
-      console.error("Notification SMS error:", smsError);
-      notification.deliveryStatus.sms = "failed";
       await notification.save();
     }
+  } catch (smsError) {
+    console.error("Notification SMS error:", smsError);
+    notification.deliveryStatus.sms = "failed";
+    await notification.save();
   }
-
-  return notification;
+}
+*/
+return notification;
 };
 
 notificationSchema.statics.getUnreadCount = function (userId) {
-  return this.countDocuments({
-    user: userId,
-    isRead: false,
-    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
-  });
+return this.countDocuments({
+  user: userId,
+  isRead: false,
+  $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+});
 };
 
 notificationSchema.statics.markAllAsRead = function (userId) {
-  return this.updateMany({ user: userId, isRead: false }, { isRead: true, readAt: new Date() });
+return this.updateMany({ user: userId, isRead: false }, { isRead: true, readAt: new Date() });
 };
 
 notificationSchema.statics.deleteOldNotifications = function (days = 30) {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
+const cutoffDate = new Date();
+cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  return this.deleteMany({
-    createdAt: { $lt: cutoffDate },
-    isRead: true,
-  });
+return this.deleteMany({
+  createdAt: { $lt: cutoffDate },
+  isRead: true,
+});
 };
 
 // === NOTIFICATION TEMPLATES ===
 notificationSchema.statics.templates = {
-  bookingSuccess: (booking) => ({
-    title: "Đặt vé thành công",
-    message: `Bạn đã đặt vé xem ${booking.movieTitle} thành công. Mã vé: ${booking.bookingCode}`,
-    type: "booking_success",
-    link: `/bookings/${booking._id}`,
-    relatedModel: "Booking",
-    relatedId: booking._id,
-    priority: "high",
-  }),
+bookingSuccess: (booking) => ({
+  title: "Đặt vé thành công",
+  message: `Bạn đã đặt vé xem ${booking.movieTitle} thành công. Mã vé: ${booking.bookingCode}`,
+  type: "booking_success",
+  link: `/bookings/${booking._id}`,
+  relatedModel: "Booking",
+  relatedId: booking._id,
+  priority: "high",
+}),
 
-  bookingCancelled: (booking) => ({
-    title: "Vé đã được hủy",
-    message: `Vé ${booking.bookingCode} đã được hủy. Số tiền hoàn lại: ${booking.refundAmount.toLocaleString()}đ`,
-    type: "booking_cancelled",
-    link: `/bookings/${booking._id}`,
-    relatedModel: "Booking",
-    relatedId: booking._id,
-    priority: "medium",
-  }),
+bookingCancelled: (booking) => ({
+  title: "Vé đã được hủy",
+  message: `Vé ${booking.bookingCode} đã được hủy. Số tiền hoàn lại: ${booking.refundAmount.toLocaleString()}đ`,
+  type: "booking_cancelled",
+  link: `/bookings/${booking._id}`,
+  relatedModel: "Booking",
+  relatedId: booking._id,
+  priority: "medium",
+}),
 
-  bookingReminder: (booking) => ({
-    title: "Nhắc nhở suất chiếu",
-    message: `Suất chiếu "${booking.movieTitle}" của bạn sẽ bắt đầu vào ${booking.showTime}. Đừng quên check-in!`,
-    type: "reminder",
-    link: `/bookings/${booking._id}`,
-    relatedModel: "Booking",
-    relatedId: booking._id,
-    priority: "high",
-  }),
+bookingReminder: (booking) => ({
+  title: "Nhắc nhở suất chiếu",
+  message: `Suất chiếu "${booking.movieTitle}" của bạn sẽ bắt đầu vào ${booking.showTime}. Đừng quên check-in!`,
+  type: "reminder",
+  link: `/bookings/${booking._id}`,
+  relatedModel: "Booking",
+  relatedId: booking._id,
+  priority: "high",
+}),
 
-  paymentSuccess: (booking) => ({
-    title: "Thanh toán thành công",
-    message: `Thanh toán ${booking.totalAmount.toLocaleString()}đ cho vé ${booking.bookingCode} thành công`,
-    type: "payment_success",
-    link: `/bookings/${booking._id}`,
-    relatedModel: "Booking",
-    relatedId: booking._id,
-    priority: "high",
-  }),
+paymentSuccess: (booking) => ({
+  title: "Thanh toán thành công",
+  message: `Thanh toán ${booking.totalAmount.toLocaleString()}đ cho vé ${booking.bookingCode} thành công`,
+  type: "payment_success",
+  link: `/bookings/${booking._id}`,
+  relatedModel: "Booking",
+  relatedId: booking._id,
+  priority: "high",
+}),
 
-  loyaltyPoints: (points, currentPoints) => ({
-    title: "Tích điểm thành công",
-    message: `Bạn vừa nhận được ${points} điểm. Tổng điểm hiện tại: ${currentPoints}`,
-    type: "loyalty_points",
-    priority: "low",
-  }),
+loyaltyPoints: (points, currentPoints) => ({
+  title: "Tích điểm thành công",
+  message: `Bạn vừa nhận được ${points} điểm. Tổng điểm hiện tại: ${currentPoints}`,
+  type: "loyalty_points",
+  priority: "low",
+}),
 
-  membershipUpgrade: (newLevel) => ({
-    title: "Chúc mừng nâng hạng!",
-    message: `Bạn đã được nâng lên hạng ${newLevel}. Hãy tận hưởng các ưu đãi đặc biệt!`,
-    type: "membership_upgrade",
-    priority: "high",
-  }),
+membershipUpgrade: (newLevel) => ({
+  title: "Chúc mừng nâng hạng!",
+  message: `Bạn đã được nâng lên hạng ${newLevel}. Hãy tận hưởng các ưu đãi đặc biệt!`,
+  type: "membership_upgrade",
+  priority: "high",
+}),
 
-  promotion: (title, description, link) => ({
-    title: title,
-    message: description,
-    type: "promotion",
-    link: link,
-    priority: "medium",
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-  }),
+promotion: (title, description, link) => ({
+  title: title,
+  message: description,
+  type: "promotion",
+  link: link,
+  priority: "medium",
+  expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+}),
 
-  paymentFailed: (booking) => ({
-    title: "Thanh toán thất bại",
-    message: `Thanh toán cho vé ${booking.bookingCode} đã thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.`,
-    type: "payment_failed",
-    link: `/bookings/${booking._id}`,
-    relatedModel: "Booking",
-    relatedId: booking._id,
-    priority: "high",
-    metadata: {
-      bookingCode: booking.bookingCode,
-      movieTitle: booking.movieTitle,
-      totalAmount: booking.totalAmount,
-    },
-  }),
+paymentFailed: (booking) => ({
+  title: "Thanh toán thất bại",
+  message: `Thanh toán cho vé ${booking.bookingCode} đã thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ.`,
+  type: "payment_failed",
+  link: `/bookings/${booking._id}`,
+  relatedModel: "Booking",
+  relatedId: booking._id,
+  priority: "high",
+  metadata: {
+    bookingCode: booking.bookingCode,
+    movieTitle: booking.movieTitle,
+    totalAmount: booking.totalAmount,
+  },
+}),
 };
 
 export default mongoose.model("Notification", notificationSchema);
