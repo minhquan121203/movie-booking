@@ -34,13 +34,11 @@ const shiftAssignmentController = {
       const createdResults = [];
 
       for (const item of assignments) {
-        // 1. Kiểm tra Schedule
         const schedule = await WorkSchedule.findById(item.workScheduleId).session(session);
         if (!schedule) throw new Error(`Không tìm thấy lịch làm việc (ID: ${item.workScheduleId})`);
         if (String(schedule.theaterId) !== String(theaterId)) throw new Error("Lịch làm việc không thuộc rạp này");
         if (schedule.status !== "open") throw new Error("Lịch làm việc chưa mở hoặc đã đóng");
 
-        // 2. Kiểm tra trùng lịch (Overlap) - Chỉ check các assignments chưa bị xóa
         const existingAssignments = await ShiftAssignment.find({ userId: item.userId, isDeleted: false })
           .populate({ path: "workScheduleId", select: "startDateTime endDateTime theaterId" })
           .session(session);
@@ -59,7 +57,6 @@ const shiftAssignmentController = {
           throw new Error("User has overlapping assignment");
         }
 
-        // 3. Tạo phân công
         const [created] = await ShiftAssignment.create(
           [
             {
@@ -73,25 +70,27 @@ const shiftAssignmentController = {
         );
 
         createdResults.push(created);
-        // 4. BẮN MAIL THÔNG BÁO CHO NHÂN VIÊN
         try {
-          // Lấy email của staff
           const staff = await User.findById(item.userId).session(session);
+
+          const Theater = (await import("../models/theater.model.js")).default;
+          const theaterInfo = await Theater.findById(theaterId).session(session);
+          const theaterName = theaterInfo ? theaterInfo.name : "Rạp CineBooking";
 
           if (staff && staff.email) {
             const dateObj = new Date(schedule.startDateTime);
             const dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const startTimeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
-
             const endObj = new Date(schedule.endDateTime);
             const endTimeStr = endObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
 
             emailService.sendStaffSchedule(staff, {
               date: dateStr,
-              shiftName: item.role, // Tạm lấy vai trò làm tên ca
+              shiftName: item.role,
               startTime: startTimeStr,
               endTime: endTimeStr,
-              position: item.role
+              position: item.role,
+              theaterName: theaterName
             }).catch(e => console.error("Lỗi gửi mail ngầm cho staff:", e));
           }
         } catch (mailErr) {
@@ -164,20 +163,11 @@ const shiftAssignmentController = {
 
       if (!assignment) return errorResponse(res, "No eligible assignment found", 404);
 
-      // update
-      // assignment.checkInTime = new Date();
-      // assignment.status = "active";
-      // await assignment.save();
-
-      // return successResponse(res, { assignmentId: assignment._id, checkInTime: assignment.checkInTime });
-
-      // ==== CHECK 1: Phải đúng ngày ====
       const today = new Date().toISOString().slice(0, 10);
       if (assignment.workScheduleId.date !== today) {
         return errorResponse(res, "Không thể check-in: Không đúng ngày làm việc", 400);
       }
 
-      // ==== CHECK 2: Phải đúng giờ ca ====
       const now = new Date();
       const start = new Date(assignment.workScheduleId.startDateTime);
       const end = new Date(assignment.workScheduleId.endDateTime);
@@ -193,7 +183,7 @@ const shiftAssignmentController = {
         return errorResponse(res, "Đã quá giờ check-in của ca này", 400);
       }
 
-      // ==== CHECK 3: Không được check-in nếu đã active/completed ====
+      // Không được check-in nếu đã active/completed
       if (assignment.status !== "pending") {
         return errorResponse(res, "Bạn đã check-in hoặc đã hoàn thành ca", 400);
       }

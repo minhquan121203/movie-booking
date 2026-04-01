@@ -123,6 +123,7 @@ class EmailService {
               <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
               <p>⏰ <b>Ca làm:</b> ${scheduleData.shiftName} (${scheduleData.startTime} - ${scheduleData.endTime})</p>
               <p>📍 <b>Vị trí:</b> ${scheduleData.position || 'Quầy vé/Sảnh'}</p>
+              <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'Chưa xác định'}</p>
             </div>
             <p style="margin-top: 15px;">Vui lòng có mặt đúng giờ để thực hiện bàn giao ca.</p>
           </div>
