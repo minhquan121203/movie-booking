@@ -1,6 +1,6 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useUsers } from '@/lib/api/user'
 import { useUserMutations } from './hooks/useUserMutations'
 import { UserTable } from './components/UserTable'
@@ -8,10 +8,12 @@ import { UserToolbar } from './components/UserToolbar'
 import { UserDetailSheet } from './components/UserDetailSheet'
 import { CreateStaffModal } from './components/CreateStaffModal'
 import { AssignTheaterModal } from './components/AssignTheaterModal'
+// 🆕 1. Import EditStaffModal
+import { EditStaffModal } from './components/EditStaffModal' 
 import { useDebounce } from '@/hooks/useDebounce'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { User } from '@/types/user'
-import { Loader2 } from 'lucide-react' // Import icon loading
+import { Loader2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +26,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 
-// 1. Tách nội dung chính ra UserManagementContent
 function UserManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -43,6 +44,9 @@ function UserManagementContent() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
   const [assignTheaterStaff, setAssignTheaterStaff] = useState<User | null>(null)
+  
+  // 🆕 2. Thêm state quản lý người đang được Edit
+  const [editingUser, setEditingUser] = useState<User | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -99,14 +103,6 @@ function UserManagementContent() {
     updateUrlParams(1, newTypeUser)
   }
 
-  const handleOpenCreateStaffModal = () => {
-    setShowCreateStaffModal(true)
-  }
-
-  const handleAssignTheater = (user: User) => {
-    setAssignTheaterStaff(user)
-  }
-
   return (
     <main className="flex-1 p-8 bg-gray-50 min-h-screen">
       <div className="max-w-[1440px] mx-auto space-y-6">
@@ -117,7 +113,7 @@ function UserManagementContent() {
           onSearchChange={setSearch}
           typeUser={typeUser}
           onTabChange={handleTypeUserChange}
-          onAddStaff={handleOpenCreateStaffModal}
+          onAddStaff={() => setShowCreateStaffModal(true)}
         />
 
         <div className="relative">
@@ -129,8 +125,10 @@ function UserManagementContent() {
                 users={users || []}
                 onViewDetail={user => setViewUserId(user._id)}
                 onDelete={id => setDeleteId(id)}
-                onAssignTheater={handleAssignTheater}
+                onAssignTheater={setAssignTheaterStaff}
                 showAssignTheater={typeUser === 'staff'}
+                // 🆕 3. Truyền state vào bảng để hiện "Cây Bút"
+                onEdit={setEditingUser} 
               />
               {isTransitioning && <LoadingOverlay />}
             </>
@@ -164,6 +162,13 @@ function UserManagementContent() {
 
       <CreateStaffModal open={showCreateStaffModal} onOpenChange={setShowCreateStaffModal} />
 
+      {/* 🆕 4. Nhúng cái Form Edit vào giao diện */}
+      <EditStaffModal 
+        open={!!editingUser} 
+        onOpenChange={(open) => !open && setEditingUser(null)} 
+        user={editingUser} 
+      />
+
       <AssignTheaterModal
         open={!!assignTheaterStaff}
         onOpenChange={() => setAssignTheaterStaff(null)}
@@ -190,7 +195,6 @@ function UserManagementContent() {
   )
 }
 
-// 2. Export default bọc trong Suspense
 export default function UserManagementPage() {
   return (
     <Suspense fallback={
