@@ -15,15 +15,22 @@ import * as z from 'zod'
 import { useCreateStaff } from '../hooks/useUserMutations'
 import { useTheaters } from '@/lib/api/theaters'
 import { useNotification } from '@/providers/NotificationProvider'
-import { useMemo, useState } from 'react' // 1. Thêm useState
-import { Loader2, Eye, EyeOff } from 'lucide-react' // 2. Thêm Eye, EyeOff
+import { useMemo, useState } from 'react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
+
+// 1. Nâng cấp Validate Zod
+const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/
 
 const createStaffSchema = z.object({
-  email: z.string().email('Email không hợp lệ'),
+  email: z.string().min(1, 'Email không được để trống').email('Email không đúng định dạng'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+  confirmPassword: z.string().min(1, 'Vui lòng nhập lại mật khẩu'),
   fullName: z.string().min(1, 'Họ tên không được để trống'),
-  phoneNumber: z.string().min(10, 'Số điện thoại không hợp lệ'),
+  phoneNumber: z.string().regex(phoneRegex, 'Số điện thoại không hợp lệ (VD: 0912345678)'),
   assignedTheater: z.string().min(1, 'Vui lòng chọn rạp'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Mật khẩu nhập lại không khớp",
+  path: ["confirmPassword"], // Trỏ lỗi vào field confirmPassword
 })
 
 type CreateStaffFormData = z.infer<typeof createStaffSchema>
@@ -37,10 +44,10 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
   const { showSuccess, showError } = useNotification()
   const createStaffMutation = useCreateStaff()
 
-  // State quản lý việc ẩn/hiện mật khẩu
+  // State cho 2 con mắt
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Fetch theaters
   const { data: theatersData, isLoading: isLoadingTheaters } = useTheaters({ limit: 100 })
   const theaters = useMemo(() => theatersData?.theaters || [], [theatersData])
 
@@ -56,10 +63,14 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
 
   const onSubmit = async (data: CreateStaffFormData) => {
     try {
-      await createStaffMutation.mutateAsync(data)
+      // 2. Tách confirmPassword ra, chỉ gửi những gì backend cần
+      const { confirmPassword, ...submitData } = data
+
+      await createStaffMutation.mutateAsync(submitData)
       showSuccess('Tạo tài khoản nhân viên thành công!')
       reset()
-      setShowPassword(false) // Reset luôn trạng thái con mắt
+      setShowPassword(false)
+      setShowConfirmPassword(false)
       onOpenChange(false)
     } catch (error: any) {
       showError('Lỗi!', error.response?.data?.message || 'Có lỗi xảy ra')
@@ -69,17 +80,17 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
   const handleClose = () => {
     reset()
     setShowPassword(false)
+    setShowConfirmPassword(false)
     onOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-white text-gray-900 min-w-fit min-h-fit overflow-y-auto">
+      <DialogContent className="bg-white text-gray-900 min-w-fit min-h-fit max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Tạo Tài Khoản Nhân Viên</DialogTitle>
         </DialogHeader>
 
-        {/* Thêm autoComplete="off" để ngăn trình duyệt tự điền láo nháo */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4" autoComplete="off">
           
           {/* Email */}
@@ -89,8 +100,8 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             </Label>
             <Input
               id="email"
-              type="email"
-              autoComplete="off" // Ép không tự điền
+              type="text" // Chuyển sang text để trị triệt để auto-fill của Chrome
+              autoComplete="off"
               placeholder="staff@cinema.com"
               className={`${errors.email ? 'border-red-500' : ''}`}
               {...register('email')}
@@ -98,7 +109,7 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
             {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
-          {/* Password - Có thêm nút 👁️ */}
+          {/* Password */}
           <div className="space-y-2">
             <Label htmlFor="password" className="text-sm font-medium">
               Mật khẩu <span className="text-red-500">*</span>
@@ -107,25 +118,47 @@ export function CreateStaffModal({ open, onOpenChange }: CreateStaffModalProps) 
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password" // Báo trình duyệt đây là pass mới, cấm điền pass cũ
+                autoComplete="new-password"
                 placeholder="Nhập mật khẩu"
-                className={`${errors.password ? 'border-red-500' : ''} pr-10`} // Thêm padding-right để không đè lên icon
+                className={`${errors.password ? 'border-red-500' : ''} pr-10`}
                 {...register('password')}
               />
               <button
                 type="button"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
                 onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1} // Để bấm Tab không bị nhảy vào nút này
+                tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+          </div>
+
+          {/* Confirm Password */}
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium">
+              Nhập lại mật khẩu <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="Xác nhận lại mật khẩu"
+                className={`${errors.confirmPassword ? 'border-red-500' : ''} pr-10`}
+                {...register('confirmPassword')}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
           </div>
 
           {/* Full Name */}
