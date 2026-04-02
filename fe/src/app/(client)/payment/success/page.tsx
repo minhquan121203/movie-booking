@@ -1,100 +1,90 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useBookingDetail } from '@/lib/api/booking'
-import { StepSuccess } from '@/app/(client)/payment/success/StepSuccess'
-import { Loader2, XCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import axios from 'axios'
+import { Loader2 } from 'lucide-react'
 
-function PaymentResult() {
+function PaymentProcessor() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const [status, setStatus] = useState('Đang xử lý giao dịch. Vui lòng không đóng trang...')
 
-  // 1. BẮT PARAM CỦA VNPAY (Code cũ của fen)
-  const vnpResponseCode = searchParams.get('vnp_ResponseCode')
+  useEffect(() => {
+    // Chỉ chạy khi router ready
+    if (!searchParams) return;
 
-  // 2. BẮT PARAM CỦA MOMO (Code mới t thêm vào)
-  const momoResultCode = searchParams.get('resultCode')
-  const momoExtraData = searchParams.get('extraData')
+    const processPayment = async () => {
+      // 1. ĐỌC DỮ LIỆU MOMO / VNPAY TRẢ VỀ TỪ URL
+      const vnpResponseCode = searchParams.get('vnp_ResponseCode')
+      const vnpTxnRef = searchParams.get('vnp_TxnRef')
 
-  // 3. XÁC ĐỊNH TRẠNG THÁI THÀNH CÔNG CHO CẢ 2 CỔNG
-  const isVnpaySuccess = vnpResponseCode === '00'
-  const isMomoSuccess = momoResultCode === '0'
+      const momoResultCode = searchParams.get('resultCode')
+      const momoOrderId = searchParams.get('orderId')
+      const momoExtraData = searchParams.get('extraData')
 
-  // Nếu có param trả về nhưng không phải mã thành công -> Báo lỗi
-  const isFailed = (vnpResponseCode && !isVnpaySuccess) || (momoResultCode && !isMomoSuccess)
+      const isVnpaySuccess = vnpResponseCode === '00'
+      const isMomoSuccess = momoResultCode === '0'
 
-  // 4. LẤY BOOKING ID
-  let bookingId = searchParams.get('bookingId') // Của VNPAY/PayOS
+      // Nếu khách hủy thanh toán -> Đá về trang chủ
+      if (searchParams.toString() && !isVnpaySuccess && !isMomoSuccess) {
+        setStatus('Giao dịch thất bại hoặc bị hủy. Đang quay về trang chủ...')
+        setTimeout(() => router.push('/'), 2000)
+        return
+      }
 
-  // Nếu là MoMo, bóc vỏ extraData để lấy bookingId
-  if (!bookingId && momoExtraData) {
-    try {
-      const decodedStr = atob(momoExtraData)
-      const decodedData = JSON.parse(decodedStr)
-      bookingId = decodedData.bookingId
-    } catch (error) {
-      console.error("Lỗi giải mã extraData MoMo:", error)
+      // 2. KHUI LẤY BOOKING ID & THÔNG TIN GIAO DỊCH
+      let bookingId = searchParams.get('bookingId')
+      let paymentMethod = ''
+      let transactionId = ''
+
+      if (isMomoSuccess) {
+        paymentMethod = 'MoMo'
+        transactionId = momoOrderId || ''
+        // Khui extraData để lấy bookingId
+        if (momoExtraData) {
+          try {
+            const decodedData = JSON.parse(atob(momoExtraData))
+            bookingId = decodedData.bookingId
+          } catch (e) {
+            console.error("Lỗi giải mã extraData:", e)
+          }
+        }
+      } else if (isVnpaySuccess) {
+        paymentMethod = 'VNPAY'
+        transactionId = vnpTxnRef || ''
+      }
+
+      if (!bookingId) return; // Nếu load lần đầu chưa có ID thì chờ
+
+      // 3. GỌI API ÉP BACKEND CHỐT ĐƠN VÀ TẠO QR CODE XỊN
+      try {
+        setStatus('Đang xác nhận thanh toán & sinh mã vé QR...')
+        
+        // Gọi thẳng vào API confirmPayment của BE
+        await axios.post(`https://movie-booking-api-bcfe.onrender.com/api/bookings/${bookingId}/confirm`, {
+          paymentMethod: paymentMethod,
+          transactionId: transactionId
+        })
+        
+        setStatus('Thành công! Đang chuyển đến Lịch sử vé...')
+      } catch (error) {
+        console.error('Lỗi duyệt đơn:', error)
+      } finally {
+        // 4. CHỐT HẠ: DÙ THÀNH CÔNG HAY LỖI CŨNG ĐÁ THẲNG VỀ ORDER HISTORY
+        router.push('/order-history')
+      }
     }
-  }
 
-  // Fetch thông tin vé để hiển thị mã vé
-  const { data: booking, isLoading } = useBookingDetail(bookingId || '')
+    processPayment()
+  }, [searchParams, router])
 
-  // GIAO DIỆN: THẤT BẠI
-  if (isFailed) {
-    return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center border-red-100 bg-red-50/50">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <XCircle className="w-10 h-10 text-red-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-red-700 mb-2">Thanh toán thất bại</h2>
-          <p className="text-text-secondary mb-8">
-            Giao dịch của bạn không thành công hoặc đã bị hủy. Vui lòng thử lại.
-          </p>
-          <div className="flex flex-col gap-3">
-            <Button
-              className="w-full bg-primary hover:bg-primary/90"
-              onClick={() => router.push('/')}
-            >
-              Về trang chủ
-            </Button>
-          </div>
-        </Card>
-      </div>
-    )
-  }
-
-  // GIAO DIỆN: ĐANG TẢI THÔNG TIN
-  if (isLoading || !booking) {
-    return (
-      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-        <p className="text-text-secondary">Đang xác thực giao dịch...</p>
-      </div>
-    )
-  }
-
-  // GIAO DIỆN: THÀNH CÔNG (DÙNG CHUNG CHO CẢ VNPAY VÀ MOMO)
-  const bookingResponseData = {
-    bookingId: booking._id,
-    bookingCode: booking.bookingCode || booking._id.slice(-6).toUpperCase(),
-    totalAmount: booking.totalAmount,
-    qrCode: booking.qrCode,
-    holdUntil: new Date(),
-  }
-
+  // GIAO DIỆN TRẠM TRUNG CHUYỂN (Chỉ hiện 1-2 giây)
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-surface p-8 rounded-3xl shadow-xl border border-border">
-        <StepSuccess
-          bookingData={bookingResponseData}
-          onClose={() => router.push('/order-history')}
-        />
-      </div>
+    <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-4">
+      <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+      <h2 className="text-2xl font-bold text-text-primary mb-2">Đang xác nhận thanh toán</h2>
+      <p className="text-text-secondary animate-pulse">{status}</p>
     </div>
   )
 }
@@ -102,11 +92,11 @@ function PaymentResult() {
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
       </div>
     }>
-      <PaymentResult />
+      <PaymentProcessor />
     </Suspense>
   )
 }
