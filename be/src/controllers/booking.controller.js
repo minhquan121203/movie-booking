@@ -67,7 +67,6 @@ const bookingController = {
       let discountAmount = 0;
 
       await session.withTransaction(async () => {
-        // 1. Validate schedule
         schedule = await Schedule.findById(scheduleId)
             .populate("movie", "title")
             .populate("theater", "name")
@@ -96,7 +95,6 @@ const bookingController = {
           throw new Error("Suất chiếu đã bắt đầu hoặc đã kết thúc. Không thể đặt vé nữa.");
         }
 
-        // 2. Hold ghế với atomic operation
         const seatNumbers = seats.map((s) => s.seatNumber);
         const currentVersion = schedule.__v;
 
@@ -143,7 +141,6 @@ const bookingController = {
 
         schedule = updatedSchedule;
 
-        // 3. Tính tiền vé
         let ticketsAmount = 0;
         const validatedSeats = seats.map((seat) => {
           const scheduleSeat = schedule.seatAvailability.find((s) => s.seatNumber === seat.seatNumber);
@@ -171,7 +168,6 @@ const bookingController = {
           };
         });
 
-        // 4. Xử lý products
         let productsAmount = 0;
         let orderedProducts = [];
 
@@ -243,7 +239,6 @@ const bookingController = {
           }
         }
 
-        // 5. Xử lý voucher
         if (voucherCode) {
           const subtotal = ticketsAmount + productsAmount;
           let retries = 3;
@@ -301,11 +296,9 @@ const bookingController = {
           }
         }
 
-        // 6. Tính tổng tiền
         const subtotal = ticketsAmount + productsAmount;
         const totalAmount = subtotal - discountAmount;
 
-        // 7. Tạo booking
         const bookingData = {
           customer: req.userId,
           schedule: scheduleId,
@@ -334,7 +327,6 @@ const bookingController = {
         const [booking] = await Booking.create([bookingData], { session });
         newBooking = booking;
 
-        // 8. Update bookingId vào voucher
         if (appliedVoucher) {
           await Voucher.updateOne(
               {
@@ -349,7 +341,6 @@ const bookingController = {
           );
         }
 
-        // 9. Update booking ID trong Schedule
         const bookingIdArrayFilters = seatNumbers.map((seatNum) => ({
           [`seat${seatNum.replace(/[^a-zA-Z0-9]/g, "")}.seatNumber`]: seatNum,
         }));
@@ -365,11 +356,10 @@ const bookingController = {
             { $set: bookingIdSetUpdate },
             { arrayFilters: bookingIdArrayFilters, session }
         );
-      }); // End transaction
+      });
 
       await session.endSession();
 
-      // 9. Broadcast qua WebSocket
       websocketService.emitToSchedule(scheduleId, "seats-status-changed", {
         scheduleId,
         seatAvailability: schedule.seatAvailability,
@@ -378,21 +368,16 @@ const bookingController = {
         userId: req.userId,
       });
 
-      // 10. Cache booking tạm
       await redisService.set(`booking:temp:${newBooking._id}`, newBooking, 900);
 
-      // TẠO LINK THANH TOÁN PAYOS
       let checkoutUrl = null;
 
       if (paymentMethod === 'bank_transfer') {
-        // 1. PayOS bắt buộc orderCode là SỐ NGUYÊN
         const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
-        // 2. Lưu lại vào transactionId để Webhook gọi về còn nhận diện được
         newBooking.paymentDetails.transactionId = payosOrderCode.toString();
         await newBooking.save();
 
-        // 3. Data gửi sang PayOS
         const requestData = {
           orderCode: payosOrderCode,
           amount: newBooking.totalAmount,
@@ -402,16 +387,38 @@ const bookingController = {
         };
 
         try {
-          // Gọi API PayOS tạo link
           const paymentLink = await payos.paymentRequests.create(requestData);
           checkoutUrl = paymentLink.checkoutUrl;
         } catch (payosError) {
           console.error("Lỗi tạo link PayOS:", payosError);
         }
       }
-      // ==========================================
-      // 🚀 KẾT THÚC ĐOẠN PAYOS
-      // ==========================================
+
+      if (paymentMethod === 'MoMo') {
+        try {
+          const extraDataObj = { bookingId: newBooking._id.toString() };
+          const extraDataStr = Buffer.from(JSON.stringify(extraDataObj)).toString('base64');
+
+          const momoOrderId = `MOMO_${newBooking.bookingCode}_${Date.now().toString().slice(-4)}`;
+
+          newBooking.paymentDetails.transactionId = momoOrderId;
+          await newBooking.save();
+
+          const momoService = await import("../services/payment/momo.service.js");
+          const momoResponse = await momoService.default.createPayment({
+            orderId: momoOrderId,
+            amount: newBooking.totalAmount,
+            orderInfo: `Thanh toan ve ${newBooking.bookingCode}`,
+            extraData: extraDataStr
+          });
+
+          if (momoResponse && momoResponse.payUrl) {
+            checkoutUrl = momoResponse.payUrl;
+          }
+        } catch (momoError) {
+          console.error("Lỗi tạo link MoMo:", momoError);
+        }
+      }
 
       return successResponse(
           res,

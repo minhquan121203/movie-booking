@@ -55,7 +55,7 @@ class MoMoService {
         redirectUrl: this.returnUrl,
         ipnUrl: this.notifyUrl,
         extraData: extraData,
-        requestType: "captureWallet",
+        requestType: "captureWallet", //payWithATM
         signature: signature,
         lang: "vi",
       };
