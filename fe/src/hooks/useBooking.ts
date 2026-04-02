@@ -313,15 +313,19 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         const bookingData = await handleCreateBooking()
 
         if (bookingData) {
-          // 🚀 KIỂM TRA NẾU LÀ PAYOS THÌ BAY THẲNG LUÔN
-          if (paymentMethod === 'bank_transfer' && (bookingData as any).payosCheckoutUrl) {
-            // Đá văng khách sang trang PayOS xịn xò
-            window.location.href = (bookingData as any).payosCheckoutUrl;
-            return; // Dừng luôn ở đây, không thèm chạy tiếp sang Step 5 nữa
+          const bd = bookingData as any; 
+
+          if (paymentMethod === 'bank_transfer' && bd.payosCheckoutUrl) {
+            window.location.href = bd.payosCheckoutUrl;
+            return; 
           }
 
-          // Dành cho VNPAY hoặc MOMO (Logic cũ của fen)
-          const bookingId = (bookingData as any)._id || (bookingData as any).bookingId
+          if (paymentMethod === 'momo' && bd.payosCheckoutUrl) {
+            window.location.href = bd.payosCheckoutUrl;
+            return; 
+          }
+
+          const bookingId = bd._id || bd.bookingId
           handleCreatePayment(bookingId)
         }
       } catch (error) {
