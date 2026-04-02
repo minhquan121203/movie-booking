@@ -41,7 +41,7 @@ class MoMoService {
         })
       ).toString("base64");
 
-      const rawSignature = `accessKey=${this.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=payWithATM`;
+      const rawSignature = `accessKey=${this.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
 
       const signature = crypto.createHmac("sha256", this.secretKey).update(rawSignature).digest("hex");
 
@@ -55,7 +55,7 @@ class MoMoService {
         redirectUrl: this.returnUrl,
         ipnUrl: this.notifyUrl,
         extraData: extraData,
-        requestType: "payWithATM",
+        requestType: "captureWallet",
         signature: signature,
         lang: "vi",
       };

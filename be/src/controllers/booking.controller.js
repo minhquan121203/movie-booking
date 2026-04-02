@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import QRCode from "qrcode";
-import payos from "../services/payment/payos.service.js"; // 👈 Đã import PayOS
+import payos from "../services/payment/payos.service.js";
 import Booking from "../models/booking.model.js";
 import Product from "../models/product.model.js";
 import Schedule from "../models/schedule.model.js";
@@ -20,8 +20,10 @@ import { errorResponse, successResponse } from "../utils/response.js";
 const bookingController = {
   // Tạo đơn đặt vé mới
   createBooking: async (req, res) => {
-    // Input Validation
-    const { scheduleId, seats, products, voucherCode, paymentMethod } = req.body; // 👈 Đã thêm paymentMethod
+    let { scheduleId, seats, products, voucherCode, paymentMethod } = req.body;
+
+    if (paymentMethod?.toLowerCase() === 'momo') paymentMethod = 'MoMo';
+    if (paymentMethod?.toLowerCase() === 'vnpay') paymentMethod = 'VNPAY';
 
     // Validate input
     if (!scheduleId || !mongoose.Types.ObjectId.isValid(scheduleId)) {
@@ -379,9 +381,7 @@ const bookingController = {
       // 10. Cache booking tạm
       await redisService.set(`booking:temp:${newBooking._id}`, newBooking, 900);
 
-      // ==========================================
-      // 🚀 BẮT ĐẦU: TẠO LINK THANH TOÁN PAYOS
-      // ==========================================
+      // TẠO LINK THANH TOÁN PAYOS
       let checkoutUrl = null;
 
       if (paymentMethod === 'bank_transfer') {
