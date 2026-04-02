@@ -52,12 +52,11 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
 
       try {
         const res = await fetch(
-          `http://localhost:5000/api/schedules/${preSelectedScheduleId}`
+          `https://movie-booking-api-bcfe.onrender.com/api/schedules/${preSelectedScheduleId}` 
         )
         const json = await res.json()
 
         if (json?.data) {
-          console.log("DATA SCHEDULE ĐÂY FEN ƠI:", json.data) 
           setSelectedSchedule(json.data)
         }
       } catch (err) {
@@ -87,12 +86,10 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     return tickets + products
   }, [selectedSeats, cartItems])
 
-  // Tính tổng số lượng sản phẩm
   const totalProductQuantity = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0)
   }, [cartItems])
 
-  // Helper: Tính giá vé dựa trên Schedule đang chọn
   const getSeatPrice = useCallback(
     (seatType: string) => {
       if (!selectedSchedule?.ticketPrices) return 0
@@ -109,21 +106,13 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     [selectedSchedule]
   )
 
-  // Helper: Kiểm tra ghế có thể chọn không
   const isSeatAvailable = useCallback(
     (seat: Seat): boolean => {
       const realTimeSeat = realTimeSeats.get(seat.seatNumber)
-
       if (realTimeSeat) {
-        // Ghế đã được bookS
         if (realTimeSeat.isBooked) return false
-
-        // Ghế đang được giữ bởi người khác
-        if (realTimeSeat.holdUntil) {
-          return false
-        }
+        if (realTimeSeat.holdUntil) return false
       }
-
       return true
     },
     [realTimeSeats]
@@ -137,7 +126,6 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         return
       }
 
-      // Kiểm tra ghế có available không
       if (!isSeatAvailable(seat)) {
         toast.warning('Ghế này không khả dụng')
         return
@@ -146,27 +134,19 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
 
       if (isSelected) {
-        // Bỏ chọn ghế -> Release qua WebSocket
         const newSelectedSeats = selectedSeats.filter(s => s.seatNumber !== seat.seatNumber)
         setSelectedSeats(newSelectedSeats)
-
-        // Release seat
         releaseSeats([seat.seatNumber])
       } else {
-        // Kiểm tra số lượng ghế tối đa
         if (selectedSeats.length >= MAX_SEATS) {
           toast.warning(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
           return
         }
-
-        // Chọn ghế mới -> Hold qua WebSocket
         try {
           await holdSeats([seat.seatNumber])
-
           const price = getSeatPrice(seat.seatType)
           setSelectedSeats(prev => [...prev, { ...seat, price }])
         } catch (error) {
-          // Error đã được handle trong useSeatSocket
           console.error('Failed to hold seat:', error)
         }
       }
@@ -180,12 +160,10 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       return
     }
 
-    // Tính tổng số lượng sản phẩm hiện tại (không bao gồm sản phẩm đang cập nhật)
     const currentTotal = cartItems
       .filter(item => item.product._id !== product._id)
       .reduce((sum, item) => sum + item.quantity, 0)
 
-    // Kiểm tra tổng số lượng có vượt quá giới hạn không
     if (currentTotal + quantity > MAX_PRODUCTS) {
       toast.warning(`Tổng số lượng sản phẩm không được vượt quá ${MAX_PRODUCTS}`)
       return
@@ -199,7 +177,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     })
   }
 
-  // --- CORE LOGIC: TẠO ĐƠN (BƯỚC 3 -> 4) ---
+  // --- CORE LOGIC: TẠO ĐƠN ---
   const handleCreateBooking = async () => {
     const scheduleId = preSelectedScheduleId || selectedSchedule?._id
 
@@ -233,138 +211,105 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const bookingData = bookingRes.data as BookingResponseData
 
       setCreatedBookingData(bookingData)
-      
-      // ĐỔI DÒNG NÀY: Thay loading bằng info hoặc success để nó tự biến mất
-      toast.info('Thông tin đặt vé đã được ghi nhận!', { 
-        icon: '📝',
-        duration: 2000 // Nó sẽ tự biến mất sau 2 giây
-      })
+      toast.info('Thông tin đặt vé đã được ghi nhận!', { icon: '📝', duration: 2000 })
 
       return bookingData
     } catch (error) {
       console.error(error)
-      toast.error('Không thể tạo đơn hàng, fen kiểm tra lại kết nối nhé!')
+      toast.error('Không thể tạo đơn hàng, vui lòng kiểm tra lại kết nối!')
       return null
     }
   }
 
-  // --- CORE LOGIC: TẠO LINK THANH TOÁN (BƯỚC 4 -> 5) ---
+  // --- CORE LOGIC: GỌI API PHỤ TẠO LINK (NẾU CẦN) ---
   const handleCreatePayment = (bookingId: string) => {
     toast.dismiss();
     if (!paymentMethod) return toast.error('Vui lòng chọn phương thức thanh toán')
 
-    if (paymentMethod === 'bank_transfer') {
-      setCurrentStep(5)
-      // Dùng toast.info hoặc toast với icon đồng hồ cho nó "pending"
-      toast.info('Vui lòng quét mã QR để hoàn tất thanh toán', {
-        icon: '⏳',
-        duration: 5000
-      })
-      return
-    }
-
     const onSuccessHandler = (res: any, method: string) => {
-      setPaymentUrl(res.paymentUrl)
-      toast.success(`Đã tạo link thanh toán ${method}!`)
-      setCurrentStep(5)
+      const link = res.paymentUrl || res.payUrl || res.data?.payUrl || res.checkoutUrl;
+      if (link) {
+        toast.loading(`Đang chuyển hướng sang ${method}...`);
+        // 🚀 ĐÁ BAY SANG APP MOMO/VNPAY LUÔN
+        window.location.href = link; 
+      } else {
+        toast.error('Lỗi: Không lấy được link thanh toán!');
+      }
     }
 
     if (paymentMethod === 'vnpay') {
-      createVNPayPayment(bookingId, {
-        onSuccess: res => onSuccessHandler(res, 'VNPAY'),
-      })
+      createVNPayPayment(bookingId, { onSuccess: res => onSuccessHandler(res, 'VNPAY') })
     } else if (paymentMethod === 'momo') {
-      createMoMoPayment(bookingId, {
-        onSuccess: res => onSuccessHandler(res, 'MoMo'),
-      })
+      createMoMoPayment(bookingId, { onSuccess: res => onSuccessHandler(res, 'MoMo') })
     }
   }
 
-  // --- NAVIGATION ---
+  // --- NAVIGATION (LUỒNG NEXT STEP) ---
   const nextStep = async () => {
-    // Validate step 2 -> 3: Kiểm tra số ghế
     if (currentStep === 2) {
-      if (selectedSeats.length === 0) {
-        toast.error('Vui lòng chọn ít nhất 1 ghế')
-        return
-      }
-      if (selectedSeats.length > MAX_SEATS) {
-        toast.error(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`, { position: 'top-right' })
-        return
-      }
+      if (selectedSeats.length === 0) return toast.error('Vui lòng chọn ít nhất 1 ghế')
+      if (selectedSeats.length > MAX_SEATS) return toast.error(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
     }
 
-    // Validate step 3 -> 4: Kiểm tra số lượng sản phẩm
     if (currentStep === 3) {
-      if (totalProductQuantity > MAX_PRODUCTS) {
-        toast.error(`Tổng số lượng sản phẩm không được vượt quá ${MAX_PRODUCTS}`)
-        return
-      }
+      if (totalProductQuantity > MAX_PRODUCTS) return toast.error(`Tổng số lượng sản phẩm không vượt quá ${MAX_PRODUCTS}`)
     }
 
-    // Bước 4 -> 5: Tạo link thanh toán
+    // Bước 4 -> 5: Chốt đơn và thanh toán
     if (currentStep === 4) {
-      if (!paymentMethod) {
-        toast.error('Vui lòng chọn phương thức thanh toán')
-        return
-      }
+      if (!paymentMethod) return toast.error('Vui lòng chọn phương thức thanh toán')
 
       try {
         const bookingData = await handleCreateBooking()
 
         if (bookingData) {
-          const bd = bookingData as any; 
+          const bd = bookingData as any;
 
-          if (paymentMethod === 'bank_transfer' && bd.payosCheckoutUrl) {
-            window.location.href = bd.payosCheckoutUrl;
-            return; 
+          // TRƯỜNG HỢP 1: CHUYỂN KHOẢN PAYOS (Phải nhảy sang bước 5 quét QR)
+          if (paymentMethod === 'bank_transfer') {
+            if (bd.payosCheckoutUrl) setPaymentUrl(bd.payosCheckoutUrl);
+            setCurrentStep(5);
+            return;
           }
 
+          // TRƯỜNG HỢP 2: MOMO 
           if (paymentMethod === 'momo' && bd.payosCheckoutUrl) {
+            toast.loading('Đang khởi tạo thanh toán MoMo...');
             window.location.href = bd.payosCheckoutUrl;
-            return; 
+            return;
           }
 
+          // TRƯỜNG HỢP 3: VNPAY hoặc MoMo 
           const bookingId = bd._id || bd.bookingId
           handleCreatePayment(bookingId)
         }
       } catch (error) {
         console.error('Error creating booking:', error)
-        toast.error('Không thể tạo đơn hàng, fen thử lại nhé!')
       }
       return
     }
 
-    // Các bước khác
     if (currentStep < 5) setCurrentStep(prev => prev + 1)
   }
 
   const prevStep = () => {
-    // Không cho quay lại từ bước 5 (đã thanh toán)
     if (currentStep === 5) return
-    // Không cho quay lại step 1 nếu có preSelectedScheduleId
     if (currentStep > 1) setCurrentStep(prev => prev - 1)
   }
 
-  // --- CLEANUP: Release seats khi unmount hoặc rời khỏi step 2 ---
+  // --- CLEANUP ---
   useEffect(() => {
     return () => {
-      // Release tất cả ghế đang giữ khi component unmount
       if (selectedSeats.length > 0) {
-        const seatNumbers = selectedSeats.map(s => s.seatNumber)
-        releaseSeats(seatNumbers)
+        releaseSeats(selectedSeats.map(s => s.seatNumber))
       }
     }
   }, [])
 
-  // Release seats khi chuyển khỏi step 2 (chọn ghế)
   useEffect(() => {
     if (currentStep !== 2 && selectedSeats.length > 0) {
-      // Không release nếu đang ở step 3, 4 (vẫn trong quá trình booking)
-      // Chỉ release khi quay lại step 1 hoặc đã hoàn thành
       if (currentStep === 1 || currentStep === 5) {
-        const seatNumbers = selectedSeats.map(s => s.seatNumber)
-        releaseSeats(seatNumbers)
+        releaseSeats(selectedSeats.map(s => s.seatNumber))
       }
     }
   }, [currentStep])
@@ -388,17 +333,14 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     isProcessing: isCreatingBooking || isCreatingVNPay || isCreatingMoMo,
     nextStep,
     prevStep,
-    // WebSocket data
     realTimeSeats,
     viewerCount,
     isInRoom,
     isConnected,
     isSeatAvailable,
-    // Validation limits
     MAX_SEATS,
     MAX_PRODUCTS,
   }
 }
 
-// Export type for page component
 export type UseBookingReturn = ReturnType<typeof useBooking>
