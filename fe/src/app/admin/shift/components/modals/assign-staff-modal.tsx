@@ -60,13 +60,26 @@ export default function AssignStaffModal({
   selectedSchedule,
   selectedTheaterId,
 }: AssignStaffModalProps) {
-  const { data: usersData, isLoading: isLoadingUsers } = useUsers({ role: 'staff', limit: 100, isActive: true, active: true })
+  const { data: usersData, isLoading: isLoadingUsers } = useUsers({ role: 'staff', limit: 100 })
   const { bulkCreate } = useAssignmentMutations()
   
   // State quản lý đóng mở combobox
   const [openCombobox, setOpenCombobox] = useState(false)
 
-  const users = useMemo(() => usersData?.users || [], [usersData])
+  const users = useMemo(() => {
+    const allStaffs = usersData?.users || []
+    
+    return allStaffs.filter(user => {
+      // Chỉ dùng isActive thôi vì TypeScript nó chỉ nhận chữ này
+      const isUserActive = user.isActive === true;
+
+      // Lọc đúng Rạp
+      const userTheaterId = user.staffInfo?.assignedTheater?._id || user.staffInfo?.assignedTheater;
+      const isRightTheater = String(userTheaterId) === String(selectedTheaterId);
+      
+      return isUserActive && isRightTheater;
+    })
+  }, [usersData, selectedTheaterId])
 
   // --- React Hook Form ---
   const {
