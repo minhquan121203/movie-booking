@@ -45,6 +45,7 @@ function OrderHistoryContent() {
     data: bookingData,
     isError,
     isLoading,
+    refetch,
   } = useMyBookings({
     page: currentPage,
     limit: itemsPerPage,
@@ -54,6 +55,27 @@ function OrderHistoryContent() {
   const bookings = bookingData?.bookings || []
   const totalPages = bookingData?.pagination?.totalPages || 1
   const totalBookings = bookingData?.pagination.totalItems || 0
+
+  useEffect(() => {
+    const hasPending = bookings.some(b => b.status === 'Chờ thanh toán');
+
+    let intervalId: NodeJS.Timeout;
+
+    if (hasPending) {
+      console.log("🛰️ Đang tự động hóng kết quả thanh toán từ MoMo...");
+      
+      intervalId = setInterval(() => {
+        if (typeof refetch === 'function') {
+           refetch(); 
+        }
+        router.refresh(); 
+      }, 3000); 
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [bookings, router, refetch]); 
 
   // Update URL params khi thay đổi page
   const updateUrlParams = (newPage: number, newStatus: BookingStatus | 'all') => {
