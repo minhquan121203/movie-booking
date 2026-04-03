@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Film, QrCode, Clock, MapPin, Armchair, CheckCircle2, XCircle } from 'lucide-react'
+import { Film, QrCode, Clock, MapPin, Armchair, CheckCircle2, XCircle, Coffee } from 'lucide-react'
 import type { TicketVerify } from '@/types/booking'
 
 interface TicketInfoDisplayProps {
@@ -98,28 +98,24 @@ function TicketStatusBadge({ status }: { status: boolean }) {
 function TicketDetails({ ticket }: { ticket: TicketVerify }) {
   return (
     <div className="space-y-3 p-4 bg-secondary rounded-[10px]">
-      {/* Movie Name */}
       <DetailRow
         icon={<Film className="w-5 h-5 text-muted-foreground mt-0.5" />}
         label="Tên phim"
         value={ticket.booking.movieTitle}
       />
 
-      {/* Showtime */}
       <DetailRow
         icon={<Clock className="w-5 h-5 text-muted-foreground mt-0.5" />}
         label="Thời gian chiếu"
-        value={`${new Date(ticket.booking.showDate).toLocaleDateString('vi-VN')} - ${new Date(ticket.booking.showTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`}
+        value={`${ticket.booking.showDate ? new Date(ticket.booking.showDate).toLocaleDateString('vi-VN') : 'Đang cập nhật'} - ${ticket.booking.showTime || ''}`}
       />
 
-      {/* Room */}
       <DetailRow
         icon={<MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />}
         label="Phòng chiếu"
         value={ticket.booking.roomName}
       />
 
-      {/* Seats */}
       <div className="flex items-start gap-3">
         <Armchair className="w-5 h-5 text-muted-foreground mt-0.5" />
         <div className="flex-1">
@@ -133,6 +129,23 @@ function TicketDetails({ ticket }: { ticket: TicketVerify }) {
           </div>
         </div>
       </div>
+
+      {ticket.booking.products && ticket.booking.products.length > 0 && (
+        <div className="flex items-start gap-3 mt-3 pt-3 border-t border-border">
+          <Coffee className="w-5 h-5 text-muted-foreground mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">Bắp nước / Combo</p>
+            <div className="mt-1 space-y-1">
+              {ticket.booking.products.map((item: any, index: number) => (
+                <p key={index} className="text-sm text-foreground font-medium">
+                  {item.quantity}x {item.productName || item.product?.name || 'Combo'}
+                  {item.size ? ` (Size ${item.size})` : ''}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
