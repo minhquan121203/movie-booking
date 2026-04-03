@@ -28,20 +28,45 @@ class MoMoService {
   }
 
   // Create payment request
-  async createPayment({ orderId, amount, orderInfo, extraData }) {
+  async createPayment(data, ipAddr = "127.0.0.1") {
     try {
+      console.log("=== MOMO CREATE PAYMENT DATA INPUT ===", JSON.stringify(data));
+
+      let orderId, amount, orderInfo, extraData;
+
+      if (data && (data.bookingCode || data._id)) {
+        const bCode = data.bookingCode || "UNKNOWN_CODE";
+        orderId = `MOMO_${bCode}_${Date.now().toString().slice(-4)}`;
+        const rawAmount = data.totalAmount || data.amount || 0;
+        amount = rawAmount.toString();
+
+        orderInfo = `Thanh toan ve ${bCode}`;
+        const extraObj = { bookingId: data._id ? data._id.toString() : "" };
+        extraData = Buffer.from(JSON.stringify(extraObj)).toString("base64");
+      }
+      else if (data && (data.orderId || data.amount)) {
+        orderId = data.orderId || `MOMO_ERR_${Date.now().toString().slice(-4)}`;
+        const rawAmount = data.amount || data.totalAmount || 0;
+        amount = rawAmount.toString();
+
+        orderInfo = data.orderInfo || "Thanh toan an danh";
+        extraData = data.extraData || "";
+      }
+      else {
+        throw new Error("Dữ liệu truyền vào hàm tạo MoMo bị rỗng hoặc sai cấu trúc!");
+      }
+
       const requestId = orderId;
-      const amountStr = amount.toString();
+      const rawSignature = `accessKey=${this.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
 
-      const rawSignature = `accessKey=${this.accessKey}&amount=${amountStr}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
-
+      const crypto = await import('crypto');
       const signature = crypto.createHmac("sha256", this.secretKey).update(rawSignature).digest("hex");
 
       const requestBody = {
         partnerCode: this.partnerCode,
         accessKey: this.accessKey,
         requestId: requestId,
-        amount: amountStr,
+        amount: amount,
         orderId: orderId,
         orderInfo: orderInfo,
         redirectUrl: this.returnUrl,
@@ -52,16 +77,13 @@ class MoMoService {
         lang: "vi",
       };
 
-      console.log("Creating MoMo payment request:", orderId);
+      console.log("Gửi Request lên MoMo với OrderId:", orderId);
 
       const response = await axios.post(this.endpoint, requestBody, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.resultCode === 0) {
-        console.log(`MoMo payment URL created successfully for ${orderId}`);
         return {
           success: true,
           paymentUrl: response.data.payUrl,
@@ -71,19 +93,12 @@ class MoMoService {
           qrCodeUrl: response.data.qrCodeUrl,
         };
       } else {
-        console.error("MoMo payment creation failed:", response.data);
-        return {
-          success: false,
-          error: response.data.message || "Payment creation failed",
-          resultCode: response.data.resultCode,
-        };
+        console.error("MoMo từ chối tạo link:", response.data);
+        return { success: false, error: response.data.message, resultCode: response.data.resultCode };
       }
     } catch (error) {
-      console.error("Create MoMo payment error:", error?.response?.data || error.message);
-      return {
-        success: false,
-        error: error.message,
-      };
+      console.error("Create MoMo payment LỖI NẶNG:", error?.response?.data || error.message);
+      return { success: false, error: error.message };
     }
   }
 
