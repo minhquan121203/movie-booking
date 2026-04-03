@@ -32,11 +32,11 @@ class VNPayService {
         vnp_Locale: "vn",
         vnp_CurrCode: "VND",
         vnp_TxnRef: orderId,
-        vnp_OrderInfo: `Thanh toan ve phim ${booking.movieTitle}`,
+        vnp_OrderInfo: `Thanh toan don hang dat ve ${orderId}`,
         vnp_OrderType: "other",
-        vnp_Amount: booking.totalAmount * 100, // VNPay expects amount in smallest currency unit
+        vnp_Amount: Math.round(booking.totalAmount * 100),
         vnp_ReturnUrl: this.returnUrl,
-        vnp_IpAddr: ipAddr,
+        vnp_IpAddr: ipAddr || "127.0.0.1",
         vnp_CreateDate: createDate,
       };
 
