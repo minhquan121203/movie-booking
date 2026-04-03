@@ -1,210 +1,178 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import {
-  Ticket,
-  QrCode,
-  Calendar,
-  MapPin,
-  MonitorPlay,
-  CreditCard,
-  Armchair,
-  Hash,
-} from 'lucide-react'
-import { Booking } from '@/types/booking'
-import Image from 'next/image'
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useBooking } from '@/hooks/useBooking'
+import { BookingHeader } from './components/BookingHeader'
+import { BookingProgress } from './components/BookingProgress'
+import { BookingSummary } from './components/BookingSummary'
+import { StepShowtime } from './components/steps/StepShowtime'
+import { StepSeatSelection } from './components/steps/StepSeatSelection'
+import { StepCombo } from './components/steps/StepCombo'
+import { StepPaymentMethod } from './components/steps/StepPaymentMethod'
+import { StepPayment } from './components/steps/StepPayment'
+import { WebSocketDebug } from './WebSocketDebug' // Import debug component
+import { useParams, useSearchParams } from 'next/navigation'
 
-interface BookingDetailModalProps {
-  booking: Booking | null
-  onClose: () => void
-}
+export default function BookingPage() {
+  const params = useParams()
+  const movieId = params.id as string
 
-export default function BookingDetailModal({ booking, onClose }: BookingDetailModalProps) {
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const preSelectedScheduleId = searchParams.get('scheduleId') || undefined
 
-  // TÍNH NĂNG 1: AUTO-REFRESH NGẦM KHI CHỜ THANH TOÁN
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout
+  const movieTitle = 'Đặt vé xem phim'
 
-    if (booking?.status === 'Chờ thanh toán') {
-      intervalId = setInterval(() => {
-        console.log('Đang hóng Webhook từ Server...')
-        router.refresh() // Lệnh ma thuật Next.js: Tự load lại data ngầm
-      }, 3000) // 3 giây check 1 lần
-    }
+  const {
+    currentStep,
+    selectedSchedule,
+    setSelectedSchedule,
+    selectedSeats,
+    handleSeatClick,
+    cartItems,
+    updateCartItem,
+    paymentMethod,
+    setPaymentMethod,
+    schedules,
+    isLoadingSchedules,
+    totalAmount,
+    nextStep,
+    prevStep,
+    isProcessing,
+    createdBookingData,
+    paymentUrl,
+    // WebSocket data
+    realTimeSeats,
+    viewerCount,
+    isInRoom,
+    isConnected,
+    isSeatAvailable,
+  } = useBooking({ movieId, preSelectedScheduleId })
 
-    return () => {
-      if (intervalId) clearInterval(intervalId)
-    }
-  }, [booking?.status, router])
-
-  // Map status tiếng Việt sang Badge Style
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Hoàn tất':
-      case 'COMPLETED':
+  // Render step content
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
         return (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">
-            Hoàn tất
-          </Badge>
+          <StepShowtime
+            movieTitle={movieTitle}
+            schedules={schedules}
+            isLoading={isLoadingSchedules}
+            selectedSchedule={selectedSchedule}
+            onSelect={setSelectedSchedule}
+          />
         )
-      case 'Đã sử dụng':
-      case 'USED':
+      case 2:
         return (
-          <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
-            Đã xem
-          </Badge>
+          <StepSeatSelection
+            selectedSeats={selectedSeats}
+            schedule={selectedSchedule}
+            onSeatClick={handleSeatClick}
+            realTimeSeats={realTimeSeats}
+            viewerCount={viewerCount}
+            isConnected={isConnected}
+            isInRoom={isInRoom}
+            isSeatAvailable={isSeatAvailable}
+          />
         )
-      case 'Chờ thanh toán':
-      case 'PENDING_PAYMENT':
+      case 3:
+        return <StepCombo cartItems={cartItems} updateCartItem={updateCartItem} />
+      case 4:
+        return <StepPaymentMethod selectedMethod={paymentMethod} onSelect={setPaymentMethod} />
+      case 5:
         return (
-          <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100">
-            Chờ thanh toán
-          </Badge>
-        )
-      case 'Đã hủy':
-      case 'CANCELLED':
-        return (
-          <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Đã huỷ</Badge>
-        )
-      case 'Hết hạn':
-        return (
-          <Badge className="bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-100">
-            Hết hạn
-          </Badge>
+          <StepPayment
+            paymentUrl={paymentUrl}
+            bookingCode={createdBookingData?.bookingCode}
+            totalAmount={totalAmount}
+            paymentMethod={paymentMethod}
+          />
         )
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return null
     }
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
+  // Điều kiện disable nút tiếp tục
+  const isNextDisabled = () => {
+    if (isProcessing) return true
+
+    switch (currentStep) {
+      case 1:
+        return !selectedSchedule
+      case 2:
+        return selectedSeats.length === 0 || !isInRoom // Phải ở trong room mới cho tiếp tục
+      case 3:
+        return false // Có thể bỏ qua combo
+      case 4:
+        return !paymentMethod // Phải chọn phương thức thanh toán
+      case 5:
+        return true // Ở bước cuối không có nút tiếp tục
+      default:
+        return false
+    }
   }
 
   return (
-    <Dialog open={!!booking} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="rounded-xl max-w-2xl bg-surface border-border p-0 overflow-hidden">
-        {booking && (
-          <>
-            <DialogHeader className="p-6 pb-2 border-b border-border">
-              <DialogTitle className="text-text-primary flex items-center gap-2 text-xl md:text-2xl">
-                <Ticket className="w-6 h-6 text-primary" />
-                Chi tiết vé
-              </DialogTitle>
-            </DialogHeader>
+    <div className="min-h-screen bg-bg-primary flex flex-col">
+      <BookingHeader onClose={() => window.history.back()} />
+      <BookingProgress currentStep={currentStep} />
 
-            <div className="p-6 space-y-6">
-              {/* Movie Info Header */}
-              <div className="flex gap-4 md:gap-6">
-                <div className="relative w-28 h-40 md:w-32 md:h-48 shrink-0 rounded-lg shadow-md overflow-hidden bg-gray-100">
-                  <Image
-                    src={booking.schedule.movie.posterUrl || '/placeholder-movie.png'}
-                    alt={booking.movieTitle || 'ảnh'}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 112px, 128px"
-                  />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-text-primary mb-2 text-lg md:text-xl font-bold line-clamp-2">
-                    {booking.movieTitle}
-                  </h3>
-
-                  <div className="mb-4">{getStatusBadge(booking.status)}</div>
-
-                  <div className="text-primary font-bold text-2xl">
-                    {formatPrice(booking.totalAmount)}
-                  </div>
-                </div>
-
-                {/* 🚀 TÍNH NĂNG 2: QR CODE THÔNG MINH */}
-                <div className="shrink-0 text-center hidden sm:block">
-                  <div className="w-24 h-24 bg-white p-1 rounded-lg border border-border flex items-center justify-center mb-2 overflow-hidden relative">
-                    {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
-                      booking.qrCode ? (
-                        <Image src={booking.qrCode} alt="QR Code" fill className="object-contain" />
-                      ) : (
-                        <QrCode className="w-full h-full text-gray-300 p-2" />
-                      )
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded">
-                        <span className="text-[10px] text-gray-400 font-medium leading-tight text-center mt-1">
-                          Thanh toán <br /> để nhận mã
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
-                    <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
-                  ) : (
-                    <span className="text-xs text-yellow-600 font-medium animate-pulse">Đang chờ xử lý...</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-bg-secondary/50 p-4 rounded-xl border border-border">
-                <DetailItem
-                  icon={<Calendar className="w-4 h-4" />}
-                  label="Thời gian"
-                  value={`${booking.schedule.startTime} - ${booking.schedule.endTime}`}
-                />
-                <DetailItem
-                  icon={<MapPin className="w-4 h-4" />}
-                  label="Rạp chiếu"
-                  value={booking.schedule.theater.name}
-                />
-                <DetailItem
-                  icon={<MonitorPlay className="w-4 h-4" />}
-                  label="Phòng chiếu"
-                  value={(booking.schedule.room as any)?.name || 'Đang cập nhật'}
-                />
-                <DetailItem
-                  icon={<Armchair className="w-4 h-4" />}
-                  label="Ghế ngồi"
-                  value={booking.seats.map(s => s.seatNumber).join(', ')}
-                  className="text-primary font-bold"
-                />
-
-                <DetailItem
-                  icon={<Hash className="w-4 h-4" />}
-                  label="Mã đặt vé"
-                  value={booking.bookingCode || booking._id}
-                  fullWidth
-                />
-              </div>
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-12">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
+          <div className="flex-1 min-w-0">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {renderStepContent()}
             </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  )
-}
 
-// Helper component nhỏ để render từng dòng chi tiết cho gọn
-interface DetailItemProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  className?: string
-  fullWidth?: boolean
-}
+            {currentStep < 5 && (
+              <div className="flex items-center justify-between mt-12 pt-6 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="rounded-full px-6 h-12 gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Quay lại
+                </Button>
 
-function DetailItem({ icon, label, value, className = '', fullWidth = false }: DetailItemProps) {
-  return (
-    <div className={`${fullWidth ? 'sm:col-span-2' : ''} flex items-start gap-3`}>
-      <div className="mt-0.5 text-text-secondary">{icon}</div>
-      <div className="flex-1">
-        <p className="text-xs text-text-secondary mb-0.5">{label}</p>
-        <p className={`text-sm text-text-primary font-medium wrap-break-word ${className}`}>
-          {value}
-        </p>
-      </div>
+                <Button
+                  onClick={nextStep}
+                  disabled={isNextDisabled()}
+                  className="rounded-full px-8 bg-primary hover:bg-primary/90 text-white h-12 gap-2 shadow-lg shadow-primary/20 flex items-center"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      {currentStep === 4 ? 'Thanh toán' : 'Tiếp tục'}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {currentStep < 5 && (
+            <div className="hidden lg:block animate-in fade-in slide-in-from-right-4 duration-700 delay-150">
+              <BookingSummary
+                movieTitle={movieTitle}
+                selectedSchedule={selectedSchedule}
+                selectedSeats={selectedSeats}
+                cartItems={cartItems}
+                total={totalAmount}
+              />
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Debug component - chỉ hiện trong development */}
+      {/* {process.env.NODE_ENV === 'development' && <WebSocketDebug />} */}
     </div>
   )
 }
