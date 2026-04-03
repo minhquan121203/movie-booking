@@ -107,18 +107,28 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                 </div>
 
                 {/* QR Code Section (Chỉ hiện nếu vé hợp lệ) */}
-                {(booking.status === 'Hoàn tất' || booking.status === 'Chờ thanh toán') && (
-                  <div className="shrink-0 text-center hidden sm:block">
-                    <div className="w-24 h-24 bg-white p-1 rounded-lg border border-border flex items-center justify-center mb-2 overflow-hidden relative">
-                      {booking.qrCode ? (
+                <div className="shrink-0 text-center hidden sm:block">
+                  <div className="w-24 h-24 bg-white p-1 rounded-lg border border-border flex items-center justify-center mb-2 overflow-hidden relative">
+                    {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
+                      booking.qrCode ? (
                         <Image src={booking.qrCode} alt="QR Code" fill className="object-contain" />
                       ) : (
-                        <QrCode className="w-full h-full text-black p-2" />
-                      )}
-                    </div>
-                    <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
+                        <QrCode className="w-full h-full text-gray-300 p-2" />
+                      )
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded">
+                        <span className="text-[10px] text-gray-400 font-medium leading-tight">
+                          Thanh toán <br /> để nhận mã
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
+                  {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
+                    <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
+                  ) : (
+                    <span className="text-xs text-yellow-600 font-medium">Đang chờ xử lý</span>
+                  )}
+                </div>
               </div>
 
               {/* Details Grid */}
