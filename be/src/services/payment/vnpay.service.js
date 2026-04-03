@@ -45,7 +45,9 @@ class VNPayService {
 
       // Create signature
       const signData = querystring.stringify(vnpParams, { encode: false });
-      const hmac = crypto.createHmac("sha512", this.hashSecret);
+      const secretKey = this.hashSecret.trim();
+      const hmac = crypto.createHmac("sha512", secretKey);
+
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
       vnpParams["vnp_SecureHash"] = signed;
 
