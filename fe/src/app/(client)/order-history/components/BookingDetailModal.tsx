@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react' // Thêm useEffect
-import { useRouter } from 'next/navigation' // Thêm useRouter
+import { useEffect } from 'react' 
+import { useRouter } from 'next/navigation' 
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -24,16 +24,14 @@ interface BookingDetailModalProps {
 export default function BookingDetailModal({ booking, onClose }: BookingDetailModalProps) {
   const router = useRouter()
 
-  // 🚀 TÍNH NĂNG: AUTO-REFRESH NGẦM KHI ĐANG MỞ MODAL
   useEffect(() => {
     let intervalId: NodeJS.Timeout
 
-    // Nếu đang mở Modal và vé đang chờ thanh toán thì mới bắt đầu hóng
-    if (booking && (booking.status === 'Chờ thanh toán')) {
+    if (booking && booking.status === 'Chờ thanh toán') {
       intervalId = setInterval(() => {
-        console.log('Đang kiểm tra trạng thái vé mới nhất...')
-        router.refresh() // Lệnh ma thuật: Tự fetch data mới ngầm từ Server
-      }, 3000) // 3 giây check 1 lần
+        console.log('Đang check trạng thái vé ngầm...')
+        router.refresh() 
+      }, 3000)
     }
 
     return () => {
@@ -41,6 +39,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
     }
   }, [booking?.status, !!booking, router])
 
+  // Badge hiển thị trạng thái
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Hoàn tất':
@@ -60,7 +59,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
       case 'Chờ thanh toán':
       case 'PENDING_PAYMENT':
         return (
-          <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100">
+          <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100 animate-pulse">
             Chờ thanh toán
           </Badge>
         )
@@ -91,11 +90,12 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
             </DialogHeader>
 
             <div className="p-6 space-y-6">
+              {/* Header: Ảnh phim & Giá tiền */}
               <div className="flex gap-4 md:gap-6">
                 <div className="relative w-28 h-40 md:w-32 md:h-48 shrink-0 rounded-lg shadow-md overflow-hidden bg-gray-100 border border-border">
                   <Image
                     src={booking.schedule.movie.posterUrl || '/placeholder-movie.png'}
-                    alt={booking.movieTitle || 'ảnh'}
+                    alt={booking.movieTitle || 'poster'}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 112px, 128px"
@@ -112,7 +112,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                   </div>
                 </div>
 
-                {/* QR Code Section - Hiển thị thông minh */}
+                {/* QR Code Section: Tự nổ ra khi thanh toán thành công */}
                 <div className="shrink-0 text-center hidden sm:block">
                   <div className="w-24 h-24 bg-white p-1 rounded-lg border border-border flex items-center justify-center mb-2 overflow-hidden relative shadow-sm">
                     {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
@@ -132,11 +132,12 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                   {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
                     <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
                   ) : (
-                    <span className="text-xs text-yellow-600 font-medium animate-pulse">Đang chờ xử lý...</span>
+                    <span className="text-xs text-yellow-600 font-medium animate-pulse">Đang hóng Webhook...</span>
                   )}
                 </div>
               </div>
 
+              {/* Chi tiết suất chiếu */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-bg-secondary/50 p-4 rounded-xl border border-border">
                 <DetailItem
                   icon={<Calendar className="w-4 h-4" />}
@@ -151,7 +152,7 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                 <DetailItem
                   icon={<MonitorPlay className="w-4 h-4" />}
                   label="Phòng chiếu"
-                  value={(booking.schedule.room as any)?.name || 'Đang cập nhật'}
+                  value={(booking.schedule.room as any)?.name || 'Phòng 1'}
                 />
                 <DetailItem
                   icon={<Armchair className="w-4 h-4" />}
