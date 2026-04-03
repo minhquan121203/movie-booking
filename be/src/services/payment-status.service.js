@@ -154,12 +154,13 @@ class PaymentStatusService {
     try {
       const result = await momoService.queryTransaction(transactionId);
 
-      if (result.success) {
+      // SỬA CHÍ MẠNG Ở ĐÂY: Phải chọc vào result.data vì Service nó trả về { success: true, data: {...} }
+      if (result.success && result.data) {
         return {
-          success: result.resultCode === 0,
-          transactionId: result.transId,
+          success: result.data.resultCode === 0,
+          transactionId: result.data.transId || transactionId,
           paymentDate: new Date(),
-          orderInfo: result.orderInfo,
+          orderInfo: result.data.orderInfo || "Thanh toan MoMo",
         };
       }
     } catch (error) {
