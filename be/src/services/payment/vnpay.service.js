@@ -21,40 +21,39 @@ class VNPayService {
   // Create payment URL
   createPaymentUrl(booking, ipAddr = "127.0.0.1") {
     try {
-      const date = new Date();
-      const createDate = moment(date).format("YYYYMMDDHHmmss");
-      const orderId = `${booking.bookingCode}_${Date.now()}`;
+      const createDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
 
-      let vnpParams = {
-        vnp_Version: "2.1.0",
-        vnp_Command: "pay",
-        vnp_TmnCode: this.tmnCode,
-        vnp_Locale: "vn",
-        vnp_CurrCode: "VND",
-        vnp_TxnRef: orderId,
-        vnp_OrderInfo: `Thanh toan don hang dat ve ${orderId}`,
-        vnp_OrderType: "other",
-        vnp_Amount: Math.round(booking.totalAmount * 100),
-        vnp_ReturnUrl: this.returnUrl,
-        vnp_IpAddr: ipAddr || "127.0.0.1",
-        vnp_CreateDate: createDate,
-      };
+      const orderId = `${booking.bookingCode}_${moment().utcOffset('+07:00').format('HHmmss')}`;
 
-      // Sort parameters
+      const amount = booking.totalAmount || 0;
+
+      let vnpParams = {};
+      vnpParams['vnp_Version'] = '2.1.0';
+      vnpParams['vnp_Command'] = 'pay';
+      vnpParams['vnp_TmnCode'] = this.tmnCode.trim();
+      vnpParams['vnp_Locale'] = 'vn';
+      vnpParams['vnp_CurrCode'] = 'VND';
+      vnpParams['vnp_TxnRef'] = orderId;
+      vnpParams['vnp_OrderInfo'] = 'Thanh toan ve phim';
+      vnpParams['vnp_OrderType'] = 'other';
+      vnpParams['vnp_Amount'] = Math.round(amount * 100);
+      vnpParams['vnp_ReturnUrl'] = this.returnUrl.trim();
+      vnpParams['vnp_IpAddr'] = ipAddr;
+      vnpParams['vnp_CreateDate'] = createDate;
+
       vnpParams = this.sortObject(vnpParams);
 
-      // Create signature
       const signData = querystring.stringify(vnpParams, { encode: false });
-      const secretKey = this.hashSecret.trim();
-      const hmac = crypto.createHmac("sha512", secretKey);
 
+      const secretKey = this.hashSecret.trim(); // Chốt hạ diệt khoảng trắng ở mã Bí mật
+      const hmac = crypto.createHmac("sha512", secretKey);
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
       vnpParams["vnp_SecureHash"] = signed;
 
-      // Create payment URL
       const paymentUrl = this.vnpUrl + "?" + querystring.stringify(vnpParams, { encode: false });
 
-      console.log(`Created VNPay payment URL for booking ${booking.bookingCode}`);
+      console.log(`🚀 VNPay URL created for: ${booking.bookingCode}`);
 
       return {
         success: true,
@@ -63,11 +62,24 @@ class VNPayService {
       };
     } catch (error) {
       console.error("Create VNPay payment URL error:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      return { success: false, error: error.message };
     }
+  }
+
+  sortObject(obj) {
+    let sorted = {};
+    let str = [];
+    let key;
+    for (key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        str.push(encodeURIComponent(key));
+      }
+    }
+    str.sort();
+    for (key = 0; key < str.length; key++) {
+      sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+    }
+    return sorted;
   }
 
   // Verify return URL from VNPay
@@ -287,23 +299,6 @@ class VNPayService {
         error: error.message,
       };
     }
-  }
-
-  // Helper function to sort object
-  sortObject(obj) {
-    let sorted = {};
-    let str = [];
-    let key;
-    for (key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        str.push(encodeURIComponent(key));
-      }
-    }
-    str.sort();
-    for (key = 0; key < str.length; key++) {
-      sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
-    }
-    return sorted;
   }
 
   // Get response code message
