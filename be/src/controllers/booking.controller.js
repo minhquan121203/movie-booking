@@ -426,7 +426,7 @@ const bookingController = {
             bookingId: newBooking._id,
             bookingCode: newBooking.bookingCode,
             totalAmount: newBooking.totalAmount,
-            payosCheckoutUrl: checkoutUrl, // 👈 Trả link PayOS ra đây
+            payosCheckoutUrl: checkoutUrl,
             holdUntil: new Date(Date.now() + BOOKING_CONSTANTS.SEAT_HOLD_DURATION_MS),
           },
           "Tạo đơn đặt vé thành công. Vui lòng thanh toán trong 10 phút",
