@@ -44,18 +44,7 @@ async function confirmPaymentSuccess(booking, paymentMethod, transactionId, paym
 
       //  #9: Generate QR code
       try {
-        const qrData = JSON.stringify({
-          bookingId: booking._id.toString(),
-          bookingCode: booking.bookingCode,
-          movieTitle: booking.movieTitle,
-          theaterName: booking.theaterName,
-          roomName: booking.roomName,
-          showDate: booking.showDate.toISOString().split("T")[0],
-          showTime: booking.showTime,
-          seats: booking.seats.map((s) => s.seatNumber).join(", "),
-          totalAmount: booking.totalAmount,
-          timestamp: new Date().toISOString(),
-        });
+        const qrData = booking.bookingCode;
 
         const qrCodeUrl = await QRCode.toDataURL(qrData, {
           errorCorrectionLevel: "M",
@@ -76,10 +65,6 @@ async function confirmPaymentSuccess(booking, paymentMethod, transactionId, paym
       }
 
       await booking.save({ session });
-
-      //  #1: Confirm seats trong schedule (session-aware)
-      //  #1: Confirm seats trong schedule (Atomic check & set)
-      // CHỐT ĐƠN: Kiểm tra lần cuối xem ghế có còn trống không (isBooked: false)
       const seatNumbers = booking.seats.map((s) => s.seatNumber);
       
       const confirmArrayFilters = seatNumbers.map((seatNum) => ({
