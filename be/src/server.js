@@ -78,10 +78,10 @@ async function startServer() {
     const PORT = process.env.PORT || 5000;
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`📚 API Docs: http://localhost:${PORT}/api-docs`);
-      console.log(`💚 Health Check: http://localhost:${PORT}/health`);
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`API Docs: http://localhost:${PORT}/api-docs`);
+      console.log(`Health Check: http://localhost:${PORT}/health`);
     });
 
     return server;
