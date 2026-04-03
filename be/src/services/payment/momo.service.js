@@ -28,20 +28,12 @@ class MoMoService {
   }
 
   // Create payment request
-  async createPayment(booking, ipAddr = "127.0.0.1") {
+  async createPayment({ orderId, amount, orderInfo, extraData }) {
     try {
-      const orderId = `${booking.bookingCode}_${Date.now()}`;
       const requestId = orderId;
-      const amount = booking.totalAmount.toString();
-      const orderInfo = `Thanh toán vé phim ${booking.movieTitle}`;
-      const extraData = Buffer.from(
-        JSON.stringify({
-          bookingId: booking._id.toString(),
-          bookingCode: booking.bookingCode,
-        })
-      ).toString("base64");
+      const amountStr = amount.toString();
 
-      const rawSignature = `accessKey=${this.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
+      const rawSignature = `accessKey=${this.accessKey}&amount=${amountStr}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
 
       const signature = crypto.createHmac("sha256", this.secretKey).update(rawSignature).digest("hex");
 
@@ -49,13 +41,13 @@ class MoMoService {
         partnerCode: this.partnerCode,
         accessKey: this.accessKey,
         requestId: requestId,
-        amount: amount,
+        amount: amountStr,
         orderId: orderId,
         orderInfo: orderInfo,
         redirectUrl: this.returnUrl,
         ipnUrl: this.notifyUrl,
         extraData: extraData,
-        requestType: "captureWallet", //payWithATM
+        requestType: "captureWallet",
         signature: signature,
         lang: "vi",
       };
@@ -69,7 +61,7 @@ class MoMoService {
       });
 
       if (response.data.resultCode === 0) {
-        console.log(`MoMo payment URL created for booking ${booking.bookingCode}`);
+        console.log(`MoMo payment URL created successfully for ${orderId}`);
         return {
           success: true,
           paymentUrl: response.data.payUrl,
@@ -87,7 +79,7 @@ class MoMoService {
         };
       }
     } catch (error) {
-      console.error("Create MoMo payment error:", error);
+      console.error("Create MoMo payment error:", error?.response?.data || error.message);
       return {
         success: false,
         error: error.message,
