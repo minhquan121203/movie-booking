@@ -12,6 +12,8 @@ import websocketService from "./services/websocket.service.js";
 import dataSyncService from "./services/data-sync.service.js";
 import expiredHoldsCleanupService from "./services/expired-holds-cleanup.service.js";
 
+let server;
+
 async function startServer() {
   try {
     // Validate critical environment variables
@@ -50,7 +52,7 @@ async function startServer() {
       console.log("  Redis is disabled");
     }
 
-    const server = http.createServer(app);
+    server = http.createServer(app);
 
     // Khởi tạo WebSocket nếu được bật
     if (process.env.WEBSOCKET_ENABLED !== "false") {
@@ -77,7 +79,7 @@ async function startServer() {
     // START SERVER
     const PORT = process.env.PORT || 5000;
 
-    server.listen(PORT, () => {
+    server.listen(PORT, "0.0.0.0",() => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`API Docs: http://localhost:${PORT}/api-docs`);
