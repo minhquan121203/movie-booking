@@ -154,20 +154,29 @@ class PaymentStatusService {
     try {
       const result = await momoService.queryTransaction(transactionId);
 
-      // SỬA CHÍ MẠNG Ở ĐÂY: Phải chọc vào result.data vì Service nó trả về { success: true, data: {...} }
       if (result.success && result.data) {
-        return {
-          success: result.data.resultCode === 0,
-          transactionId: result.data.transId || transactionId,
-          paymentDate: new Date(),
-          orderInfo: result.data.orderInfo || "Thanh toan MoMo",
-        };
+        const code = Number(result.data.resultCode);
+
+        if (code === 0) {
+          return {
+            success: true,
+            transactionId: result.data.transId || transactionId,
+            paymentDate: new Date(),
+            orderInfo: result.data.orderInfo || "Thanh toan MoMo",
+          };
+        } else if (code === 1000 || code === 9000 || code === 8000) {
+          console.log(`[MoMo] Đơn ${transactionId} đang chờ khách quét mã... (Code: ${code})`);
+          return null;
+        } else {
+          console.log(`[MoMo] Đơn ${transactionId} đã bị khách hủy hoặc thất bại! (Code: ${code})`);
+          return { success: false };
+        }
       }
     } catch (error) {
       console.error("MoMo status check error:", error);
     }
 
-    return null;
+    return null; // Lỗi mạng thì im lặng chờ lần sau check tiếp
   }
 
   /**
