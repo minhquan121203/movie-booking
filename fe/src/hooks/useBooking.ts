@@ -265,23 +265,16 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         if (bookingData) {
           const bd = bookingData as any;
 
-          // TRƯỜNG HỢP 1: CHUYỂN KHOẢN PAYOS (Phải nhảy sang bước 5 quét QR)
-          if (paymentMethod === 'bank_transfer') {
-            if (bd.payosCheckoutUrl) setPaymentUrl(bd.payosCheckoutUrl);
-            setCurrentStep(5);
-            return;
-          }
-
-          // TRƯỜNG HỢP 2: MOMO 
-          if (paymentMethod === 'momo' && bd.payosCheckoutUrl) {
-            toast.loading('Đang khởi tạo thanh toán MoMo...');
+          if ((paymentMethod === 'bank_transfer' || paymentMethod === 'momo') && bd.payosCheckoutUrl) {
+            toast.loading(`Đang chuyển hướng sang trang thanh toán...`);
             window.location.href = bd.payosCheckoutUrl;
-            return;
+            return; 
           }
 
-          // TRƯỜNG HỢP 3: VNPAY hoặc MoMo 
           const bookingId = bd._id || bd.bookingId
-          handleCreatePayment(bookingId)
+          handleCreatePayment(bookingId) 
+          
+          return; 
         }
       } catch (error) {
         console.error('Error creating booking:', error)
