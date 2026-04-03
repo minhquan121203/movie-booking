@@ -15,7 +15,6 @@ function PaymentProcessor() {
     if (!searchParams) return;
 
     const processPayment = async () => {
-      // 1. ĐỌC THAM SỐ TỪ VNPAY / MOMO
       const vnpResponseCode = searchParams.get('vnp_ResponseCode')
       const vnpTxnRef = searchParams.get('vnp_TxnRef')
 
@@ -26,12 +25,10 @@ function PaymentProcessor() {
       const isVnpaySuccess = vnpResponseCode === '00'
       const isMomoSuccess = momoResultCode === '0'
 
-      // Nếu không có tham số gì cả (user tự gõ link) -> Về lịch sử vé
       if (!vnpResponseCode && !momoResultCode) {
         return router.push('/order-history')
       }
 
-      // Nếu giao dịch thất bại từ ví -> Về trang chủ
       if (!isVnpaySuccess && !isMomoSuccess) {
         setIsError(true)
         setStatus('Giao dịch chưa hoàn tất hoặc đã bị hủy. Về trang chủ...')
@@ -39,7 +36,6 @@ function PaymentProcessor() {
         return
       }
 
-      // 2. KHUI BOOKING ID VÀ CHUẨN BỊ DATA
       let bookingId = searchParams.get('bookingId')
       let paymentMethod = ''
       let transactionId = ''
@@ -49,7 +45,6 @@ function PaymentProcessor() {
         transactionId = momoOrderId || ''
         if (momoExtraData) {
           try {
-            // Fix lỗi Base64 bị mất dấu '+' khi truyền qua URL
             const safeBase64 = momoExtraData.replace(/ /g, '+')
             const decodedData = JSON.parse(atob(safeBase64))
             bookingId = decodedData.bookingId
@@ -69,42 +64,16 @@ function PaymentProcessor() {
         return
       }
 
-      // 3. GỌI API CHỐT ĐƠN (CÓ KẸP TOKEN ĐĂNG NHẬP)
-      try {
-        setStatus('Đang xác nhận thanh toán & sinh mã vé QR...')
+      setStatus('Thanh toán thành công! Hệ thống đang sinh mã vé QR...')
         
-        // Lấy token đăng nhập từ LocalStorage (Tùy project fen lưu tên là gì, t bắt cả 2)
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken') || '';
-
-        await axios.post(
-          `https://movie-booking-api-bcfe.onrender.com/api/bookings/${bookingId}/confirm`, 
-          {
-            paymentMethod: paymentMethod,
-            transactionId: transactionId
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}` // <--- ĐIỂM CHÍ MẠNG Ở ĐÂY!
-            }
-          }
-        )
-        
-        setStatus('Thành công! Đang tự động chuyển đến Lịch sử vé...')
-        setTimeout(() => router.push('/order-history'), 1000)
-
-      } catch (error: any) {
-        console.error('Lỗi duyệt đơn:', error)
-        setIsError(true)
-        // Hiển thị rõ lỗi từ Backend trả về để dễ fix
-        setStatus(`Lỗi duyệt vé: ${error.response?.data?.message || 'Không thể kết nối Server'}. Về lịch sử vé...`)
-        setTimeout(() => router.push('/order-history'), 4000)
-      }
+      setTimeout(() => {
+         router.push('/order-history')
+      }, 3000)
     }
 
     processPayment()
   }, [searchParams, router])
 
-  // GIAO DIỆN TRẠM CHỜ
   return (
     <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-4 text-center">
       <div className="bg-surface p-8 rounded-2xl border border-border max-w-md w-full shadow-xl">
