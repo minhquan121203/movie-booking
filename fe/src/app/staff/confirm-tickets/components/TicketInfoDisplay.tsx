@@ -136,12 +136,20 @@ function TicketDetails({ ticket }: { ticket: TicketVerify }) {
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">Bắp nước / Combo</p>
             <div className="mt-1 space-y-1">
-              {ticket.booking.products.map((item: any, index: number) => (
-                <p key={index} className="text-sm text-foreground font-medium">
-                  {item.quantity}x {item.productName || item.product?.name || 'Combo'}
-                  {item.size ? ` (Size ${item.size})` : ''}
-                </p>
-              ))}
+              {ticket.booking.products.map((item: any, index: number) => {
+                const itemName = item.name 
+                              || item.productName 
+                              || item.product?.name 
+                              || item.combo?.name 
+                              || item.item?.name
+                              || 'Sản phẩm'; 
+
+                return (
+                  <p key={index} className="text-sm text-foreground font-medium">
+                    {item.quantity}x {itemName}
+                  </p>
+                )
+              })}
             </div>
           </div>
         </div>
