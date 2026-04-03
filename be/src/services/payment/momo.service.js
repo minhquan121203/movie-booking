@@ -39,7 +39,6 @@ class MoMoService {
         orderId = `MOMO_${bCode}_${Date.now().toString().slice(-4)}`;
         const rawAmount = data.totalAmount || data.amount || 0;
         amount = rawAmount.toString();
-
         orderInfo = `Thanh toan ve ${bCode}`;
         const extraObj = { bookingId: data._id ? data._id.toString() : "" };
         extraData = Buffer.from(JSON.stringify(extraObj)).toString("base64");
@@ -48,7 +47,6 @@ class MoMoService {
         orderId = data.orderId || `MOMO_ERR_${Date.now().toString().slice(-4)}`;
         const rawAmount = data.amount || data.totalAmount || 0;
         amount = rawAmount.toString();
-
         orderInfo = data.orderInfo || "Thanh toan an danh";
         extraData = data.extraData || "";
       }
@@ -57,14 +55,18 @@ class MoMoService {
       }
 
       const requestId = orderId;
-      const rawSignature = `accessKey=${this.accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
+      const cleanAccessKey = (this.accessKey || process.env.MOMO_ACCESS_KEY || "").trim();
+      const cleanSecretKey = (this.secretKey || process.env.MOMO_SECRET_KEY || "").trim();
+      const cleanPartnerCode = (this.partnerCode || process.env.MOMO_PARTNER_CODE || "").trim();
+
+      const rawSignature = `accessKey=${cleanAccessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${this.notifyUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${cleanPartnerCode}&redirectUrl=${this.returnUrl}&requestId=${requestId}&requestType=captureWallet`;
 
       const crypto = await import('crypto');
-      const signature = crypto.createHmac("sha256", this.secretKey).update(rawSignature).digest("hex");
+      const signature = crypto.createHmac("sha256", cleanSecretKey).update(rawSignature).digest("hex");
 
       const requestBody = {
-        partnerCode: this.partnerCode,
-        accessKey: this.accessKey,
+        partnerCode: cleanPartnerCode,
+        accessKey: cleanAccessKey,
         requestId: requestId,
         amount: amount,
         orderId: orderId,
@@ -89,8 +91,6 @@ class MoMoService {
           paymentUrl: response.data.payUrl,
           orderId: orderId,
           requestId: requestId,
-          deeplink: response.data.deeplink,
-          qrCodeUrl: response.data.qrCodeUrl,
         };
       } else {
         console.error("MoMo từ chối tạo link:", response.data);
