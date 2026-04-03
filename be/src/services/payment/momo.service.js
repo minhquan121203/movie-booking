@@ -159,15 +159,15 @@ class MoMoService {
   }
 
   // Query transaction status
-  async queryTransaction(orderId, requestId) {
+  async queryTransaction(orderId) {
     try {
-      const rawSignature = `accessKey=${this.accessKey}&orderId=${orderId}&partnerCode=${this.partnerCode}&requestId=${requestId}`;
+      const requestId = orderId;
 
+      const rawSignature = `accessKey=${this.accessKey}&orderId=${orderId}&partnerCode=${this.partnerCode}&requestId=${requestId}`;
       const signature = crypto.createHmac("sha256", this.secretKey).update(rawSignature).digest("hex");
 
       const requestBody = {
         partnerCode: this.partnerCode,
-        accessKey: this.accessKey,
         requestId: requestId,
         orderId: orderId,
         signature: signature,
@@ -187,7 +187,7 @@ class MoMoService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Query MoMo transaction error:", error);
+      console.error("Query MoMo transaction error:", error?.response?.data || error.message);
       return {
         success: false,
         error: error.message,
