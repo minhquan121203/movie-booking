@@ -149,16 +149,38 @@ const paymentController = {
       const bookingId = req.params.bookingId || req.params.id;
       const booking = await Booking.findById(bookingId).exec();
 
-      if (!booking) return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
+      if (!booking) {
+        return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
+      }
 
-      console.log(`⚠️ [DEV MODE] VNPAY Auto-Success cho đơn: ${booking.bookingCode}`);
+      // 1. LẤY IP CHUẨN XÁC CỰC KỲ QUAN TRỌNG (Để không bị lỗi 70 trên Render)
+      let ipAddr = req.headers["x-forwarded-for"] || req.connection.remoteAddress || "12.34.56.78";
+      if (ipAddr && typeof ipAddr === "string") {
+        ipAddr = ipAddr.split(",")[0].trim();
+        if (ipAddr.length > 15 || ipAddr.includes(":")) {
+          ipAddr = "12.34.56.78";
+        }
+      }
 
-      await confirmPaymentSuccess(booking, "VNPAY", `MOCK_VNPAY_${Date.now()}`, { message: "Thanh toán giả lập thành công" });
+      console.log(`[VNPAY] Đang tạo link thật cho đơn: ${booking.bookingCode} | IP: ${ipAddr}`);
 
-      const frontendSuccessUrl = `${process.env.FRONTEND_URL || 'https://movie-booking-cinema.vercel.app'}/booking-flow/success?bookingCode=${booking.bookingCode}`;
+      const result = vnpayService.createPaymentUrl(booking, ipAddr);
 
-      return res.json({ success: true, paymentUrl: frontendSuccessUrl });
+      if (result.success) {
+        booking.paymentDetails.transactionId = result.orderId;
+        await booking.save();
+
+        return successResponse(res, {
+          paymentUrl: result.paymentUrl,
+          orderId: result.orderId,
+        });
+      } else {
+        console.error("Lỗi từ VNPay Service:", result.error);
+        return errorResponse(res, "Không thể tạo link thanh toán VNPay", 500);
+      }
+
     } catch (error) {
+      console.error("Create VNPay Payment Error:", error);
       return errorResponse(res, "Lỗi Server", 500);
     }
   },
