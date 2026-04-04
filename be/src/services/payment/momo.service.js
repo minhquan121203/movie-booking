@@ -9,8 +9,8 @@ class MoMoService {
     this.accessKey = process.env.MOMO_ACCESS_KEY;
     this.secretKey = process.env.MOMO_SECRET_KEY;
     this.endpoint = process.env.MOMO_ENDPOINT || "https://test-payment.momo.vn/v2/gateway/api/create";
-    this.returnUrl = process.env.MOMO_RETURN_URL || "http://localhost:5000/api/payment/momo-return";
-    this.notifyUrl = process.env.MOMO_NOTIFY_URL || "http://localhost:5000/api/payment/momo-notify";
+    this.returnUrl = process.env.MOMO_RETURN_URL || "https://movie-booking-api-bcfe.onrender.com/api/payment/momo-return";
+    this.notifyUrl = process.env.MOMO_NOTIFY_URL || "https://movie-booking-api-bcfe.onrender.com/api/payment/momo-notify";
 
     const hasRealCredentials =
       this.partnerCode &&
