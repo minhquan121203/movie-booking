@@ -60,9 +60,9 @@ async function startServer() {
     }
 
     // Khởi tạo payment status polling
-    if (process.env.PAYMENT_POLLING_ENABLED !== "false") {
-      paymentStatusService.startPolling();
-    }
+    // if (process.env.PAYMENT_POLLING_ENABLED !== "false") {
+    //   paymentStatusService.startPolling();
+    // }
 
     //  FIX #4 HIGH: Chỉ dùng 1 cleanup service duy nhất
     // Khởi tạo expired holds cleanup service (handles all cleanup tasks)
