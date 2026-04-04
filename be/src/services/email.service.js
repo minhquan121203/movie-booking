@@ -8,9 +8,9 @@ class EmailService {
     // Kiểm tra API KEY từ biến môi trường
     if (process.env.SENDGRID_API_KEY) {
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      console.log("✅ SendGrid Service initialized!");
+      console.log("SendGrid Service initialized!");
     } else {
-      console.error("❌ Thiếu SENDGRID_API_KEY trong cấu hình môi trường!");
+      console.error("Thiếu SENDGRID_API_KEY trong cấu hình môi trường!");
     }
   }
 
