@@ -4,9 +4,9 @@ class EmailService {
   constructor() {
     if (process.env.SENDGRID_API_KEY) {
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      console.log("✅ SendGrid Service (Full Functions) Ready!");
+      console.log("SendGrid Service (Full Functions) Ready!");
     } else {
-      console.error("❌ Lỗi: Thiếu SENDGRID_API_KEY trong cấu hình Render!");
+      console.error("Lỗi: Thiếu SENDGRID_API_KEY trong cấu hình Render!");
     }
   }
 
@@ -35,7 +35,7 @@ class EmailService {
 
       const msg = {
         to: user.email,
-        from: this.getSender(), // 🚀 Dùng sender chuyên nghiệp
+        from: this.getSender(),
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
           <div style="font-family: 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 20px auto; background-color: #1a1c23; color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -93,9 +93,9 @@ class EmailService {
       };
 
       await sgMail.send(msg);
-      console.log(`✅ [Đặt vé] Mail chuyên nghiệp đã gửi tới: ${user.email}`);
+      console.log(`[Đặt vé] Mail đã gửi tới: ${user.email}`);
     } catch (error) {
-      console.error("❌ Lỗi gửi mail đặt vé:", error.response ? error.response.body : error);
+      console.error("Lỗi gửi mail đặt vé:", error.response ? error.response.body : error);
     }
   }
 
@@ -124,9 +124,9 @@ class EmailService {
         `
       };
       await sgMail.send(msg);
-      console.log(`✅ [Giao ca] Mail chuyên nghiệp đã gửi tới: ${staff.email}`);
+      console.log(`[Giao ca] Mail đã gửi tới: ${staff.email}`);
     } catch (error) {
-      console.error("❌ Lỗi gửi mail giao ca:", error.response ? error.response.body : error);
+      console.error("Lỗi gửi mail giao ca:", error.response ? error.response.body : error);
     }
   }
 
@@ -154,9 +154,9 @@ class EmailService {
         `
       };
       await sgMail.send(msg);
-      console.log(`✅ [Hủy ca] Mail chuyên nghiệp đã gửi tới: ${staff.email}`);
+      console.log(`[Hủy ca] Mail đã gửi tới: ${staff.email}`);
     } catch (error) {
-      console.error("❌ Lỗi gửi mail hủy ca:", error.response ? error.response.body : error);
+      console.error("Lỗi gửi mail hủy ca:", error.response ? error.response.body : error);
     }
   }
 }

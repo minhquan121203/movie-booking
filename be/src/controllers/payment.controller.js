@@ -463,10 +463,10 @@ const paymentController = {
 
       if (result.isSuccess) {
         //  #1-4, #9-10: Sử dụng helper function
-        // await confirmPaymentSuccess(booking, "VNPAY", result.transactionNo, {
-        //   bankCode: result.bankCode,
-        //   payDate: result.payDate,
-        // });
+        await confirmPaymentSuccess(booking, "VNPAY", result.transactionNo, {
+          bankCode: result.bankCode,
+          payDate: result.payDate,
+        });
 
         return res.redirect(`${process.env.FRONTEND_URL}/payment/success?bookingId=${booking._id}`);
       } else {
@@ -602,10 +602,10 @@ const paymentController = {
 
       if (result.isSuccess) {
         //  #1-4, #9-10: Sử dụng helper function
-        // await confirmPaymentSuccess(booking, "MoMo", result.transId, {
-        //   message: result.message,
-        //   orderInfo: result.orderInfo,
-        // });
+        await confirmPaymentSuccess(booking, "MoMo", result.transId, {
+          message: result.message,
+          orderInfo: result.orderInfo,
+        });
 
         return res.redirect(`${process.env.FRONTEND_URL}/payment/success?bookingId=${booking._id}`);
       } else {
