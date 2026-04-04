@@ -232,6 +232,6 @@ paymentController.vnpayReturn = paymentController.handleVNPayReturn;
 paymentController.vnpayIpn = paymentController.handleVNPayIPN;
 paymentController.momoReturn = paymentController.handleMoMoReturn;
 paymentController.momoNotify = paymentController.handleMoMoNotify;
-paymentController.createVnpayPayment = paymentController.createVnPayPayment;
+paymentController.createVNPayPayment = paymentController.createVnPayPayment;
 
 export default paymentController;
