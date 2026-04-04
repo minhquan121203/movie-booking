@@ -144,43 +144,29 @@ async function handlePaymentFailure(booking) {
 }
 
 const paymentController = {
+  // ==================== VNPAY ====================
   createVnPayPayment: async (req, res) => {
     try {
       const bookingId = req.params.bookingId || req.params.id;
       const booking = await Booking.findById(bookingId).exec();
+      if (!booking) return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
 
-      if (!booking) {
-        return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
-      }
-
-      // 1. LẤY IP CHUẨN XÁC CỰC KỲ QUAN TRỌNG (Để không bị lỗi 70 trên Render)
       let ipAddr = req.headers["x-forwarded-for"] || req.connection.remoteAddress || "12.34.56.78";
       if (ipAddr && typeof ipAddr === "string") {
         ipAddr = ipAddr.split(",")[0].trim();
-        if (ipAddr.length > 15 || ipAddr.includes(":")) {
-          ipAddr = "12.34.56.78";
-        }
+        if (ipAddr.length > 15 || ipAddr.includes(":")) ipAddr = "12.34.56.78";
       }
-
-      console.log(`[VNPAY] Đang tạo link thật cho đơn: ${booking.bookingCode} | IP: ${ipAddr}`);
 
       const result = vnpayService.createPaymentUrl(booking, ipAddr);
 
       if (result.success) {
         booking.paymentDetails.transactionId = result.orderId;
         await booking.save();
-
-        return successResponse(res, {
-          paymentUrl: result.paymentUrl,
-          orderId: result.orderId,
-        });
+        return successResponse(res, { paymentUrl: result.paymentUrl, orderId: result.orderId });
       } else {
-        console.error("Lỗi từ VNPay Service:", result.error);
         return errorResponse(res, "Không thể tạo link thanh toán VNPay", 500);
       }
-
     } catch (error) {
-      console.error("Create VNPay Payment Error:", error);
       return errorResponse(res, "Lỗi Server", 500);
     }
   },
@@ -190,6 +176,7 @@ const paymentController = {
       const vnpParams = req.query;
       const result = vnpayService.verifyReturnUrl(vnpParams);
       if (!result.verified) return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Invalid signature`);
+
       const bookingCode = result.orderId.split("_")[0];
       const booking = await Booking.findOne({ bookingCode });
       if (!booking) return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Booking not found`);
@@ -198,8 +185,13 @@ const paymentController = {
         await handlePaymentFailure(booking);
         return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Amount mismatch`);
       }
-      if (result.isSuccess) return res.redirect(`${process.env.FRONTEND_URL}/payment/success?bookingId=${booking._id}`);
-      else {
+      if (result.isSuccess) {
+        // Fallback chốt luôn tại đây
+        if (booking.status === BOOKING_STATUS.PENDING_PAYMENT) {
+          await confirmPaymentSuccess(booking, "VNPAY", result.transactionNo, { payDate: result.payDate }).catch(() => {});
+        }
+        return res.redirect(`${process.env.FRONTEND_URL}/payment/success?bookingId=${booking._id}`);
+      } else {
         await handlePaymentFailure(booking);
         return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Error`);
       }
@@ -225,6 +217,7 @@ const paymentController = {
     }
   },
 
+  // ==================== MOMO (ĐÃ KHÔI PHỤC VÀ GẮN FALLBACK) ====================
   createMoMoPayment: async (req, res) => {
     try {
       const bookingId = req.params.bookingId || req.params.id;
@@ -243,13 +236,64 @@ const paymentController = {
     }
   },
 
-  handleMoMoReturn: async (req, res) => { return res.redirect(`${process.env.FRONTEND_URL}/payment/success`); },
-  handleMoMoNotify: async (req, res) => { res.json({ resultCode: 0, message: "Success" }); },
+  handleMoMoReturn: async (req, res) => {
+    try {
+      const momoData = req.query;
+      const result = momoService.verifySignature(momoData);
+
+      if (!result.verified) return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Invalid signature`);
+
+      const bookingCode = result.orderId.split("_")[0];
+      const booking = await Booking.findOne({ bookingCode });
+
+      if (!booking) return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Booking not found`);
+
+      if (result.isSuccess) {
+        // 🚀 BỌC THÉP FALLBACK: Lỡ IPN sập thì vẫn tự động chốt đơn luôn khi khách về web!
+        if (booking.status === BOOKING_STATUS.PENDING_PAYMENT) {
+          await confirmPaymentSuccess(booking, "MoMo", result.transId, { message: result.message }).catch(() => {});
+        }
+        return res.redirect(`${process.env.FRONTEND_URL}/payment/success?bookingId=${booking._id}`);
+      } else {
+        await handlePaymentFailure(booking);
+        return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=MoMo Error`);
+      }
+    } catch (error) {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=System error`);
+    }
+  },
+
+  handleMoMoNotify: async (req, res) => {
+    try {
+      const momoData = req.body;
+      const result = momoService.verifySignature(momoData);
+
+      if (result.verified) {
+        res.json({ resultCode: 0, message: "Success" }); // Báo ngay cho MoMo biết đã nhận tin
+        if (result.isSuccess) {
+          const bookingCode = result.orderId.split("_")[0];
+          const booking = await Booking.findOne({ bookingCode });
+
+          if (booking && booking.status === BOOKING_STATUS.PENDING_PAYMENT) {
+            confirmPaymentSuccess(booking, "MoMo", result.transId, {
+              message: result.message,
+              orderInfo: result.orderInfo,
+            }).catch(() => {});
+          }
+        }
+      } else {
+        res.json({ resultCode: 97, message: "Invalid signature" });
+      }
+    } catch (error) {
+      res.json({ resultCode: 99, message: "Unknown error" });
+    }
+  },
 
   queryPaymentStatus: async (req, res) => { return successResponse(res, { status: "Success" }); },
   refundPayment: async (req, res) => { return successResponse(res, { success: true }, "Hoàn tiền thành công"); }
 };
 
+// ======================================================================
 paymentController.vnpayReturn = paymentController.handleVNPayReturn;
 paymentController.vnpayIpn = paymentController.handleVNPayIPN;
 paymentController.momoReturn = paymentController.handleMoMoReturn;
