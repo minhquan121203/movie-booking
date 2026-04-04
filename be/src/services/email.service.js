@@ -41,63 +41,77 @@ class EmailService {
         }
       }
 
+      // html: `
+      //     <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: auto; background-color: #1a1c23; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;">
+      //       <div style="background: linear-gradient(90deg, #f97316, #ea580c); padding: 25px; text-align: center;">
+      //         <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">ĐẶT VÉ THÀNH CÔNG</h1>
+      //       </div>
+      //
+      //       <div style="padding: 25px;">
+      //         <h2 style="color: #f97316; margin-bottom: 20px; font-size: 22px;">${booking.movieTitle}</h2>
+      //
+      //         <div style="background-color: #262936; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+      //           <table style="width: 100%; border-collapse: collapse;">
+      //             <tr>
+      //               <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">📅 Ngày chiếu:</td>
+      //               <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
+      //             </tr>
+      //             <tr>
+      //               <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">⏰ Giờ chiếu:</td>
+      //               <td style="padding: 8px 0; text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td>
+      //             </tr>
+      //             <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
+      //             <tr>
+      //               <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📍 Rạp:</td>
+      //               <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Sense City'}</td>
+      //             </tr>
+      //             <tr>
+      //               <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📺 Phòng:</td>
+      //               <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
+      //             </tr>
+      //             <tr>
+      //               <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">💺 Ghế ngồi:</td>
+      //               <td style="padding: 12px 0; text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
+      //             </tr>
+      //           </table>
+      //         </div>
+      //
+      //         <div style="background-color: white; padding: 25px; border-radius: 15px; text-align: center;">
+      //           <p style="color: #111827; margin: 0 0 15px 0; font-weight: bold;">QUÉT MÃ ĐỂ VÀO RẠP</p>
+      //           <img src="cid:ticket_qr" style="width: 180px; height: 180px;" alt="QR Code"/>
+      //           <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Mã vé: <b>${booking.bookingCode}</b></p>
+      //         </div>
+      //       </div>
+      //
+      //       <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
+      //         Vui lòng đến rạp trước 15 phút để làm thủ tục.
+      //       </div>
+      //     </div>
+      //   `,
+
+      // 1. Tách chuỗi base64 một cách an toàn
+      const qrImageContent = (booking.qrCode && typeof booking.qrCode === 'string' && booking.qrCode.includes("base64,"))
+          ? booking.qrCode.split("base64,")[1]
+          : null;
+
       const mailOptions = {
         from: `"CineBooking" <quankm1520@gmail.com>`,
         to: user.email,
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
-          <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: auto; background-color: #1a1c23; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;">
-            <div style="background: linear-gradient(90deg, #f97316, #ea580c); padding: 25px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">ĐẶT VÉ THÀNH CÔNG</h1>
+            <div style="background-color: white; padding: 25px; border-radius: 15px; text-align: center;">
+              <p style="color: #111827; margin: 0 0 15px 0; font-weight: bold;">QUÉT MÃ ĐỂ VÀO RẠP</p>
+              ${qrImageContent ? `<img src="cid:ticket_qr" style="width: 180px; height: 180px;" alt="QR Code"/>` : '<p style="color:red">Lỗi hiển thị mã QR</p>'}
+              <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Mã vé: <b>${booking.bookingCode}</b></p>
             </div>
-            
-            <div style="padding: 25px;">
-              <h2 style="color: #f97316; margin-bottom: 20px; font-size: 22px;">${booking.movieTitle}</h2>
-              
-              <div style="background-color: #262936; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">📅 Ngày chiếu:</td>
-                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">⏰ Giờ chiếu:</td>
-                    <td style="padding: 8px 0; text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td>
-                  </tr>
-                  <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📍 Rạp:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Sense City'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📺 Phòng:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">💺 Ghế ngồi:</td>
-                    <td style="padding: 12px 0; text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="background-color: white; padding: 25px; border-radius: 15px; text-align: center;">
-                <p style="color: #111827; margin: 0 0 15px 0; font-weight: bold;">QUÉT MÃ ĐỂ VÀO RẠP</p>
-                <img src="cid:ticket_qr" style="width: 180px; height: 180px;" alt="QR Code"/>
-                <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Mã vé: <b>${booking.bookingCode}</b></p>
-              </div>
-            </div>
-            
-            <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
-              Vui lòng đến rạp trước 15 phút để làm thủ tục.
-            </div>
-          </div>
-        `,
-        attachments: [{
+            `,
+        // 2. Chỉ đính kèm nếu qrImageContent tồn tại, tránh lỗi undefined
+        attachments: qrImageContent ? [{
           filename: 'ticket-qr.png',
-          content: booking.qrCode.split("base64,")[1],
+          content: qrImageContent,
           encoding: 'base64',
           cid: 'ticket_qr'
-        }]
+        }] : []
       };
 
       await this.transporter.sendMail(mailOptions);
