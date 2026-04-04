@@ -4,124 +4,68 @@ dotenv.config();
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,             // 🚀 Thử lại Port 465 (SMTPS)
-      secure: true,          // true cho Port 465
-      pool: true,            // 🚀 Giúp duy trì kết nối, không phải tạo mới liên tục
-      auth: {
-        user: 'quankm1520@gmail.com',
-        pass: 'wkghykyxyrifhoqf'
-      },
-      tls: {
-        rejectUnauthorized: false // 🚀 Bỏ qua xác thực SSL rườm rà (Giúp vượt rào Render)
-      },
-      // 🚀 TĂNG THỜI GIAN CHỜ LÊN TỐI ĐA (30 giây)
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-    });
-
-    // Kiểm tra kết nối ngay lập tức
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.log("❌ Vẫn chưa thông được mạng Render -> Gmail:", error.message);
-      } else {
-        console.log("✅ Nodemailer Ready! Port 465 đã thông nòng.");
-      }
-    });
+    if (process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      console.log("✅ SendGrid Service initialized!");
+    } else {
+      console.error("❌ Thiếu SENDGRID_API_KEY trong file .env!");
+    }
   }
 
   // Hàm gửi mail xác nhận đặt vé
   async sendBookingConfirmation(booking, user) {
     try {
-      console.log("--- DEBUG DATE ---");
-      console.log("Giá trị showTime nhận được:", booking.showTime);
-
+      // --- Giữ nguyên logic xử lý ngày giờ của fen ---
       let dateStr = "Chưa xác định";
       let timeStr = "Chưa xác định";
-
       if (booking.showTime) {
         let dateObj = new Date(booking.showTime);
-
         if (!isNaN(dateObj.getTime())) {
-          dateStr = dateObj.toLocaleDateString('vi-VN', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-          });
-          timeStr = dateObj.toLocaleTimeString('vi-VN', {
-            hour: '2-digit', minute: '2-digit', hour12: false
-          });
-        }
-        else if (typeof booking.showTime === 'string') {
-          timeStr = booking.showTime.substring(0, 5);
-          const now = new Date();
-          dateStr = now.toLocaleDateString('vi-VN');
+          dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
       }
 
-      const mailOptions = {
-        from: `"CineBooking" <quankm1520@gmail.com>`,
+      const msg = {
         to: user.email,
+        // 🚀 Lấy email gửi đi từ env fen đã set
+        from: process.env.SENDGRID_FROM_EMAIL || 'quankm1520@gmail.com',
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
           <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: auto; background-color: #1a1c23; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;">
             <div style="background: linear-gradient(90deg, #f97316, #ea580c); padding: 25px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px;">ĐẶT VÉ THÀNH CÔNG</h1>
             </div>
-            
             <div style="padding: 25px;">
               <h2 style="color: #f97316; margin-bottom: 20px; font-size: 22px;">${booking.movieTitle}</h2>
-              
               <div style="background-color: #262936; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
                 <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">📅 Ngày chiếu:</td>
-                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #9ca3af; font-size: 14px;">⏰ Giờ chiếu:</td>
-                    <td style="padding: 8px 0; text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td>
-                  </tr>
-                  <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📍 Rạp:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Sense City'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📺 Phòng:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">💺 Ghế ngồi:</td>
-                    <td style="padding: 12px 0; text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
-                  </tr>
+                  <tr><td style="padding: 8px 0; color: #9ca3af;">📅 Ngày chiếu:</td><td style="text-align: right; font-weight: bold;">${dateStr}</td></tr>
+                  <tr><td style="padding: 8px 0; color: #9ca3af;">⏰ Giờ chiếu:</td><td style="text-align: right; color: #f97316; font-size: 18px;"><b>${timeStr}</b></td></tr>
+                  <tr><td style="padding: 12px 0; color: #9ca3af;">💺 Ghế ngồi:</td><td style="text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td></tr>
                 </table>
               </div>
-
               <div style="background-color: white; padding: 25px; border-radius: 15px; text-align: center;">
                 <p style="color: #111827; margin: 0 0 15px 0; font-weight: bold;">QUÉT MÃ ĐỂ VÀO RẠP</p>
                 <img src="cid:ticket_qr" style="width: 180px; height: 180px;" alt="QR Code"/>
                 <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Mã vé: <b>${booking.bookingCode}</b></p>
               </div>
             </div>
-            
-            <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 12px; color: #6b7280;">
-              Vui lòng đến rạp trước 15 phút để làm thủ tục.
-            </div>
           </div>
         `,
         attachments: [{
-          filename: 'ticket-qr.png',
           content: booking.qrCode.split("base64,")[1],
-          encoding: 'base64',
-          cid: 'ticket_qr'
+          filename: 'ticket-qr.png',
+          type: 'image/png',
+          disposition: 'inline',
+          contentId: 'ticket_qr' // Phải khớp với cid trong HTML
         }]
       };
 
-      await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Đã gửi mail vé cho: ${user.email}`);
+      await sgMail.send(msg);
+      console.log(`✅ Đã gửi mail qua SendGrid thành công cho: ${user.email}`);
     } catch (error) {
-      console.error("❌ Lỗi thực tế khi gửi mail:", error);
+      console.error("❌ Lỗi SendGrid:", error.response ? error.response.body : error);
     }
   }
 
