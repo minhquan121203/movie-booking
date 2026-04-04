@@ -28,7 +28,7 @@ interface AdminSeatMapProps {
   isSaving: boolean
 }
 
-// 🚀 Thêm interface để bọc dữ liệu ghế đôi lúc render
+// Interface để bọc dữ liệu ghế đôi lúc render
 interface MergedSeatRender {
   mainSeat: Seat
   pairedSeat: Seat | null
@@ -40,21 +40,17 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
   const [seats, setSeats] = useState<Seat[]>(room.seatMap ? room.seatMap : [])
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([])
 
-  // --- LOGIC CHÍNH: Xử lý chọn ghế (Đã nâng cấp hỗ trợ Ghế đôi) ---
   const handleSeatClick = (mergedItem: MergedSeatRender) => {
     const { mainSeat, pairedSeat, isPair } = mergedItem
 
     setSelectedSeats(prev => {
-      // Check xem ghế main đã được chọn chưa
       const isSelected = prev.some(s => s.seatNumber === mainSeat.seatNumber)
 
       if (isSelected) {
-        // Bỏ chọn: Lọc ra, vứt cả mainSeat và pairedSeat (nếu có)
         return prev.filter(
           s => s.seatNumber !== mainSeat.seatNumber && s.seatNumber !== pairedSeat?.seatNumber
         )
       } else {
-        // Chọn thêm: Bế cả cặp (hoặc 1 mình nó) vào mảng
         const toAdd = [mainSeat]
         if (isPair && pairedSeat) toAdd.push(pairedSeat)
         return [...prev, ...toAdd]
@@ -169,7 +165,6 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
       </CardHeader>
 
       <CardContent className="p-6 bg-gray-50/30">
-        {/* TOOLBAR */}
         <div className="flex flex-wrap items-center justify-center gap-4 mb-8 sticky top-0 z-20 bg-white/90 backdrop-blur-md p-3 rounded-2xl border shadow-sm transition-all duration-200">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
             <Armchair className="w-4 h-4" /> Loại ghế:
@@ -214,7 +209,6 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
           </Button>
         </div>
 
-        {/* SCREEN */}
         <div className="flex justify-center mb-12">
           <div className="w-3/4 max-w-3xl relative group">
             <div className="absolute -inset-4 bg-blue-500/10 blur-2xl rounded-[50%] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -223,14 +217,11 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
           </div>
         </div>
 
-        {/* SEAT GRID */}
         <div className="flex justify-center overflow-x-auto pb-8 custom-scrollbar">
-          <div className="min-w-max mx-auto px-8 py-4 bg-white rounded-3xl border border-gray-100 shadow-inner">
+          <div className="grid gap-y-3 min-w-max mx-auto px-8 py-4 bg-white rounded-3xl border border-gray-100 shadow-inner">
             {rows.map(rowLabel => {
-              // Lấy ghế của hàng và sort
               const rawSeats = seats.filter(s => s.row === rowLabel).sort((a, b) => a.column - b.column)
               
-              // 🚀 THUẬT TOÁN GOM GHẾ Ở ADMIN
               const mergedSeats: MergedSeatRender[] = []
               for (let i = 0; i < rawSeats.length; i++) {
                 const currentSeat = rawSeats[i]
@@ -243,7 +234,7 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
                     isPair: true,
                     displayNumber: `${currentSeat.column}-${nextSeat.column}`
                   })
-                  i++ // Nhảy qua ghế kế tiếp
+                  i++ 
                 } else {
                   mergedSeats.push({
                     mainSeat: currentSeat,
@@ -255,24 +246,22 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
               }
 
               return (
-                <div key={rowLabel} className="flex items-center gap-6 mb-3 group/row">
+                <div key={rowLabel} className="flex items-center group/row">
                   <div
-                    className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400 cursor-pointer hover:text-white hover:bg-blue-500 rounded-full transition-all duration-200 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-blue-200"
+                    className="w-8 h-8 flex items-center justify-center text-sm font-bold text-gray-400 cursor-pointer hover:text-white hover:bg-blue-500 rounded-full transition-all duration-200 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-blue-200 mr-6"
                     onClick={() => handleSelectRow(rowLabel)}
                     title={`Chọn cả hàng ${rowLabel}`}
                   >
                     {rowLabel}
                   </div>
 
-                  <div className="flex gap-2.5">
+                  <div className="grid grid-cols-10 gap-x-2.5">
                     {mergedSeats.map(mergedItem => {
                       const { mainSeat, pairedSeat, isPair, displayNumber } = mergedItem
                       
-                      // Kiểm tra xem 1 trong 2 ghế có đang được chọn không (để tô màu cả cặp)
                       const isSelected = selectedSeats.some(s => s.seatNumber === mainSeat.seatNumber) || 
                                        (pairedSeat ? selectedSeats.some(s => s.seatNumber === pairedSeat.seatNumber) : false)
 
-                      // Check available (Nếu 1 trong 2 bị khoá -> khoá cả)
                       const isAvailable = mainSeat.isAvailable && (pairedSeat ? pairedSeat.isAvailable : true)
 
                       return (
@@ -280,8 +269,8 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
                           key={mainSeat.seatNumber}
                           onClick={() => handleSeatClick(mergedItem)}
                           className={cn(
-                            'flex items-center justify-center rounded-lg border text-xs font-bold cursor-pointer transition-all duration-200 select-none shadow-sm',
-                            isPair ? 'w-24 h-10' : 'w-10 h-10', // 🚀 Đổi chiều rộng nếu là ghế đôi
+                            'flex items-center justify-center rounded-lg border text-xs font-bold cursor-pointer transition-all duration-200 select-none shadow-sm h-10',
+                            isPair ? 'w-full col-span-2' : 'w-10',
                             getSeatStyle(mainSeat.seatType, isAvailable, isSelected)
                           )}
                         >
@@ -300,7 +289,6 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
           </div>
         </div>
 
-        {/* LEGEND */}
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 pt-8 border-t border-dashed mt-4 text-sm text-gray-600">
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border border-gray-300 bg-white shadow-sm"></div> <span className="text-xs font-medium">Thường</span></div>
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border border-orange-300 bg-orange-100 shadow-sm"></div> <span className="text-xs font-medium">VIP</span></div>
