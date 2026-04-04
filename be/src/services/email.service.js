@@ -10,16 +10,24 @@ class EmailService {
     }
   }
 
-  // Hàm gửi mail xác nhận đặt vé
+  getSender() {
+    return {
+      name: 'CineBooking',
+      email: process.env.SENDGRID_FROM_EMAIL || 'quankm1520@gmail.com'
+    };
+  }
+
+  // 1. Hàm gửi mail ĐẶT VÉ
   async sendBookingConfirmation(booking, user) {
     try {
+      // 🚀 LOGIC VÉT NGÀY GIỜ: Kiểm tra mọi nguồn có thể có
       let dateStr = "Đang cập nhật";
       let timeStr = "Đang cập nhật";
 
-      const showTimeSource = booking.showTime || (booking.schedule && booking.schedule.startTime);
+      const rawDate = booking.showTime || (booking.schedule && booking.schedule.startTime);
 
-      if (showTimeSource) {
-        const dateObj = new Date(showTimeSource);
+      if (rawDate) {
+        const dateObj = new Date(rawDate);
         if (!isNaN(dateObj.getTime())) {
           dateStr = dateObj.toLocaleDateString('vi-VN', {
             day: '2-digit', month: '2-digit', year: 'numeric'
@@ -32,59 +40,52 @@ class EmailService {
 
       const msg = {
         to: user.email,
-        from: process.env.SENDGRID_FROM_EMAIL,
+        from: this.getSender(), // 🚀 Dùng sender chuyên nghiệp
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
           <div style="font-family: 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 20px auto; background-color: #1a1c23; color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
             <div style="background: linear-gradient(90deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 2px; color: #ffffff; text-transform: uppercase;">ĐẶT VÉ THÀNH CÔNG</h1>
+              <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;">ĐẶT VÉ THÀNH CÔNG</h1>
             </div>
             
             <div style="padding: 30px;">
-              <h2 style="color: #f97316; margin: 0 0 25px 0; font-size: 24px; font-weight: 700;">${booking.movieTitle}</h2>
+              <h2 style="color: #f97316; margin: 0 0 20px 0; font-size: 22px;">${booking.movieTitle}</h2>
               
-              <div style="background-color: #262936; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+              <div style="background-color: #262936; border-radius: 16px; padding: 20px; margin-bottom: 25px;">
+                <table style="width: 100%; border-collapse: collapse;">
                   <tr>
-                    <td style="padding: 10px 0; color: #9ca3af;">📅 Ngày chiếu:</td>
-                    <td style="padding: 10px 0; text-align: right; font-weight: 600;">${dateStr}</td>
+                    <td style="padding: 8px 0; color: #9ca3af;">📅 Ngày chiếu:</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 0; color: #9ca3af;">⏰ Giờ chiếu:</td>
-                    <td style="padding: 10px 0; text-align: right; color: #f97316; font-size: 18px; font-weight: 700;">${timeStr}</td>
+                    <td style="padding: 8px 0; color: #9ca3af;">⏰ Giờ chiếu:</td>
+                    <td style="padding: 8px 0; text-align: right; color: #f97316; font-size: 18px; font-weight: bold;">${timeStr}</td>
                   </tr>
                   <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
-                  <tr style="vertical-align: top;">
-                    <td style="padding: 15px 0; color: #9ca3af;">📍 Rạp:</td>
-                    <td style="padding: 15px 0; text-align: right;">${booking.theaterName || 'CineBooking Cinema'}</td>
+                  <tr>
+                    <td style="padding: 12px 0; color: #9ca3af;">📍 Rạp:</td>
+                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Royal City'}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 0; color: #9ca3af;">📺 Phòng:</td>
-                    <td style="padding: 10px 0; text-align: right;">${booking.roomName || 'Phòng chiếu'}</td>
+                    <td style="padding: 8px 0; color: #9ca3af;">📺 Phòng:</td>
+                    <td style="padding: 8px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 0; color: #9ca3af;">💺 Ghế ngồi:</td>
-                    <td style="padding: 10px 0; text-align: right; color: #f97316; font-weight: 800;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
+                    <td style="padding: 8px 0; color: #9ca3af;">💺 Ghế ngồi:</td>
+                    <td style="padding: 8px 0; text-align: right; color: #f97316; font-weight: bold;">${booking.seats.map(s => s.seatNumber).join(", ")}</td>
                   </tr>
                 </table>
               </div>
 
-              <div style="background-color: #ffffff; padding: 30px; border-radius: 20px; text-align: center; color: #111827;">
-                <p style="margin: 0 0 15px 0; font-weight: 800; font-size: 14px; letter-spacing: 1px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
-                <div style="display: inline-block; padding: 10px; border: 1px solid #e5e7eb; border-radius: 12px;">
-                  <img src="cid:ticket_qr" style="width: 200px; height: 200px; display: block;" alt="Ticket QR"/>
-                </div>
-                <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">Mã đặt vé: <b style="color: #111827;">${booking.bookingCode}</b></p>
-                
-                <div style="margin-top: 15px;">
-                   <img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="20" alt="more"/>
-                </div>
+              <div style="background-color: #ffffff; padding: 25px; border-radius: 15px; text-align: center; color: #111827;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
+                <img src="cid:ticket_qr" style="width: 180px; height: 180px; border: 1px solid #eee;" alt="QR Code"/>
+                <p style="color: #6b7280; font-size: 11px; margin-top: 10px;">Mã vé: <b>${booking.bookingCode}</b></p>
+                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
             </div>
-            
-            <div style="background-color: #111827; padding: 20px; text-align: center; font-size: 12px; color: #4b5563;">
-              Vui lòng đến rạp trước 15 phút để làm thủ tục.<br/>
-              © 2026 CineBooking System.
+            <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 11px; color: #4b5563;">
+              Vui lòng đến rạp trước 15 phút để làm thủ tục.
             </div>
           </div>
         `,
@@ -98,111 +99,70 @@ class EmailService {
       };
 
       await sgMail.send(msg);
-      console.log(`✅ [Đặt vé] Mail Dark-mode đã gửi tới: ${user.email}`);
+      console.log(`✅ [Đặt vé] Mail chuyên nghiệp đã gửi tới: ${user.email}`);
     } catch (error) {
-      console.error("❌ Lỗi gửi mail đặt vé:", JSON.stringify(error.response?.body, null, 2) || error);
+      console.error("❌ Lỗi gửi mail đặt vé:", error.response ? error.response.body : error);
     }
   }
 
-  //  Gửi lịch làm việc/Giao ca cho Staff
+  // Gửi lịch GIAO CA
   async sendStaffSchedule(staff, scheduleData) {
     try {
       const msg = {
         to: staff.email,
-        from: process.env.SENDGRID_FROM_EMAIL,
+        from: this.getSender(),
         subject: `📅 Thông báo lịch làm việc mới - ${scheduleData.date}`,
         html: `
-          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="padding: 32px;">
-              <h2 style="color: #ef4444; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">THÔNG BÁO LỊCH LÀM VIỆC</h2>
-              <p style="color: #374151; font-size: 16px;">Chào <b>${staff.fullName || 'KMQ'}</b>,</p>
-              <p style="color: #4b5563; font-size: 15px; line-height: 1.5;">Lịch làm việc dưới đây của bạn đã được cập nhật trên hệ thống:</p>
-              
-              <div style="margin-top: 24px; padding: 20px; background-color: #fff1f2; border-left: 4px solid #ef4444; border-radius: 4px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px; width: 120px;">📅 <b>Ngày:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.date}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">⏰ <b>Ca làm:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.startTime} - ${scheduleData.endTime}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">📍 <b>Vị trí:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.position || 'staff'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">🏢 <b>Rạp:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.theaterName || 'CGV Sense City'}</td>
-                  </tr>
-                </table>
-                <div style="margin-top: 12px;">
-                   <img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="20" alt="more"/>
-                </div>
+          <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="padding: 30px;">
+              <h2 style="color: #ef4444; margin: 0 0 15px 0; font-size: 22px;">THÔNG BÁO LỊCH LÀM VIỆC</h2>
+              <p>Chào <b>${staff.fullName || 'KMQ'}</b>,</p>
+              <p>Hệ thống vừa cập nhật ca làm mới của bạn:</p>
+              <div style="margin-top: 20px; padding: 20px; background-color: #fff1f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
+                <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
+                <p>📍 <b>Vị trí:</b> ${scheduleData.position || 'staff'}</p>
+                <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'CGV Sense City'}</p>
+                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
-              
-              <p style="margin-top: 24px; color: #6b7280; font-size: 14px; font-style: italic; line-height: 1.6;">
-                Vui lòng có mặt đúng giờ để thực hiện bàn giao ca. Bạn có thể kiểm tra lại lịch làm việc chi tiết trên hệ thống.
-              </p>
+              <p style="margin-top: 20px; font-size: 13px; color: #6b7280; font-style: italic;">Vui lòng có mặt đúng giờ để thực hiện bàn giao ca.</p>
             </div>
           </div>
         `
       };
       await sgMail.send(msg);
-      console.log(`✅ [Giao ca] Đã gửi mail thành công tới: ${staff.email}`);
+      console.log(`✅ [Giao ca] Mail chuyên nghiệp đã gửi tới: ${staff.email}`);
     } catch (error) {
       console.error("❌ Lỗi gửi mail giao ca:", error.response ? error.response.body : error);
     }
   }
 
-  // Gửi thông báo hủy ca làm việc cho Staff
+  // Gửi thông báo HỦY CA
   async sendShiftCancellation(staff, scheduleData) {
     try {
       const msg = {
         to: staff.email,
-        from: process.env.SENDGRID_FROM_EMAIL,
+        from: this.getSender(),
         subject: `❌ THÔNG BÁO HỦY CA LÀM VIỆC - ${scheduleData.date}`,
         html: `
-          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="padding: 32px;">
-              <h2 style="color: #ef4444; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">THÔNG BÁO HỦY CA</h2>
-              <p style="color: #374151; font-size: 16px;">Chào <b>${staff.fullName || 'KMQ'}</b>,</p>
-              <p style="color: #4b5563; font-size: 15px; line-height: 1.5;">Ca làm việc dưới đây của bạn đã được quản lý <b>HỦY BỎ</b> khỏi hệ thống:</p>
-              
-              <div style="margin-top: 24px; padding: 20px; background-color: #fff1f2; border-left: 4px solid #ef4444; border-radius: 4px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px; width: 120px;">📅 <b>Ngày:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.date}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">⏰ <b>Ca làm:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.startTime} - ${scheduleData.endTime}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">📍 <b>Vị trí:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.position || 'staff'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">🏢 <b>Rạp:</b></td>
-                    <td style="padding: 8px 0; color: #374151; font-size: 15px;">${scheduleData.theaterName || 'CGV Sense City'}</td>
-                  </tr>
-                </table>
-                <div style="margin-top: 12px;">
-                   <img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="20" alt="more"/>
-                </div>
+          <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="padding: 30px;">
+              <h2 style="color: #ef4444; margin: 0 0 15px 0; font-size: 22px;">THÔNG BÁO HỦY CA</h2>
+              <p>Chào <b>${staff.fullName || 'KMQ'}</b>,</p>
+              <p>Ca làm việc dưới đây của bạn đã được quản lý <b>HỦY BỎ</b>:</p>
+              <div style="margin-top: 20px; padding: 20px; background-color: #fff1f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
+                <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
+                <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'CGV Sense City'}</p>
+                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
-              
-              <p style="margin-top: 24px; color: #6b7280; font-size: 14px; font-style: italic; line-height: 1.6;">
-                Bạn không cần có mặt tại rạp vào ca này. Vui lòng kiểm tra lại lịch làm việc mới nhất trên hệ thống để biết thêm chi tiết.
-              </p>
+              <p style="margin-top: 20px; font-size: 13px; color: #6b7280; font-style: italic;">Bạn không cần có mặt tại rạp vào ca này.</p>
             </div>
           </div>
         `
       };
       await sgMail.send(msg);
-      console.log(`✅ [Hủy ca] Đã gửi mail thành công tới: ${staff.email}`);
+      console.log(`✅ [Hủy ca] Mail chuyên nghiệp đã gửi tới: ${staff.email}`);
     } catch (error) {
       console.error("❌ Lỗi gửi mail hủy ca:", error.response ? error.response.body : error);
     }
