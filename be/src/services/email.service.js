@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import Schedule from '../models/schedule.model.js';
 
 class EmailService {
   constructor() {
@@ -23,13 +24,34 @@ class EmailService {
       let dateStr = "Đang cập nhật";
       let timeStr = "Đang cập nhật";
 
-      const rawDate = booking.showTime || (booking.schedule && booking.schedule.startTime);
+      let sched = booking.schedule;
+      if (sched && (!sched.startTime && !sched.date && !sched.time)) {
+        try {
+          sched = await Schedule.findById(sched);
+        } catch (e) { console.error("Không tìm thấy Schedule"); }
+      }
 
-      if (rawDate) {
-        const dateObj = new Date(rawDate);
+      const sourceTime = booking.showTime || booking.time || (sched && (sched.startTime || sched.time));
+      const sourceDate = booking.showDate || (sched && sched.date) || sourceTime;
+
+      // Xử lý Giờ
+      if (sourceTime) {
+        const timeObj = new Date(sourceTime);
+        if (!isNaN(timeObj.getTime())) {
+          timeStr = timeObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          dateStr = timeObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } else if (typeof sourceTime === 'string' && sourceTime.includes(':')) {
+          timeStr = sourceTime.substring(0, 5);
+        }
+      }
+
+      // Xử lý Ngày
+      if (sourceDate && dateStr === "Đang cập nhật") {
+        const dateObj = new Date(sourceDate);
         if (!isNaN(dateObj.getTime())) {
           dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        } else if (typeof sourceDate === 'string') {
+          dateStr = sourceDate;
         }
       }
 
@@ -50,7 +72,7 @@ class EmailService {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 8px 0; color: #9ca3af;">📅 Ngày chiếu:</td>
-                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${dateStr}</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold; color: white;">${dateStr}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #9ca3af;">⏰ Giờ chiếu:</td>
@@ -59,11 +81,11 @@ class EmailService {
                   <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
                   <tr>
                     <td style="padding: 12px 0; color: #9ca3af;">📍 Rạp:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Royal City'}</td>
+                    <td style="padding: 12px 0; text-align: right; color: white;">${booking.theaterName || 'CGV Sense City'}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #9ca3af;">📺 Phòng:</td>
-                    <td style="padding: 8px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
+                    <td style="padding: 8px 0; text-align: right; color: white;">${booking.roomName || 'Phòng 1'}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #9ca3af;">💺 Ghế ngồi:</td>
