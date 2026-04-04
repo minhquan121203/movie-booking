@@ -28,7 +28,6 @@ interface AdminSeatMapProps {
   isSaving: boolean
 }
 
-// Interface để bọc dữ liệu ghế đôi lúc render
 interface MergedSeatRender {
   mainSeat: Seat
   pairedSeat: Seat | null
@@ -255,7 +254,8 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
                     {rowLabel}
                   </div>
 
-                  <div className="grid grid-cols-10 gap-x-2.5">
+                  {/* 🚀 TRẢ LẠI FLEXBOX GAP-2.5 ĐỂ DÙNG TOÁN HỌC */}
+                  <div className="flex gap-2.5">
                     {mergedSeats.map(mergedItem => {
                       const { mainSeat, pairedSeat, isPair, displayNumber } = mergedItem
                       
@@ -270,7 +270,8 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
                           onClick={() => handleSeatClick(mergedItem)}
                           className={cn(
                             'flex items-center justify-center rounded-lg border text-xs font-bold cursor-pointer transition-all duration-200 select-none shadow-sm h-10',
-                            isPair ? 'w-full col-span-2' : 'w-10',
+                            // 🚀 FIX TOÁN HỌC: 40px + 10px + 40px = 90px chuẩn chỉnh!
+                            isPair ? 'w-[90px] shrink-0' : 'w-10 shrink-0',
                             getSeatStyle(mainSeat.seatType, isAvailable, isSelected)
                           )}
                         >
@@ -292,7 +293,7 @@ export function AdminSeatMap({ theaterId, room, onClose, onSave, isSaving }: Adm
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 pt-8 border-t border-dashed mt-4 text-sm text-gray-600">
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border border-gray-300 bg-white shadow-sm"></div> <span className="text-xs font-medium">Thường</span></div>
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border border-orange-300 bg-orange-100 shadow-sm"></div> <span className="text-xs font-medium">VIP</span></div>
-          <div className="flex items-center gap-2"><div className="w-10 h-5 rounded border border-pink-300 bg-pink-100 shadow-sm"></div> <span className="text-xs font-medium">Ghế đôi</span></div>
+          <div className="flex items-center gap-2"><div className="w-[90px] h-5 rounded border border-pink-300 bg-pink-100 shadow-sm"></div> <span className="text-xs font-medium">Ghế đôi</span></div>
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border border-gray-300 bg-gray-200 opacity-60"></div> <span className="text-xs font-medium">Bảo trì</span></div>
           <div className="flex items-center gap-2"><div className="w-5 h-5 rounded border-2 border-slate-500 bg-slate-600 shadow-md"></div> <span className="text-xs font-medium">Đang chọn (Màu đậm)</span></div>
         </div>
