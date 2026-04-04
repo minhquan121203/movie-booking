@@ -1,28 +1,31 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import sgMail from '@sendgrid/mail';
 dotenv.config();
 
 class EmailService {
   constructor() {
-    // Kiểm tra API KEY từ biến môi trường
-    if (process.env.SENDGRID_API_KEY) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      console.log("SendGrid Service initialized!");
-    } else {
-      console.error("Thiếu SENDGRID_API_KEY trong cấu hình môi trường!");
-    }
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'quankm1520@gmail.com',
+        pass: 'wkghykyxyrifhoqf'
+      }
+    });
+    console.log("✅ Nodemailer (Gmail) Ready!");
   }
 
   // Hàm gửi mail xác nhận đặt vé
   async sendBookingConfirmation(booking, user) {
     try {
-      // Xử lý hiển thị ngày giờ
+      console.log("--- DEBUG DATE ---");
+      console.log("Giá trị showTime nhận được:", booking.showTime);
+
       let dateStr = "Chưa xác định";
       let timeStr = "Chưa xác định";
 
       if (booking.showTime) {
         let dateObj = new Date(booking.showTime);
+
         if (!isNaN(dateObj.getTime())) {
           dateStr = dateObj.toLocaleDateString('vi-VN', {
             day: '2-digit', month: '2-digit', year: 'numeric'
@@ -31,11 +34,16 @@ class EmailService {
             hour: '2-digit', minute: '2-digit', hour12: false
           });
         }
+        else if (typeof booking.showTime === 'string') {
+          timeStr = booking.showTime.substring(0, 5);
+          const now = new Date();
+          dateStr = now.toLocaleDateString('vi-VN');
+        }
       }
 
-      const msg = {
+      const mailOptions = {
+        from: `"CineBooking" <quankm1520@gmail.com>`,
         to: user.email,
-        from: process.env.SENDGRID_FROM_EMAIL || 'quankm1520@gmail.com',
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
           <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: auto; background-color: #1a1c23; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;">
@@ -59,11 +67,11 @@ class EmailService {
                   <tr><td colspan="2" style="border-bottom: 1px solid #3f3f46; padding: 5px 0;"></td></tr>
                   <tr>
                     <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📍 Rạp:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CineBooking Cinema'}</td>
+                    <td style="padding: 12px 0; text-align: right;">${booking.theaterName || 'CGV Sense City'}</td>
                   </tr>
                   <tr>
                     <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">📺 Phòng:</td>
-                    <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng chiếu'}</td>
+                    <td style="padding: 12px 0; text-align: right;">${booking.roomName || 'Phòng 1'}</td>
                   </tr>
                   <tr>
                     <td style="padding: 12px 0; color: #9ca3af; font-size: 14px;">💺 Ghế ngồi:</td>
@@ -85,18 +93,17 @@ class EmailService {
           </div>
         `,
         attachments: [{
-          content: booking.qrCode.split("base64,")[1],
           filename: 'ticket-qr.png',
-          type: 'image/png',
-          disposition: 'inline',
-          contentId: 'ticket_qr'
+          content: booking.qrCode.split("base64,")[1],
+          encoding: 'base64',
+          cid: 'ticket_qr'
         }]
       };
 
-      await sgMail.send(msg);
-      console.log(`✅ Đã gửi mail vé qua SendGrid cho: ${user.email}`);
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Đã gửi mail vé cho: ${user.email}`);
     } catch (error) {
-      console.error("❌ Lỗi SendGrid:", error.response ? error.response.body : error);
+      console.error("❌ Lỗi gửi mail:", error);
     }
   }
 
