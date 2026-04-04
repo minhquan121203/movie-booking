@@ -17,10 +17,9 @@ class EmailService {
     };
   }
 
-  // 1. Hàm gửi mail ĐẶT VÉ
+  // Hàm gửi mail ĐẶT VÉ
   async sendBookingConfirmation(booking, user) {
     try {
-      // 🚀 LOGIC VÉT NGÀY GIỜ: Kiểm tra mọi nguồn có thể có
       let dateStr = "Đang cập nhật";
       let timeStr = "Đang cập nhật";
 
@@ -29,12 +28,8 @@ class EmailService {
       if (rawDate) {
         const dateObj = new Date(rawDate);
         if (!isNaN(dateObj.getTime())) {
-          dateStr = dateObj.toLocaleDateString('vi-VN', {
-            day: '2-digit', month: '2-digit', year: 'numeric'
-          });
-          timeStr = dateObj.toLocaleTimeString('vi-VN', {
-            hour: '2-digit', minute: '2-digit', hour12: false
-          });
+          dateStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
       }
 
@@ -81,7 +76,6 @@ class EmailService {
                 <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
                 <img src="cid:ticket_qr" style="width: 180px; height: 180px; border: 1px solid #eee;" alt="QR Code"/>
                 <p style="color: #6b7280; font-size: 11px; margin-top: 10px;">Mã vé: <b>${booking.bookingCode}</b></p>
-                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
             </div>
             <div style="background-color: #111827; padding: 15px; text-align: center; font-size: 11px; color: #4b5563;">
@@ -123,7 +117,6 @@ class EmailService {
                 <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
                 <p>📍 <b>Vị trí:</b> ${scheduleData.position || 'staff'}</p>
                 <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'CGV Sense City'}</p>
-                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
               <p style="margin-top: 20px; font-size: 13px; color: #6b7280; font-style: italic;">Vui lòng có mặt đúng giờ để thực hiện bàn giao ca.</p>
             </div>
@@ -154,7 +147,6 @@ class EmailService {
                 <p>📅 <b>Ngày:</b> ${scheduleData.date}</p>
                 <p>⏰ <b>Ca làm:</b> ${scheduleData.startTime} - ${scheduleData.endTime}</p>
                 <p>🏢 <b>Rạp:</b> ${scheduleData.theaterName || 'CGV Sense City'}</p>
-                <div style="margin-top: 10px;"><img src="https://img.icons8.com/ios-glyphs/30/9ca3af/ellipsis.png" width="18"/></div>
               </div>
               <p style="margin-top: 20px; font-size: 13px; color: #6b7280; font-style: italic;">Bạn không cần có mặt tại rạp vào ca này.</p>
             </div>

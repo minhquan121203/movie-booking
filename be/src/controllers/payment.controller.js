@@ -448,7 +448,7 @@ const paymentController = {
 
       // Extract booking code from orderId
       const bookingCode = result.orderId.split("_")[0];
-      const booking = await Booking.findOne({ bookingCode });
+      const booking = await Booking.findOne({ bookingCode }).populate('schedule');
 
       if (!booking) {
         return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Booking not found`);
@@ -495,7 +495,7 @@ const paymentController = {
       // : Load booking first to verify orderId and amount
       let booking = null;
       if (bookingCode) {
-        booking = await Booking.findOne({ bookingCode });
+        booking = await Booking.findOne({ bookingCode }).populate('schedule');
       }
 
       // : Verify with booking data to check orderId and amount
@@ -594,7 +594,7 @@ const paymentController = {
       }
 
       const bookingCode = result.orderId.split("_")[0];
-      const booking = await Booking.findOne({ bookingCode });
+      const booking = await Booking.findOne({ bookingCode }).populate('schedule');
 
       if (!booking) {
         return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?message=Booking not found`);
@@ -641,7 +641,7 @@ const paymentController = {
         //  #11: Process in background
         if (result.isSuccess) {
           const bookingCode = result.orderId.split("_")[0];
-          const booking = await Booking.findOne({ bookingCode });
+          const booking = await Booking.findOne({ bookingCode }).populate('schedule');
 
           if (booking && booking.status === BOOKING_STATUS.PENDING_PAYMENT) {
             // Sử dụng helper function giống return handler
