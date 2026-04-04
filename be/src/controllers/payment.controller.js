@@ -367,74 +367,35 @@ async function handlePaymentFailure(booking) {
 }
 
 const paymentController = {
-  // ============================================
-  // VNPAY
-  // ============================================
-
-  // Tạo payment URL VNPay
-  createVNPayPayment: async (req, res) => {
+  createVnPayPayment: async (req, res) => {
     try {
-      const { bookingId } = req.params;
-
+      const bookingId = req.params.bookingId || req.params.id;
       const booking = await Booking.findById(bookingId);
+
       if (!booking) {
         return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
       }
 
-      // Verify ownership
-      if (booking.customer.toString() !== req.userId) {
-        return errorResponse(res, "Bạn không có quyền thanh toán đơn này", 403);
-      }
+      console.log(`⚠️ [DEV MODE] Giả lập thanh toán VNPAY thành công cho đơn: ${booking.bookingCode}`);
 
-      if (booking.status !== "Chờ thanh toán") {
-        return errorResponse(res, "Đơn đặt vé không ở trạng thái chờ thanh toán", 400);
-      }
+      booking.status = "Hoàn tất";
+      booking.paymentDetails = {
+        paymentMethod: "VNPAY",
+        status: "Đã thanh toán",
+        transactionId: `MOCK_VNPAY_${Date.now()}`,
+        paymentDate: new Date(),
+      };
+      await booking.save();
 
-      // Check if payment is already in progress or completed
-      if (booking.paymentDetails.status === "Thành công") {
-        return errorResponse(res, "Đơn đặt vé đã được thanh toán", 400);
-      }
+      const frontendSuccessUrl = `http://localhost:3000/booking-flow/success?bookingCode=${booking.bookingCode}`;
 
-      // Check if payment URL was already created recently (prevent spam)
-      if (booking.paymentDetails.transactionId && booking.updatedAt > new Date(Date.now() - 5 * 60 * 1000)) {
-        return errorResponse(res, "Vui lòng đợi 5 phút trước khi tạo link thanh toán mới", 429);
-      }
-
-      //  RACE CONDITION CHECK: Kiểm tra lại ghế trước khi tạo link
-      const schedule = await Schedule.findById(booking.schedule);
-      if (!schedule) {
-         return errorResponse(res, "Suất chiếu không tồn tại", 400);
-      }
-
-      const unavailableSeats = booking.seats.filter(bookingSeat => {
-         const scheduleSeat = schedule.seatAvailability.find(s => s.seatNumber === bookingSeat.seatNumber);
-         return !scheduleSeat || scheduleSeat.isBooked; // Ghế không tìm thấy hoặc đã BỊ MUA
+      return res.json({
+        success: true,
+        paymentUrl: frontendSuccessUrl,
       });
-
-      if (unavailableSeats.length > 0) {
-         return errorResponse(res, `Ghế ${unavailableSeats.map(s => s.seatNumber).join(", ")} đã bị người khác mua. Vui lòng hủy đơn và chọn ghế khác.`, 409);
-      }
-
-      // Create payment URL
-      const ipAddr = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.socket.remoteAddress;
-
-      const result = vnpayService.createPaymentUrl(booking, ipAddr);
-
-      if (result.success) {
-        // Update booking với orderId
-        booking.paymentDetails.transactionId = result.orderId;
-        await booking.save();
-
-        return successResponse(res, {
-          paymentUrl: result.paymentUrl,
-          orderId: result.orderId,
-        });
-      } else {
-        return errorResponse(res, "Không thể tạo payment URL", 500);
-      }
     } catch (error) {
-      console.error("Create VNPay payment error:", error);
-      return errorResponse(res, "Lỗi server", 500);
+      console.error("Create VNPay Payment Error:", error);
+      return errorResponse(res, "Lỗi Server", 500);
     }
   },
 
