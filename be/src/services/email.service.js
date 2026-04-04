@@ -10,22 +10,21 @@ class EmailService {
       secure: false,
       auth: {
         user: 'quankm1520@gmail.com',
-        pass: 'wkghykyxyrifhoqf' // Mật khẩu ứng dụng
+        pass: 'wkghykyxyrifhoqf'
       },
       tls: {
         rejectUnauthorized: false
       },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 15000,
+      connectionTimeout: 20000,
+      greetingTimeout: 20000,
+      socketTimeout: 20000,
     });
 
-    // Verify kết nối ngay khi khởi tạo
     this.transporter.verify((error, success) => {
       if (error) {
-        console.log("❌ Lỗi kết nối Mail Server:", error);
+        console.log("❌ Lỗi kết nối Mail Server (Vẫn Timeout):", error);
       } else {
-        console.log("✅ Nodemailer (Gmail) Ready on Port 587!");
+        console.log("✅ Nodemailer (Gmail) Ready on Port 587! Mail sẽ nổ ting ting.");
       }
     });
   }
