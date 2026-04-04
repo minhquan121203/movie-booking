@@ -388,7 +388,7 @@ const paymentController = {
       };
       await booking.save();
 
-      const frontendSuccessUrl = `https://movie-booking-cinema.vercel.app/booking-flow/success?bookingCode=${booking.bookingCode}`;
+      const frontendSuccessUrl = `${process.env.FRONTEND_URL || 'https://movie-booking-cinema.vercel.app'}/booking-flow/success?bookingCode=${booking.bookingCode}`;
 
       return res.json({
         success: true,
