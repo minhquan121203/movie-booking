@@ -1,18 +1,25 @@
 import type { Schedule, SeatAvailability } from '@/types/schedule'
 import type { BookedSeat } from '@/types/booking'
 import type { Seat } from '@/types/theater'
-import { useMemo, useState, useEffect } from 'react'
-import { Clock } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 interface SeatMapsProps {
   selectedSeats: BookedSeat[]
   schedule: Schedule | null
   onSeatClick: (seat: Seat) => void
-  // WebSocket props
   realTimeSeats?: Map<string, Seat>
   isSeatAvailable?: (seat: Seat) => boolean
 }
+
+// 🚀 Khai báo thêm Type mở rộng để phục vụ việc Gom ghế đôi
+interface MergedSeat extends SeatAvailability {
+  isMergedPair?: boolean
+  pairedSeat?: SeatAvailability
+  displayNumber?: string
+}
+
 const time = Date.now()
+
 export function SeatMaps({
   selectedSeats,
   schedule,
@@ -20,38 +27,65 @@ export function SeatMaps({
   realTimeSeats,
   isSeatAvailable,
 }: SeatMapsProps) {
-  const [currentTime, setCurrentTime] = useState(time)
+  const [currentTime] = useState(time)
 
-  console.log(realTimeSeats)
-  // 1. Xử lý dữ liệu: Gom nhóm ghế theo Hàng (Row)
+  // 1. Xử lý dữ liệu: Gom nhóm ghế theo Hàng và GỘP GHẾ ĐÔI
   const rows = useMemo(() => {
     if (!schedule?.seatAvailability) return []
 
     const groups: Record<string, SeatAvailability[]> = {}
 
     schedule.seatAvailability.forEach(seat => {
-      const rowLabel = seat.seatNumber.charAt(0) // Lấy ký tự đầu làm tên hàng (A, B, C...)
+      const rowLabel = seat.seatNumber.charAt(0)
       if (!groups[rowLabel]) {
         groups[rowLabel] = []
       }
       groups[rowLabel].push(seat)
     })
 
-    // Sắp xếp các hàng theo thứ tự A -> Z
     return Object.keys(groups)
       .sort()
-      .map(rowLabel => ({
-        rowLabel,
-        seats: groups[rowLabel].sort((a, b) => {
-          // Sắp xếp ghế trong hàng theo số (A1 -> A2 -> A10)
+      .map(rowLabel => {
+        // Sắp xếp ghế theo số thứ tự
+        const sortedSeats = groups[rowLabel].sort((a, b) => {
           const numA = parseInt(a.seatNumber.slice(1))
           const numB = parseInt(b.seatNumber.slice(1))
           return numA - numB
-        }),
-      }))
+        })
+
+        const mergedSeats: MergedSeat[] = []
+        
+        // 🚀 THUẬT TOÁN GOM GHẾ ĐÔI (SOFA)
+        for (let i = 0; i < sortedSeats.length; i++) {
+          const currentSeat = sortedSeats[i]
+          const nextSeat = sortedSeats[i + 1]
+
+          // Nếu ghế hiện tại và ghế kế tiếp ĐỀU LÀ GHẾ ĐÔI -> Gom thành 1 cặp
+          if (currentSeat.seatType === 'Ghế đôi' && nextSeat && nextSeat.seatType === 'Ghế đôi') {
+            mergedSeats.push({
+              ...currentSeat,
+              isMergedPair: true,
+              pairedSeat: nextSeat, // Lưu lại dữ liệu của thằng ghế anh em
+              displayNumber: `${currentSeat.seatNumber.slice(1)}-${nextSeat.seatNumber.slice(1)}` // Hiển thị: 3-4
+            })
+            i++ // Nhảy cóc qua ghế tiếp theo vì đã bị gộp vào rồi
+          } else {
+            // Ghế thường, VIP, hoặc ghế đôi bị lẻ thì giữ nguyên
+            mergedSeats.push({
+              ...currentSeat,
+              isMergedPair: false,
+              displayNumber: currentSeat.seatNumber.slice(1)
+            })
+          }
+        }
+
+        return {
+          rowLabel,
+          seats: mergedSeats,
+        }
+      })
   }, [schedule, realTimeSeats])
-  //   console.log(rows)
-  // 2. Hàm lấy giá vé (chỉ để hiển thị tooltip, logic tính tiền chính nằm ở useBooking)
+
   const getSeatPrice = (seatType: string) => {
     if (!schedule?.ticketPrices) return 0
     switch (seatType) {
@@ -65,60 +99,47 @@ export function SeatMaps({
     }
   }
 
-  // 3. Xác định trạng thái hiển thị của ghế (với real-time data)
-  const getSeatStatus = (seat: SeatAvailability) => {
-    // Kiểm tra real-time data từ WebSocket
-    const realTimeSeat = realTimeSeats?.get(seat.seatNumber)
+  // 3. Trạng thái của ghế (cập nhật để check cả 2 ghế trong 1 Sofa)
+  const getSeatStatus = (seat: MergedSeat) => {
+    const realTimeSeat1 = realTimeSeats?.get(seat.seatNumber)
+    const realTimeSeat2 = seat.pairedSeat ? realTimeSeats?.get(seat.pairedSeat.seatNumber) : null
 
-    // Ghế đã được book (từ DB hoặc real-time)
-    if (seat.isBooked || realTimeSeat?.isBooked) {
+    // Bất kỳ ghế nào trong cặp bị Booked -> Cả Sofa màu Xám
+    if (seat.isBooked || realTimeSeat1?.isBooked || seat.pairedSeat?.isBooked || realTimeSeat2?.isBooked) {
       return 'booked'
     }
 
-    // Ghế đang được user hiện tại chọn
-    if (selectedSeats.some(s => s.seatNumber === seat.seatNumber)) {
-      return 'selected'
-    }
+    const isSelected1 = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
+    const isSelected2 = seat.pairedSeat ? selectedSeats.some(s => s.seatNumber === seat.pairedSeat?.seatNumber) : false
 
-    // Ghế đang được giữ bởi người khác (từ real-time data)
-    if (realTimeSeat?.holdUntil) {
-      return 'held'
-    }
+    // Bất kỳ ghế nào trong cặp đang được chọn -> Cả Sofa màu Xanh (Selected)
+    if (isSelected1 || isSelected2) return 'selected'
 
-    // Trạng thái bình thường theo loại ghế
+    const isHeld = realTimeSeat1?.holdUntil || realTimeSeat2?.holdUntil
+    if (isHeld) return 'held'
+
     return seat.seatType === 'VIP' ? 'vip' : seat.seatType === 'Ghế đôi' ? 'couple' : 'standard'
   }
 
-  // 4. Kiểm tra ghế có thể click không
-  const canClickSeat = (seat: SeatAvailability) => {
+  const canClickSeat = (seat: MergedSeat) => {
     const status = getSeatStatus(seat)
+    if (status === 'booked' || status === 'held') return false
 
-    // Không click được nếu đã booked hoặc đang được giữ
-    if (status === 'booked') {
-      return false
-    }
-
-    // Sử dụng function từ parent nếu có
     if (isSeatAvailable) {
-      return isSeatAvailable(seat as unknown as Seat)
+      const avail1 = isSeatAvailable(seat as unknown as Seat)
+      const avail2 = seat.pairedSeat ? isSeatAvailable(seat.pairedSeat as unknown as Seat) : true
+      return avail1 && avail2
     }
-
     return true
   }
 
-  // 5. Tính thời gian còn lại khi ghế đang được giữ
-  //   const getHoldTimeRemaining = (seat: SeatAvailability): number | null => {
-  //     const realTimeSeat = realTimeSeats?.get(seat.seatNumber)
-
-  //     if (realTimeSeat?.holdUntil) {
-  //       const holdUntilTime = new Date(realTimeSeat.holdUntil).getTime()
-  //       const remaining = Math.max(0, Math.floor((holdUntilTime - currentTime) / 1000))
-
-  //       return remaining > 0 ? remaining : null
-  //     }
-
-  //     return null
-  //   }
+  // 🚀 Khi click vào Sofa, chọn luôn CẢ 2 GHẾ
+  const handleSeatClick = (seat: MergedSeat) => {
+    onSeatClick(seat as unknown as Seat) // Chọn ghế trái
+    if (seat.isMergedPair && seat.pairedSeat) {
+      onSeatClick(seat.pairedSeat as unknown as Seat) // Chọn nốt ghế phải
+    }
+  }
 
   return (
     <>
@@ -126,28 +147,25 @@ export function SeatMaps({
         <div className="flex flex-col items-center min-w-max gap-3">
           {rows.map(({ rowLabel, seats }) => (
             <div key={rowLabel} className="flex items-center gap-2 sm:gap-4">
-              {/* Tên hàng */}
               <span className="w-6 text-text-secondary text-center font-bold text-sm">
                 {rowLabel}
               </span>
 
-              {/* Danh sách ghế */}
               <div className="flex items-center gap-2">
                 {seats.map(seat => {
                   const status = getSeatStatus(seat)
                   const price = getSeatPrice(seat.seatType)
                   const isCouple = seat.seatType === 'Ghế đôi'
                   const canClick = canClickSeat(seat)
-                  //   const holdTimeRemaining = getHoldTimeRemaining(seat)
 
                   return (
                     <button
                       key={seat.seatNumber}
                       disabled={!canClick}
-                      onClick={() => canClick && onSeatClick(seat as unknown as Seat)}
+                      onClick={() => canClick && handleSeatClick(seat)}
                       className={`
                         relative group transition-all duration-200 flex items-center justify-center border
-                        ${isCouple ? 'w-20 sm:w-24 h-8 sm:h-10 rounded-xl' : 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg'}
+                        ${isCouple ? 'w-20 sm:w-28 h-8 sm:h-10 rounded-xl' : 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg'}
                         
                         ${
                           status === 'selected'
@@ -165,15 +183,9 @@ export function SeatMaps({
                       `}
                     >
                       <span className="text-[10px] sm:text-xs font-medium">
-                        {seat.seatNumber.slice(1)}
+                        {seat.displayNumber}
                       </span>
 
-                      {/* Icon đồng hồ khi ghế đang được giữ */}
-                      {/* {status === 'held' && holdTimeRemaining !== null && (
-                        <Clock className="absolute -top-1 -right-1 w-3 h-3 text-yellow-600" />
-                      )} */}
-
-                      {/* Tooltip */}
                       {canClick && status !== 'booked' && status !== 'held' && (
                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] py-1.5 px-3 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
                           <div className="font-bold">{seat.seatType}</div>
@@ -182,19 +194,6 @@ export function SeatMaps({
                         </div>
                       )}
 
-                      {/* Tooltip cho ghế đang được giữ */}
-                      {/* {status === 'held' && holdTimeRemaining !== null && (
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-yellow-600 text-white text-[10px] py-1.5 px-3 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                          <div className="font-bold">Đang được giữ</div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{holdTimeRemaining}s</span>
-                          </div>
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-600 rotate-45"></div>
-                        </div>
-                      )} */}
-
-                      {/* Tooltip cho ghế đã đặt */}
                       {status === 'booked' && (
                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-600 text-white text-[10px] py-1.5 px-3 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
                           <div className="font-bold">Đã đặt</div>
@@ -209,7 +208,7 @@ export function SeatMaps({
           ))}
         </div>
 
-        {/* Legend */}
+        {/* Legend giữ nguyên */}
         <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mt-10 pt-6 border-t border-border">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-bg-secondary border border-border"></div>
@@ -220,16 +219,12 @@ export function SeatMaps({
             <span className="text-sm text-text-secondary">VIP</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-5 rounded bg-pink-500/10 border border-pink-500/30"></div>
+            <div className="w-12 h-5 rounded bg-pink-500/10 border border-pink-500/30"></div>
             <span className="text-sm text-text-secondary">Ghế đôi</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-primary border border-primary"></div>
             <span className="text-sm text-text-secondary">Đang chọn</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-yellow-500/20 border border-yellow-500/50 animate-pulse"></div>
-            <span className="text-sm text-text-secondary">Đang giữ</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-muted opacity-60"></div>
