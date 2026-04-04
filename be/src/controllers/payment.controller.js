@@ -367,10 +367,11 @@ async function handlePaymentFailure(booking) {
 }
 
 const paymentController = {
+
   createVnPayPayment: async (req, res) => {
     try {
       const bookingId = req.params.bookingId || req.params.id;
-      const booking = await Booking.findById(bookingId);
+      const booking = await Booking.findById(bookingId).exec();
 
       if (!booking) {
         return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
@@ -387,7 +388,7 @@ const paymentController = {
       };
       await booking.save();
 
-      const frontendSuccessUrl = `http://localhost:3000/booking-flow/success?bookingCode=${booking.bookingCode}`;
+      const frontendSuccessUrl = `https://movie-booking-cinema.vercel.app/booking-flow/success?bookingCode=${booking.bookingCode}`;
 
       return res.json({
         success: true,
