@@ -5,13 +5,29 @@ dotenv.config();
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user: 'quankm1520@gmail.com',
-        pass: 'wkghykyxyrifhoqf'
+        pass: 'wkghykyxyrifhoqf' // Mật khẩu ứng dụng
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
+    });
+
+    // Verify kết nối ngay khi khởi tạo
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.log("❌ Lỗi kết nối Mail Server:", error);
+      } else {
+        console.log("✅ Nodemailer (Gmail) Ready on Port 587!");
       }
     });
-    console.log("✅ Nodemailer (Gmail) Ready!");
   }
 
   // Hàm gửi mail xác nhận đặt vé
@@ -103,7 +119,7 @@ class EmailService {
       await this.transporter.sendMail(mailOptions);
       console.log(`✅ Đã gửi mail vé cho: ${user.email}`);
     } catch (error) {
-      console.error("❌ Lỗi gửi mail:", error);
+      console.error("❌ Lỗi thực tế khi gửi mail:", error);
     }
   }
 
