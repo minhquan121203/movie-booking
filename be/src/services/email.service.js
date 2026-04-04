@@ -55,7 +55,7 @@ class EmailService {
           filename: 'ticket-qr.png',
           type: 'image/png',
           disposition: 'inline',
-          contentId: 'ticket_qr'
+          content_id: 'ticket_qr'
         }]
       };
 
