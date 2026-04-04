@@ -21,43 +21,44 @@ class VNPayService {
   // Create payment URL
   createPaymentUrl(booking, ipAddr = "127.0.0.1") {
     try {
-      // BẬT CHẾ ĐỘ "BẤT TỬ": Hardcode toàn bộ để ép qua ải 70
-      const secretKey = "LJUWG61EUOP6YWWPZRA93VGPVSWLHF7N"; // Fix cứng HashSecret
+      const createDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
+
+      const orderId = `${booking.bookingCode}_${moment().utcOffset('+07:00').format('HHmmss')}`;
+
+      const amount = booking.totalAmount || 0;
 
       let vnpParams = {};
       vnpParams['vnp_Version'] = '2.1.0';
       vnpParams['vnp_Command'] = 'pay';
-      vnpParams['vnp_TmnCode'] = "9Q7KU68U"; // Fix cứng TmnCode
+      vnpParams['vnp_TmnCode'] = this.tmnCode.trim();
       vnpParams['vnp_Locale'] = 'vn';
       vnpParams['vnp_CurrCode'] = 'VND';
-      vnpParams['vnp_TxnRef'] = `TEST_${moment().utcOffset('+07:00').format('HHmmss')}`;
-      vnpParams['vnp_OrderInfo'] = 'ThanhToanVePhim';
+      vnpParams['vnp_TxnRef'] = orderId;
+      vnpParams['vnp_OrderInfo'] = 'Thanh toan ve phim';
       vnpParams['vnp_OrderType'] = 'other';
-      vnpParams['vnp_Amount'] = 5000000; // Fix cứng 50.000 VNĐ (Phòng lỗi booking.totalAmount = 0)
-      vnpParams['vnp_ReturnUrl'] = "https://movie-booking-api-bcfe.onrender.com/api/payment/vnpay-return";
-      vnpParams['vnp_IpAddr'] = '12.34.56.78';
-      vnpParams['vnp_CreateDate'] = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
+      vnpParams['vnp_Amount'] = Math.round(amount * 100);
+      vnpParams['vnp_ReturnUrl'] = this.returnUrl.trim();
+      vnpParams['vnp_IpAddr'] = ipAddr;
+      vnpParams['vnp_CreateDate'] = createDate;
 
-      // Sort chuẩn VNPay
       vnpParams = this.sortObject(vnpParams);
 
-      const signData = Object.entries(vnpParams)
-          .map(([key, val]) => `${key}=${val}`)
-          .join('&');
+      const signData = querystring.stringify(vnpParams, { encode: false });
 
+      const secretKey = this.hashSecret.trim(); // Chốt hạ diệt khoảng trắng ở mã Bí mật
       const hmac = crypto.createHmac("sha512", secretKey);
       const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
       vnpParams["vnp_SecureHash"] = signed;
 
-      const paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?" +
-          Object.entries(vnpParams).map(([key, val]) => `${key}=${val}`).join('&');
+      const paymentUrl = this.vnpUrl + "?" + querystring.stringify(vnpParams, { encode: false });
 
-      console.log("VNPAY URL GENERATED SUCESSFULLY!");
+      console.log(`🚀 VNPay URL created for: ${booking.bookingCode}`);
 
       return {
         success: true,
         paymentUrl,
-        orderId: vnpParams['vnp_TxnRef'],
+        orderId,
       };
     } catch (error) {
       console.error("Create VNPay payment URL error:", error);
