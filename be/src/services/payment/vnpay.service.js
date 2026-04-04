@@ -21,39 +21,59 @@ class VNPayService {
   // Create payment URL
   createPaymentUrl(booking, ipAddr = "127.0.0.1") {
     try {
+      // 1. Kéo biến môi trường và dọn sạch khoảng trắng tàng hình
+      const tmnCode = (process.env.VNPAY_TMN_CODE || "").trim();
+      const secretKey = (process.env.VNPAY_HASH_SECRET || "").trim();
+      const vnpUrl = (process.env.VNPAY_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html").trim();
+      const returnUrl = (process.env.VNPAY_RETURN_URL || "").trim();
+
+      // 2. Ép múi giờ chuẩn VN (+07:00)
       const createDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
-
       const orderId = `${booking.bookingCode}_${moment().utcOffset('+07:00').format('HHmmss')}`;
+      const amount = Math.round(Number(booking.totalAmount) * 100);
 
-      const amount = booking.totalAmount || 0;
-
+      // 3. Khởi tạo Params (Chỉ dùng các key cơ bản nhất, fix cứng OrderInfo)
       let vnpParams = {};
       vnpParams['vnp_Version'] = '2.1.0';
       vnpParams['vnp_Command'] = 'pay';
-      vnpParams['vnp_TmnCode'] = this.tmnCode.trim();
+      vnpParams['vnp_TmnCode'] = tmnCode;
       vnpParams['vnp_Locale'] = 'vn';
       vnpParams['vnp_CurrCode'] = 'VND';
       vnpParams['vnp_TxnRef'] = orderId;
-      vnpParams['vnp_OrderInfo'] = 'Thanh toan ve phim';
+      vnpParams['vnp_OrderInfo'] = 'Thanh toan don hang';
       vnpParams['vnp_OrderType'] = 'other';
-      vnpParams['vnp_Amount'] = Math.round(amount * 100);
-      vnpParams['vnp_ReturnUrl'] = this.returnUrl.trim();
+      vnpParams['vnp_Amount'] = amount;
+      vnpParams['vnp_ReturnUrl'] = returnUrl;
       vnpParams['vnp_IpAddr'] = ipAddr;
       vnpParams['vnp_CreateDate'] = createDate;
 
+      // 4. Sort theo hàm chuẩn VNPay
       vnpParams = this.sortObject(vnpParams);
 
-      const signData = querystring.stringify(vnpParams, { encode: false });
+      // 🚀 5. BƯỚC QUYẾT ĐỊNH: Tự nối chuỗi ký tên (TUYỆT ĐỐI KHÔNG DÙNG THƯ VIỆN qs)
+      let signData = "";
+      for (let key in vnpParams) {
+        if (vnpParams.hasOwnProperty(key)) {
+          signData += key + '=' + vnpParams[key] + '&';
+        }
+      }
+      signData = signData.slice(0, -1); // Cắt bỏ dấu '&' thừa ở cuối cùng
 
-      const secretKey = this.hashSecret.trim(); // Chốt hạ diệt khoảng trắng ở mã Bí mật
+      // 6. Tạo mã Hash HMAC SHA-512
       const hmac = crypto.createHmac("sha512", secretKey);
-      const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+      const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+      vnpParams['vnp_SecureHash'] = signed;
 
-      vnpParams["vnp_SecureHash"] = signed;
+      // 7. Tự nối chuỗi tạo URL cuối cùng
+      let paymentUrl = vnpUrl + '?';
+      for (let key in vnpParams) {
+        if (vnpParams.hasOwnProperty(key)) {
+          paymentUrl += key + '=' + vnpParams[key] + '&';
+        }
+      }
+      paymentUrl = paymentUrl.slice(0, -1);
 
-      const paymentUrl = this.vnpUrl + "?" + querystring.stringify(vnpParams, { encode: false });
-
-      console.log(`🚀 VNPay URL created for: ${booking.bookingCode}`);
+      console.log(`🚀 VNPay link created OK for Order: ${orderId}`);
 
       return {
         success: true,
