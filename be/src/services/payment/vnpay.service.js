@@ -1,84 +1,67 @@
 import crypto from "crypto";
-import dotenv from "dotenv";
 import moment from "moment";
 import querystring from "qs";
-dotenv.config();
 
 class VNPayService {
-  constructor() {
-    this.vnpUrl = process.env.VNPAY_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    this.tmnCode = process.env.VNPAY_TMN_CODE;
-    this.hashSecret = process.env.VNPAY_HASH_SECRET;
-    this.returnUrl = process.env.VNPAY_RETURN_URL || "https://movie-booking-cinema.vercel.app/payment/vnpay-return";
-
-    if (this.tmnCode && this.hashSecret) {
-      console.log("VNPay initialized");
-    } else {
-      console.warn("VNPay credentials not found");
-    }
-  }
-
   // Create payment URL
-  createPaymentUrl(booking, ipAddr = "127.0.0.1") {
+  createPaymentUrl(booking, ipAddr = "12.34.56.78") {
     try {
       const tmnCode = (process.env.VNPAY_TMN_CODE || "").trim();
       const secretKey = (process.env.VNPAY_HASH_SECRET || "").trim();
       const vnpUrl = (process.env.VNPAY_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html").trim();
       const returnUrl = (process.env.VNPAY_RETURN_URL || "").trim();
 
-      const createDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
+      // 🚀 1. Ép IP chuẩn (Giải quyết triệt để lỗi do Render nối chuỗi IP quá dài)
+      let cleanIp = "12.34.56.78";
+      if (ipAddr && typeof ipAddr === 'string') {
+        cleanIp = ipAddr.split(',')[0].trim(); // Chỉ lấy IP đầu tiên
+        if (cleanIp.length > 15 || cleanIp.includes(':')) cleanIp = "12.34.56.78"; // Nếu là IPv6 hoặc lỗi thì fake IP luôn
+      }
+
+      // 2. Múi giờ VN
+      const createDate = moment().utcOffset('+07:00').format("YYYYMMDDHHmmss");
+
+      // 3. Mã đơn hàng (Bỏ đuôi thời gian để khớp với DB)
       const orderId = booking.bookingCode;
-      const amount = Math.round(Number(booking.totalAmount) * 100);
+      const amount = Math.round(Number(booking.totalAmount || 0) * 100);
 
+      // 4. Khởi tạo Params
       let vnpParams = {};
-      vnpParams['vnp_Version'] = '2.1.0';
-      vnpParams['vnp_Command'] = 'pay';
-      vnpParams['vnp_TmnCode'] = tmnCode;
-      vnpParams['vnp_Locale'] = 'vn';
-      vnpParams['vnp_CurrCode'] = 'VND';
-      vnpParams['vnp_TxnRef'] = orderId;
-      vnpParams['vnp_OrderInfo'] = 'Thanh toan don hang';
-      vnpParams['vnp_OrderType'] = 'other';
-      vnpParams['vnp_Amount'] = amount;
-      vnpParams['vnp_ReturnUrl'] = returnUrl;
-      vnpParams['vnp_IpAddr'] = ipAddr;
-      vnpParams['vnp_CreateDate'] = createDate;
+      vnpParams["vnp_Version"] = "2.1.0";
+      vnpParams["vnp_Command"] = "pay";
+      vnpParams["vnp_TmnCode"] = tmnCode;
+      vnpParams["vnp_Locale"] = "vn";
+      vnpParams["vnp_CurrCode"] = "VND";
+      vnpParams["vnp_TxnRef"] = orderId;
+      vnpParams["vnp_OrderInfo"] = "ThanhToanVePhim";
+      vnpParams["vnp_OrderType"] = "other";
+      vnpParams["vnp_Amount"] = amount;
+      vnpParams["vnp_ReturnUrl"] = returnUrl;
+      vnpParams["vnp_IpAddr"] = cleanIp;
+      vnpParams["vnp_CreateDate"] = createDate;
 
+      // 5. Sort theo chuẩn
       vnpParams = this.sortObject(vnpParams);
 
-      let signData = "";
-      for (let key in vnpParams) {
-        if (vnpParams.hasOwnProperty(key)) {
-          signData += key + '=' + vnpParams[key] + '&';
-        }
-      }
-      signData = signData.slice(0, -1);
-
+      // 6. Ký tên
+      const signData = querystring.stringify(vnpParams, { encode: false });
       const hmac = crypto.createHmac("sha512", secretKey);
-      const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-      vnpParams['vnp_SecureHash'] = signed;
+      const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+      vnpParams["vnp_SecureHash"] = signed;
 
-      let paymentUrl = vnpUrl + '?';
-      for (let key in vnpParams) {
-        if (vnpParams.hasOwnProperty(key)) {
-          paymentUrl += key + '=' + vnpParams[key] + '&';
-        }
-      }
-      paymentUrl = paymentUrl.slice(0, -1);
+      // 7. Tạo link
+      const paymentUrl = vnpUrl + "?" + querystring.stringify(vnpParams, { encode: false });
 
-      console.log(`🚀 VNPay link created OK for Order: ${orderId}`);
+      console.log(`🚀 [VNPAY] Tạo link thành công cho đơn: ${orderId} (IP: ${cleanIp})`);
 
-      return {
-        success: true,
-        paymentUrl,
-        orderId,
-      };
+      return { success: true, paymentUrl, orderId };
     } catch (error) {
       console.error("Create VNPay payment URL error:", error);
       return { success: false, error: error.message };
     }
   }
 
+  // Thuật toán sort chuẩn sách giáo khoa VNPay
   sortObject(obj) {
     let sorted = {};
     let str = [];
