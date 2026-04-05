@@ -919,9 +919,8 @@ router.post(
   paymentController.refundPayment
 );
 
-// ============================================
-// UPLOAD ROUTES
-// ============================================
+// Chatbot
+router.post('/chat', chatController.handleChat);
 
 // Movie poster
 router.post(
