@@ -142,18 +142,23 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
 
       if (isSelected) {
-        setSelectedSeats(prev => prev.filter(s => s.seatNumber !== seat.seatNumber))
-        releaseSeats([seat.seatNumber])
+        try {
+          await releaseSeats([seat.seatNumber])
+        } catch (error) {
+          console.error('Release error:', error)
+        } finally {
+          setSelectedSeats(prev => prev.filter(s => s.seatNumber !== seat.seatNumber))
+        }
       } else {
         if (selectedSeats.length >= MAX_SEATS) {
           toast.warning(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
           return
         }
-        
+
         try {
           await holdSeats([seat.seatNumber])
           const price = getSeatPrice(seat.seatType)
-          
+
           setSelectedSeats(prev => {
             if (prev.some(s => s.seatNumber === seat.seatNumber)) return prev;
             return [...prev, { ...seat, price }];
@@ -164,7 +169,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         }
       }
     },
-    [selectedSchedule, isSeatAvailable, holdSeats, releaseSeats, getSeatPrice]
+    [selectedSchedule, selectedSeats, isSeatAvailable, holdSeats, releaseSeats, getSeatPrice]
   )
 
   const updateCartItem = (product: Product, quantity: number) => {
