@@ -27,3 +27,7 @@ const handleChat = async (req, res) => {
         res.status(500).json({ botMessage: "AI đang bận đi mua bắp rang bơ rồi nhé!" });
     }
 };
+
+export default {
+    handleChat
+};
