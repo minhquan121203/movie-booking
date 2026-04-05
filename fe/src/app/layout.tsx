@@ -5,7 +5,7 @@ import { Poppins } from 'next/font/google'
 import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 import ClientProvider from './ClientProvider'
-import Chatbot from '@/app/(client)/components/Chatbot'
+import Chatbot from './components/Chatbot' 
 
 // Thêm fallback để giảm CLS nếu font load chậm
 const poppins = Poppins({
@@ -26,7 +26,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* 1. Đưa class font vào body để áp dụng toàn cục ngay lập tức */}
       <body suppressHydrationWarning className={`${poppins.variable} font-sans antialiased`}>
         <NextTopLoader
-
           color="#6c63ff"
           initialPosition={0.08}
           crawlSpeed={200}
