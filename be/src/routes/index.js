@@ -26,6 +26,7 @@ import uploadController from "../controllers/upload.controller.js";
 import userController from "../controllers/user.controller.js";
 import voucherController from "../controllers/voucher.controller.js";
 import workScheduleController from "../controllers/workSchedule.controller.js";
+import chatController from "../controllers/chat.controller.js";
 
 // Import middleware
 import { checkAge } from "../middlewares/age-check.middleware.js";
@@ -94,6 +95,9 @@ router.get("/products/:id", productController.getProductById);
 
 // Voucher routes (public - verify only)
 router.post("/vouchers/verify", voucherController.verifyVoucher);
+
+// AI & CHATBOT ROUTES
+router.post("/chat", chatController.handleChat);
 
 // ============================================
 // PROTECTED ROUTES (Cần authentication)
@@ -919,8 +923,9 @@ router.post(
   paymentController.refundPayment
 );
 
-// Chatbot
-router.post('/chat', chatController.handleChat);
+// ============================================
+// UPLOAD ROUTES
+// ============================================
 
 // Movie poster
 router.post(
