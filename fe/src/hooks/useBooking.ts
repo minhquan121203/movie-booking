@@ -134,24 +134,29 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
 
       if (isSelected) {
-        const newSelectedSeats = selectedSeats.filter(s => s.seatNumber !== seat.seatNumber)
-        setSelectedSeats(newSelectedSeats)
+        setSelectedSeats(prev => prev.filter(s => s.seatNumber !== seat.seatNumber))
         releaseSeats([seat.seatNumber])
       } else {
         if (selectedSeats.length >= MAX_SEATS) {
           toast.warning(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
           return
         }
+        
         try {
           await holdSeats([seat.seatNumber])
           const price = getSeatPrice(seat.seatType)
-          setSelectedSeats(prev => [...prev, { ...seat, price }])
+          
+          setSelectedSeats(prev => {
+            if (prev.some(s => s.seatNumber === seat.seatNumber)) return prev;
+            return [...prev, { ...seat, price }];
+          })
         } catch (error) {
           console.error('Failed to hold seat:', error)
+          toast.error('Ghế này vừa có người chọn mất rồi!')
         }
       }
     },
-    [selectedSchedule, selectedSeats, isSeatAvailable, holdSeats, releaseSeats, getSeatPrice]
+    [selectedSchedule, isSeatAvailable, holdSeats, releaseSeats, getSeatPrice]
   )
 
   const updateCartItem = (product: Product, quantity: number) => {

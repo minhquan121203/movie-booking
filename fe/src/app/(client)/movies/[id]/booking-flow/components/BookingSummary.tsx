@@ -31,21 +31,27 @@ export function BookingSummary({
 
   const renderBadges = () => {
     const badges: string[] = [];
-    const coupleSeats = selectedSeats.filter(s => s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple'));
     const normalSeats = selectedSeats.filter(s => !(s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple')));
+    const coupleSeats = selectedSeats.filter(s => s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple'));
 
-    // Ghế thường 
+    coupleSeats.sort((a, b) => a.seatNumber.localeCompare(b.seatNumber));
+
     normalSeats.forEach(s => badges.push(`${s.seatNumber} (${s.seatType})`));
 
-    // Ghế đôi 
-    for (let i = 0; i < coupleSeats.length; i += 2) {
-      if (coupleSeats[i + 1]) {
-        const first = coupleSeats[i].seatNumber; 
-        const secondNum = coupleSeats[i + 1].seatNumber.replace(/[^0-9]/g, ''); 
-        badges.push(`${first}-${secondNum} (Ghế đôi)`);
-      } else {
-        badges.push(`${coupleSeats[i].seatNumber} (Đang lỗi click)`);
+    for (let i = 0; i < coupleSeats.length; i++) {
+      const current = coupleSeats[i];
+      const next = coupleSeats[i + 1];
+
+      if (next && current.seatNumber.charAt(0) === next.seatNumber.charAt(0)) {
+         const num1 = parseInt(current.seatNumber.slice(1));
+         const num2 = parseInt(next.seatNumber.slice(1));
+         if (num2 === num1 + 1) {
+            badges.push(`${current.seatNumber.charAt(0)}${num1}-${num2} (Ghế đôi)`);
+            i++; 
+            continue;
+         }
       }
+      badges.push(`${current.seatNumber} (Ghế đôi)`);
     }
     return badges;
   }
