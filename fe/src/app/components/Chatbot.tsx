@@ -52,7 +52,7 @@ export default function ChatBot() {
 
       {/* Khung Chat */}
       {isOpen && (
-        <div className="absolute bottom-20 right-0 w-[350px] ...">
+        <div className="absolute bottom-[75px] right-0 w-[380px] h-[500px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
           <div className="bg-blue-600 p-4 text-white font-bold flex justify-between">
             <span>🤖 Trợ lý CineBooking</span>
           </div>
