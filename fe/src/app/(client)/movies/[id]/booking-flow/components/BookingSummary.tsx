@@ -21,7 +21,6 @@ export function BookingSummary({
 }: BookingSummaryProps) {
   const formatPrice = (price: number) => price.toLocaleString('vi-VN') + ' đ'
 
-  // 1. CHIA ĐÔI TIỀN GHẾ COUPLE
   const seatsTotal = selectedSeats.reduce((acc, seat) => {
     const isCouple = seat.seatType?.toLowerCase().includes('đôi') || seat.seatType?.toLowerCase().includes('couple');
     return acc + (isCouple ? seat.price / 2 : seat.price);
@@ -30,23 +29,21 @@ export function BookingSummary({
   const combosTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   const displayTotal = seatsTotal + combosTotal;
 
-  // 2. LOGIC GỘP CHỮ "K9" VÀ "K10" THÀNH "K9-10"
   const renderBadges = () => {
     const badges: string[] = [];
     const coupleSeats = selectedSeats.filter(s => s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple'));
     const normalSeats = selectedSeats.filter(s => !(s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple')));
 
-    // Ghế thường thì cứ hiện bình thường
+    // Ghế thường 
     normalSeats.forEach(s => badges.push(`${s.seatNumber} (${s.seatType})`));
 
-    // Ghế đôi thì gom 2 cái liền nhau lại
+    // Ghế đôi 
     for (let i = 0; i < coupleSeats.length; i += 2) {
       if (coupleSeats[i + 1]) {
-        const first = coupleSeats[i].seatNumber; // VD: K9
-        const secondNum = coupleSeats[i + 1].seatNumber.replace(/[^0-9]/g, ''); // VD: 10
+        const first = coupleSeats[i].seatNumber; 
+        const secondNum = coupleSeats[i + 1].seatNumber.replace(/[^0-9]/g, ''); 
         badges.push(`${first}-${secondNum} (Ghế đôi)`);
       } else {
-        // Trường hợp bị lẻ do bug click
         badges.push(`${coupleSeats[i].seatNumber} (Đang lỗi click)`);
       }
     }
@@ -62,15 +59,11 @@ export function BookingSummary({
             <div className="space-y-2 text-sm text-text-secondary">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                {/* Truy cập nested object theater */}
-                <span>
-                  {selectedSchedule.theater?.name} - {selectedSchedule.roomName}
-                </span>
+                <span>{selectedSchedule.theater?.name} - {selectedSchedule.roomName}</span>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" />{' '}
-                  {new Date(selectedSchedule.showDate).toLocaleDateString()}
+                  <Calendar className="w-4 h-4" /> {new Date(selectedSchedule.showDate).toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4" /> {selectedSchedule.startTime}
@@ -86,17 +79,17 @@ export function BookingSummary({
         <div className="space-y-3 mb-4">
           <div className="flex justify-between items-center">
             <span className="font-semibold text-text-primary flex items-center gap-2">
-              <Ticket className="w-4 h-4" /> Ghế ({selectedSeats.length})
+              <Ticket className="w-4 h-4" /> Ghế ({renderBadges().length})
             </span>
             <span className="font-bold text-primary">
-              {formatPrice(selectedSeats.reduce((acc, s) => acc + s.price, 0))}
+              {formatPrice(seatsTotal)}
             </span>
           </div>
           {selectedSeats.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
-              {selectedSeats.map(seat => (
-                <Badge key={seat.seatNumber} variant="outline" className="bg-bg-secondary">
-                  {seat.seatNumber} ({seat.seatType})
+              {renderBadges().map((badgeTxt, idx) => (
+                <Badge key={idx} variant="outline" className="bg-bg-secondary">
+                  {badgeTxt}
                 </Badge>
               ))}
             </div>
@@ -105,23 +98,17 @@ export function BookingSummary({
           )}
         </div>
 
-        {/* Danh sách Combo */}
+        {/*Bắp nước */}
         {cartItems.length > 0 && (
           <div className="space-y-3 mb-4 border-t border-border border-dashed pt-4">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-text-primary">Bắp nước</span>
-              <span className="font-bold text-primary">
-                {formatPrice(
-                  cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0)
-                )}
-              </span>
+              <span className="font-bold text-primary">{formatPrice(combosTotal)}</span>
             </div>
             <div className="space-y-2">
               {cartItems.map(item => (
                 <div key={item.product._id} className="flex justify-between text-sm">
-                  <span className="text-text-secondary">
-                    {item.quantity}x {item.product.name}
-                  </span>
+                  <span className="text-text-secondary">{item.quantity}x {item.product.name}</span>
                   <span>{formatPrice(item.product.price * item.quantity)}</span>
                 </div>
               ))}
