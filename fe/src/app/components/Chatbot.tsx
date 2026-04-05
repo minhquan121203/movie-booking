@@ -70,15 +70,18 @@ export default function ChatBot() {
             {isLoading && <div className="text-xs text-gray-400 italic">CineBot đang suy nghĩ...</div>}
           </div>
 
-          <div className="p-4 border-t bg-white flex gap-2">
+          <div className="p-3 border-t bg-white flex items-center gap-2">
             <input 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Hỏi tớ về phim, rạp, giờ chiếu..."
-              className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Hỏi tớ về phim, rạp..."
+              className="flex-[4] min-w-0 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button onClick={handleSend} className="bg-blue-600 text-white p-2 rounded-full px-4 text-sm font-bold">
+            <button 
+              onClick={handleSend} 
+              className="flex-1 bg-blue-600 text-white py-2 rounded-full text-sm font-bold whitespace-nowrap px-4 hover:bg-blue-700 transition-colors"
+            >
               Gửi
             </button>
           </div>
