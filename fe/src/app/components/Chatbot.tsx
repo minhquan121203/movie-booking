@@ -41,7 +41,7 @@ export default function ChatBot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999]">
+    <div className="fixed bottom-8 right-8 z-[9999]">
       {/* Nút bấm tròn */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
@@ -52,7 +52,7 @@ export default function ChatBot() {
 
       {/* Khung Chat */}
       {isOpen && (
-        <div className="absolute bottom-24 right-0 w-[350px] ...">
+        <div className="absolute bottom-20 right-0 w-[350px] ...">
           <div className="bg-blue-600 p-4 text-white font-bold flex justify-between">
             <span>🤖 Trợ lý CineBooking</span>
           </div>
@@ -67,7 +67,7 @@ export default function ChatBot() {
                 </div>
               </div>
             ))}
-            {isLoading && <div className="text-xs text-gray-400 italic">CineBot đang gõ...</div>}
+            {isLoading && <div className="text-xs text-gray-400 italic">CineBot đang suy nghĩ...</div>}
           </div>
 
           <div className="p-4 border-t bg-white flex gap-2">
