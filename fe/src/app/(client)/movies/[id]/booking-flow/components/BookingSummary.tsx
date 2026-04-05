@@ -21,20 +21,37 @@ export function BookingSummary({
 }: BookingSummaryProps) {
   const formatPrice = (price: number) => price.toLocaleString('vi-VN') + ' đ'
 
-  // 🚀 1. FIX LỖI 360K: TÍNH LẠI TIỀN GHẾ (CHIA ĐÔI NẾU LÀ GHẾ ĐÔI)
+  // 1. CHIA ĐÔI TIỀN GHẾ COUPLE
   const seatsTotal = selectedSeats.reduce((acc, seat) => {
-    // Kiểm tra xem tên loại ghế có chữ "đôi" hoặc "couple" không
     const isCouple = seat.seatType?.toLowerCase().includes('đôi') || seat.seatType?.toLowerCase().includes('couple');
-    
-    // Nếu là ghế đôi -> lấy giá / 2. Nếu ghế thường -> giữ nguyên giá
     return acc + (isCouple ? seat.price / 2 : seat.price);
   }, 0);
 
-  // 🚀 2. TÍNH TIỀN BẮP NƯỚC
   const combosTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-
-  // 🚀 3. TÍNH LẠI TỔNG TIỀN CUỐI CÙNG HIỂN THỊ RA UI
   const displayTotal = seatsTotal + combosTotal;
+
+  // 2. LOGIC GỘP CHỮ "K9" VÀ "K10" THÀNH "K9-10"
+  const renderBadges = () => {
+    const badges: string[] = [];
+    const coupleSeats = selectedSeats.filter(s => s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple'));
+    const normalSeats = selectedSeats.filter(s => !(s.seatType?.toLowerCase().includes('đôi') || s.seatType?.toLowerCase().includes('couple')));
+
+    // Ghế thường thì cứ hiện bình thường
+    normalSeats.forEach(s => badges.push(`${s.seatNumber} (${s.seatType})`));
+
+    // Ghế đôi thì gom 2 cái liền nhau lại
+    for (let i = 0; i < coupleSeats.length; i += 2) {
+      if (coupleSeats[i + 1]) {
+        const first = coupleSeats[i].seatNumber; // VD: K9
+        const secondNum = coupleSeats[i + 1].seatNumber.replace(/[^0-9]/g, ''); // VD: 10
+        badges.push(`${first}-${secondNum} (Ghế đôi)`);
+      } else {
+        // Trường hợp bị lẻ do bug click
+        badges.push(`${coupleSeats[i].seatNumber} (Đang lỗi click)`);
+      }
+    }
+    return badges;
+  }
 
   return (
     <div className="w-full lg:w-[380px] flex-shrink-0">
