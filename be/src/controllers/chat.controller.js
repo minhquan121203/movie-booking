@@ -42,4 +42,6 @@ export const handleChat = async (req, res) => {
     }
 };
 
-export default handleChat;
+export default {
+    handleChat
+};
