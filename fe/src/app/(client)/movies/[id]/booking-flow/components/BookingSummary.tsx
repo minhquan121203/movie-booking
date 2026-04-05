@@ -21,6 +21,21 @@ export function BookingSummary({
 }: BookingSummaryProps) {
   const formatPrice = (price: number) => price.toLocaleString('vi-VN') + ' đ'
 
+  // 🚀 1. FIX LỖI 360K: TÍNH LẠI TIỀN GHẾ (CHIA ĐÔI NẾU LÀ GHẾ ĐÔI)
+  const seatsTotal = selectedSeats.reduce((acc, seat) => {
+    // Kiểm tra xem tên loại ghế có chữ "đôi" hoặc "couple" không
+    const isCouple = seat.seatType?.toLowerCase().includes('đôi') || seat.seatType?.toLowerCase().includes('couple');
+    
+    // Nếu là ghế đôi -> lấy giá / 2. Nếu ghế thường -> giữ nguyên giá
+    return acc + (isCouple ? seat.price / 2 : seat.price);
+  }, 0);
+
+  // 🚀 2. TÍNH TIỀN BẮP NƯỚC
+  const combosTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+
+  // 🚀 3. TÍNH LẠI TỔNG TIỀN CUỐI CÙNG HIỂN THỊ RA UI
+  const displayTotal = seatsTotal + combosTotal;
+
   return (
     <div className="w-full lg:w-[380px] flex-shrink-0">
       <div className="bg-surface rounded-2xl p-6 border border-border sticky top-24 shadow-lg">
@@ -100,7 +115,7 @@ export function BookingSummary({
         {/* Tổng tiền */}
         <div className="pt-4 border-t-2 border-border flex justify-between items-end">
           <span className="text-text-secondary font-medium">Tổng cộng</span>
-          <span className="text-2xl font-bold text-primary">{formatPrice(total)}</span>
+          <span className="text-2xl font-bold text-primary">{formatPrice(displayTotal)}</span>
         </div>
       </div>
     </div>

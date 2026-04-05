@@ -119,7 +119,7 @@ export default function ConcessionSalesPage() {
 
       showSuccess(
         'Đơn hàng thành công!',
-        `Mã đơn: ${result.data.transaction.transactionId} - Tổng: ${result.data.transaction.totalAmount}đ`
+        `Mã đơn: ${result.data.concessionId} - Tổng: ${result.data.totalAmount.toLocaleString('vi-VN')}đ`
       )
 
       clearCart()
