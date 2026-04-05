@@ -26,7 +26,7 @@ import uploadController from "../controllers/upload.controller.js";
 import userController from "../controllers/user.controller.js";
 import voucherController from "../controllers/voucher.controller.js";
 import workScheduleController from "../controllers/workSchedule.controller.js";
-import chatController from "../controllers/chat.controller.js";
+import * as chatController from "../controllers/chat.controller.js";
 
 // Import middleware
 import { checkAge } from "../middlewares/age-check.middleware.js";
