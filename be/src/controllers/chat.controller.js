@@ -11,10 +11,12 @@ export const handleChat = async (req, res) => {
 
     try {
         const [movies, theaters, schedules] = await Promise.all([
-            Movie.find({ status: 'showing' }).select('title genre description poster'), // Thêm poster để FE lấy ảnh
+            Movie.find().select('title genre description poster').limit(5),
             Theater.find().select('name address'),
             Schedule.find().populate('movie theater').select('startTime availableSeats').limit(10)
         ]);
+
+        console.log("=== CHECK DATA PHIM ===", movies);
 
         const context = `
           Bạn là trợ lý ảo CineBot của rạp phim CineBooking. 
@@ -22,6 +24,7 @@ export const handleChat = async (req, res) => {
           Dữ liệu hiện tại:
           - Phim: ${JSON.stringify(movies)}
           - Rạp: ${JSON.stringify(theaters)}
+          - Lịch: ${JSON.stringify(schedules)}
         
           YÊU CẦU ĐỊNH DẠNG TRẢ LỜI:
           Bạn PHẢI trả lời duy nhất dưới dạng một chuỗi JSON hợp lệ, không kèm thêm bất kỳ văn bản nào bên ngoài.
