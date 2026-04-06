@@ -33,6 +33,11 @@ export const handleChat = async (req, res) => {
             Voucher.find({ isActive: true }).select('code discount description minSpend')
         ]);
 
+        console.log("=== TỔNG LỊCH THÔ LẤY ĐƯỢC ===", rawSchedules.length);
+        if (rawSchedules.length > 0) {
+            console.log("=== CHI TIẾT LỊCH 1 ===", rawSchedules[0]);
+        }
+
         const schedules = rawSchedules.map(s => {
             if (!s.movie || !s.theater || !s.startTime) return null;
 
