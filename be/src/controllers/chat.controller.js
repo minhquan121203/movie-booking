@@ -40,7 +40,10 @@ export const handleChat = async (req, res) => {
             const dateStr = d.toLocaleDateString('vi-VN');
 
             return {
-                phim: s.movie.title,
+                id: s.movie._id, // Ép lấy ID phim
+                title: s.movie.title, // Ép lấy tên phim
+                genre: s.movie.genre || "Đang hot",
+                poster: s.movie.poster || s.movie.image || s.movie.hinhAnh || s.movie.thumbnail, // Ép lấy link ảnh
                 rap: s.theater.name,
                 thoiGian: `${timeStr} ngày ${dateStr}`,
                 gheTrong: s.availableSeats
