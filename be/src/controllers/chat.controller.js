@@ -13,7 +13,7 @@ export const handleChat = async (req, res) => {
 
     try {
         const [movies, theaters, schedules, products, vouchers] = await Promise.all([
-            Movie.find().select('title genre description poster').limit(5),
+            Movie.find().select('title genre description poster image hinhAnh thumbnail').limit(5),
             Theater.find().select('name address'),
             Schedule.find().populate('movie theater').select('startTime availableSeats').limit(10),
             Product.find().select('name price description'),
