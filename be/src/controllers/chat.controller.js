@@ -19,12 +19,7 @@ export const handleChat = async (req, res) => {
         const [movies, theaters, rawSchedules, products, vouchers] = await Promise.all([
             Movie.find().select('title genre description poster image hinhAnh thumbnail'),
             Theater.find().select('name address'),
-            Schedule.find({
-                startTime: {
-                    $gte: now,
-                    $lte: next7Days
-                }
-            })
+            Schedule.find()
                 .populate('movie', 'title')
                 .populate('theater', 'name')
                 .select('startTime availableSeats')
@@ -33,15 +28,14 @@ export const handleChat = async (req, res) => {
             Voucher.find({ isActive: true }).select('code discount description minSpend')
         ]);
 
-        console.log("=== TỔNG LỊCH THÔ LẤY ĐƯỢC ===", rawSchedules.length);
-        if (rawSchedules.length > 0) {
-            console.log("=== CHI TIẾT LỊCH 1 ===", rawSchedules[0]);
-        }
-
+        console.log("=== TỔNG LỊCH (ĐÃ THÁO CHỐT) ===", rawSchedules.length);
         const schedules = rawSchedules.map(s => {
             if (!s.movie || !s.theater || !s.startTime) return null;
 
             const d = new Date(s.startTime);
+
+            if (d < now || d > next7Days) return null;
+
             const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const dateStr = d.toLocaleDateString('vi-VN');
 
