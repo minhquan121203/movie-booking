@@ -10,35 +10,73 @@ export const handleChat = async (req, res) => {
     const { userMessage } = req.body;
 
     try {
-        // 1. Lấy dữ liệu thực tế từ Database của fen
         const [movies, theaters, schedules] = await Promise.all([
-            Movie.find({ status: 'showing' }).select('title genre description'),
+            Movie.find({ status: 'showing' }).select('title genre description poster'), // Thêm poster để FE lấy ảnh
             Theater.find().select('name address'),
             Schedule.find().populate('movie theater').select('startTime availableSeats').limit(10)
         ]);
 
-        // 2. Tạo "Ngữ cảnh" (Context)
         const context = `
-      Bạn là trợ lý ảo CineBot của rạp phim CineBooking. 
-      Hãy gọi khách hàng là "fen" và xưng là "tớ".
-      Dữ liệu hiện tại:
-      - Phim: ${JSON.stringify(movies)}
-      - Rạp: ${JSON.stringify(theaters)}
-      - Lịch chiếu: ${JSON.stringify(schedules)}
+          Bạn là trợ lý ảo CineBot của rạp phim CineBooking. 
+          Hãy gọi khách hàng là "fen" và xưng là "tớ".
+          Dữ liệu hiện tại:
+          - Phim: ${JSON.stringify(movies)}
+          - Rạp: ${JSON.stringify(theaters)}
+        
+          YÊU CẦU ĐỊNH DẠNG TRẢ LỜI:
+          Bạn PHẢI trả lời duy nhất dưới dạng một chuỗi JSON hợp lệ, không kèm thêm bất kỳ văn bản nào bên ngoài.
+          Cấu trúc JSON như sau:
+          {
+            "text": "Câu chào hoặc câu dẫn dắt tự nhiên (ví dụ: 'Dưới đây là danh sách phim đang hot nè fen!')",
+            "type": "text" hoặc "movie_list",
+            "data": [] // Nếu type là movie_list, data sẽ là mảng các object phim: [{title, genre, poster, details_url}]
+          }
+        
+          VÍ DỤ TRẢ LỜI (Nếu khách hỏi phim đang chiếu):
+          {
+            "text": "Nay rạp tớ có mấy siêu phẩm này đang chiếu nè, fen xem thử coi ưng cái nào không nhé!",
+            "type": "movie_list",
+            "data": [
+              {
+                "title": "Demon Slayer: Mugen Train",
+                "genre": "Anime, Hành động",
+                "poster": "link_ảnh_poster (nếu có trong dữ liệu, không thì để null)",
+                "details_url": "/movies/id_phim" 
+              }
+            ]
+          }
+        `;
 
-      Hãy dựa vào dữ liệu trên để tư vấn về thể loại, địa chỉ rạp và giờ chiếu. 
-      Nếu không có thông tin, hãy xin lỗi lịch sự.
-    `;
-
-        // 3. Gửi cho Gemini
         const prompt = `${context}\n\nKhách hàng hỏi: ${userMessage}`;
         const result = await model.generateContent(prompt);
         const response = await result.response;
+        let responseText = response.text();
 
-        res.json({ botMessage: response.text() });
+        responseText = responseText.replace(/```json|```/g, "").trim();
+
+        try {
+            const botResponse = JSON.parse(responseText);
+            res.json({ botMessage: botResponse });
+        } catch (error) {
+            console.error("Lỗi Parse JSON:", error);
+            res.json({
+                botMessage: {
+                    text: responseText,
+                    type: "text",
+                    data: []
+                }
+            });
+        }
+
     } catch (error) {
-        console.error("Lỗi Chatbot:", error);
-        res.status(500).json({ botMessage: "AI đang bận đi mua bắp rang bơ rồi fen!" });
+        console.error("Lỗi Server hoặc AI:", error);
+        res.status(500).json({
+            botMessage: {
+                text: "Tớ đang bận xíu việc ở rạp, fen đợi tí hỏi lại tớ nha!",
+                type: "text",
+                data: []
+            }
+        });
     }
 };
 
