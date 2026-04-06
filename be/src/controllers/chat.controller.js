@@ -9,7 +9,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export const handleChat = async (req, res) => {
-    // 🌟 VIP 1: Nhận thêm history (lịch sử) và tên user từ Frontend
     const { userMessage, history = [], userName = "Khách VIP" } = req.body;
 
     try {
@@ -48,7 +47,9 @@ export const handleChat = async (req, res) => {
           }
         `;
 
-        const formattedHistory = history.map(msg => ({
+        const safeHistory = Array.isArray(history) ? history : [];
+
+        const formattedHistory = safeHistory.map(msg => ({
             role: msg.role === 'bot' ? 'model' : 'user',
             parts: [{ text: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) }]
         }));
