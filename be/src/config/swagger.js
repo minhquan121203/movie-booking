@@ -53,6 +53,7 @@ const options = {
       { name: "Analytics", description: "Phân tích và báo cáo dữ liệu kinh doanh" },
       { name: "Performance Metrics", description: "Tracking và đánh giá hiệu suất (KPI)" },
       { name: "Dashboard", description: "Dashboard" },
+      { name: "AI Chat", description: "Tư vấn viên AI (Gemini)" },
     ],
   },
   apis: ["./src/docs/*.swagger.js"],
