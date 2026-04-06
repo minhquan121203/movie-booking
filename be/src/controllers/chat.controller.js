@@ -12,10 +12,21 @@ export const handleChat = async (req, res) => {
     const { userMessage, history = [], userName = "Khách VIP" } = req.body;
 
     try {
+        // 1. Lấy thời gian hiện tại
+        const now = new Date();
+
+        // 2. Nâng cấp Query lấy dữ liệu (Sửa đoạn Promise.all)
         const [movies, theaters, schedules, products, vouchers] = await Promise.all([
-            Movie.find().select('title genre description poster image hinhAnh thumbnail').limit(5),
+            // Bỏ limit đi để lấy hết phim đang có
+            Movie.find().select('title genre description poster'),
             Theater.find().select('name address'),
-            Schedule.find().populate('movie theater').select('startTime availableSeats').limit(10),
+            // CHỈ lấy lịch chiếu từ hôm nay trở đi, sắp xếp tăng dần, lấy tối đa 50 suất
+            Schedule.find({ startTime: { $gte: now } })
+                .populate('movie', 'title') // Lấy chính xác tên phim
+                .populate('theater', 'name') // Lấy chính xác tên rạp
+                .select('startTime availableSeats')
+                .sort({ startTime: 1 })
+                .limit(50),
             Product.find().select('name price description'),
             Voucher.find({ isActive: true }).select('code discount description minSpend')
         ]);
@@ -30,6 +41,11 @@ export const handleChat = async (req, res) => {
           - Lịch: ${JSON.stringify(schedules)}
           - Bắp nước: ${JSON.stringify(products)}  
           - Khuyến mãi: ${JSON.stringify(vouchers)}
+        
+          LƯU Ý TỐI QUAN TRỌNG (CẤM VI PHẠM):
+          1. TUYỆT ĐỐI KHÔNG bịa đặt thông tin, KHÔNG tự chế tên phim, KHÔNG tự chế lịch chiếu.
+          2. CHỈ TƯ VẤN lịch chiếu CÓ THẬT trong mảng "Lịch" ở trên.
+          3. Nếu khách hỏi rạp X mà trong dữ liệu "Lịch" không có suất chiếu nào của rạp X, bạn PHẢI trả lời: "Hiện tại tớ chưa có thông tin lịch chiếu của rạp này trong thời gian tới fen ạ!".
         
           YÊU CẦU ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC):
           Bạn PHẢI trả lời dưới dạng JSON hợp lệ, không có markdown.
@@ -48,21 +64,42 @@ export const handleChat = async (req, res) => {
         `;
 
         const safeHistory = Array.isArray(history) ? history : [];
+        const formattedHistory = safeHistory.map(msg => {
+            let plainText = "";
+            // Chỉ trích xuất phần text thuần túy để AI dễ ghi nhớ
+            if (typeof msg.content === 'string') {
+                plainText = msg.content;
+            } else if (msg.content && msg.content.text) {
+                plainText = msg.content.text;
+            } else {
+                plainText = JSON.stringify(msg.content);
+            }
 
-        const formattedHistory = safeHistory.map(msg => ({
-            role: msg.role === 'bot' ? 'model' : 'user',
-            parts: [{ text: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) }]
-        }));
-
-        const chatSession = model.startChat({
-            history: [
-                { role: "user", parts: [{ text: context }] },
-                { role: "model", parts: [{ text: '{"text": "Đã nạp dữ liệu và luật lệ!", "type": "text", "data": []}' }] },
-                ...formattedHistory // Nạp trí nhớ cũ vào đây
-            ]
+            return {
+                role: msg.role === 'bot' ? 'model' : 'user',
+                parts: [{ text: plainText }]
+            };
         });
 
-        // Gửi tin nhắn hiện tại
+        const rawHistory = [
+            { role: "user", parts: [{ text: context + "\n\nLƯU Ý QUAN TRỌNG: Nếu khách nói 'phim đó', 'phim ý', hãy tự động đọc lại tin nhắn trước đó để biết chính xác là phim nào và lấy đúng _id của phim đó để đặt vé!" }] },
+            { role: "model", parts: [{ text: 'Đã rõ! Tớ đã ghi nhớ toàn bộ luật và lịch sử trò chuyện.' }] },
+            ...formattedHistory
+        ];
+
+        const validHistory = [];
+        for (const msg of rawHistory) {
+            if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === msg.role) {
+                validHistory[validHistory.length - 1].parts[0].text += "\n" + msg.parts[0].text;
+            } else {
+                validHistory.push(msg);
+            }
+        }
+
+        const chatSession = model.startChat({
+            history: validHistory
+        });
+
         const result = await chatSession.sendMessage(userMessage);
         let responseText = result.response.text();
 
