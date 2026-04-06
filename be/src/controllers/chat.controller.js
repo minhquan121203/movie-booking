@@ -14,22 +14,44 @@ export const handleChat = async (req, res) => {
     try {
         // 1. Lấy thời gian hiện tại
         const now = new Date();
+        const next7Days = new Date();
+        next7Days.setDate(now.getDate() + 7); // Cộng thêm 7 ngày vào thời gian hiện tại
 
-        // 2. Nâng cấp Query lấy dữ liệu (Sửa đoạn Promise.all)
-        const [movies, theaters, schedules, products, vouchers] = await Promise.all([
-            // Bỏ limit đi để lấy hết phim đang có
+        // 2. Nâng cấp Query lấy dữ liệu
+        const [movies, theaters, products, vouchers] = await Promise.all([
             Movie.find().select('title genre description poster'),
             Theater.find().select('name address'),
-            // CHỈ lấy lịch chiếu từ hôm nay trở đi, sắp xếp tăng dần, lấy tối đa 50 suất
-            Schedule.find({ startTime: { $gte: now } })
-                .populate('movie', 'title') // Lấy chính xác tên phim
-                .populate('theater', 'name') // Lấy chính xác tên rạp
+            Schedule.find({
+                startTime: {
+                    $gte: now,         // Lấy từ bây giờ trở đi (không lấy vé đã chiếu xong)
+                    $lte: next7Days    // Chặn ở mốc 7 ngày tới
+                }
+            })
+                .populate('movie', 'title')
+                .populate('theater', 'name')
                 .select('startTime availableSeats')
-                .sort({ startTime: 1 })
-                .limit(50),
+                .sort({ startTime: 1 }),
             Product.find().select('name price description'),
             Voucher.find({ isActive: true }).select('code discount description minSpend')
         ]);
+
+        // 3. DỊCH LỊCH CHIẾU RA "TIẾNG NGƯỜI" CHO AI DỄ HIỂU
+        const schedules = rawSchedules.map(s => {
+            // Né lỗi nếu rạp hoặc phim bị xóa mất
+            if (!s.movie || !s.theater || !s.startTime) return null;
+
+            const d = new Date(s.startTime);
+            // Ép ra format chuẩn Việt Nam: ví dụ "16:25 ngày 30/04/2026"
+            const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = d.toLocaleDateString('vi-VN');
+
+            return {
+                phim: s.movie.title,
+                rap: s.theater.name,
+                thoiGian: `${timeStr} ngày ${dateStr}`,
+                gheTrong: s.availableSeats
+            };
+        }).filter(item => item !== null);
 
         const context = `
           Bạn là trợ lý ảo CineBot của rạp phim CineBooking. 
