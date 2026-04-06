@@ -133,22 +133,25 @@ export default function ChatBot() {
                     {m.content?.type === 'movie_list' && m.content?.data?.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto px-3 pb-3 pt-1 snap-x scroll-smooth touch-pan-x w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {m.content.data.map((movie: any, idx: number) => {
-                          // Bắt mọi thể loại tên trường ảnh từ DB
+                          const title = movie.title || movie.phim || movie.name || movie.tenPhim || 'Phim Đang Chiếu';
+                          const genre = movie.genre || movie.theLoai || 'Đang hot';
                           const imageUrl = movie.poster || movie.image || movie.hinhAnh || movie.thumbnail || 'https://placehold.co/150x200?text=No+Poster';
+                          const movieId = movie._id || movie.id || movie.movieId || '';
+
                           return (
                             <div key={idx} className="flex-none w-[130px] border rounded-xl overflow-hidden snap-center flex flex-col bg-gray-50 shadow-sm shrink-0">
                               <img 
                                 src={imageUrl} 
-                                alt={movie.title} 
+                                alt={title} 
                                 className="w-full h-[180px] object-cover"
                               />
                               <div className="p-2 flex flex-col flex-1 justify-between">
                                 <div>
-                                  <h4 className="font-bold text-xs line-clamp-2" title={movie.title}>{movie.title}</h4>
-                                  <p className="text-[10px] text-gray-500 truncate mt-1">{movie.genre}</p>
+                                  <h4 className="font-bold text-xs line-clamp-2" title={title}>{title}</h4>
+                                  <p className="text-[10px] text-gray-500 truncate mt-1">{genre}</p>
                                 </div>
                                 <a 
-                                  href={`/movies/${movie._id || movie.id || ''}`} 
+                                  href={`/movies/${movieId}`} 
                                   target="_blank"
                                   className="mt-2 text-center bg-blue-500 text-white py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-colors"
                                 >
