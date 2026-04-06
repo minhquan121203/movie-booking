@@ -12,19 +12,17 @@ export const handleChat = async (req, res) => {
     const { userMessage, history = [], userName = "Khách VIP" } = req.body;
 
     try {
-        // 1. Lấy thời gian hiện tại
         const now = new Date();
         const next7Days = new Date();
-        next7Days.setDate(now.getDate() + 7); // Cộng thêm 7 ngày vào thời gian hiện tại
+        next7Days.setDate(now.getDate() + 7);
 
-        // 2. Nâng cấp Query lấy dữ liệu
-        const [movies, theaters, products, vouchers] = await Promise.all([
-            Movie.find().select('title genre description poster'),
+        const [movies, theaters, rawSchedules, products, vouchers] = await Promise.all([
+            Movie.find().select('title genre description poster image hinhAnh thumbnail'),
             Theater.find().select('name address'),
             Schedule.find({
                 startTime: {
-                    $gte: now,         // Lấy từ bây giờ trở đi (không lấy vé đã chiếu xong)
-                    $lte: next7Days    // Chặn ở mốc 7 ngày tới
+                    $gte: now,
+                    $lte: next7Days
                 }
             })
                 .populate('movie', 'title')
@@ -35,13 +33,10 @@ export const handleChat = async (req, res) => {
             Voucher.find({ isActive: true }).select('code discount description minSpend')
         ]);
 
-        // 3. DỊCH LỊCH CHIẾU RA "TIẾNG NGƯỜI" CHO AI DỄ HIỂU
         const schedules = rawSchedules.map(s => {
-            // Né lỗi nếu rạp hoặc phim bị xóa mất
             if (!s.movie || !s.theater || !s.startTime) return null;
 
             const d = new Date(s.startTime);
-            // Ép ra format chuẩn Việt Nam: ví dụ "16:25 ngày 30/04/2026"
             const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const dateStr = d.toLocaleDateString('vi-VN');
 
