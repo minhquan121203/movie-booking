@@ -1,13 +1,15 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; 
 
 export default function ChatBot() {
+  const router = useRouter(); 
+  
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Khởi tạo tin nhắn chào mừng (Đúng chuẩn JSON từ backend)
   const [messages, setMessages] = useState([
     { 
       role: 'bot', 
@@ -19,7 +21,6 @@ export default function ChatBot() {
     }
   ]);
 
-  // Tự động cuộn xuống khi có tin nhắn mới
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -29,8 +30,10 @@ export default function ChatBot() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    // Tin nhắn của user chỉ là text thường
     const userMsg = { role: 'user', content: { text: input, type: 'text', data: [] } };
+    
+    const currentHistory = [...messages]; 
+    
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
@@ -39,12 +42,24 @@ export default function ChatBot() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage: input }),
+        body: JSON.stringify({ 
+          userMessage: input,
+          history: currentHistory, 
+          userName: "Fen"          
+        }),
       });
       const data = await res.json();
+      const botResponse = data.botMessage;
       
-      // data.botMessage bây giờ là một Object JSON từ backend
-      setMessages(prev => [...prev, { role: 'bot', content: data.botMessage }]);
+      setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
+
+      if (botResponse.type === 'action_booking' && botResponse.data?.movieId) {
+        setTimeout(() => {
+          setIsOpen(false); 
+          router.push(`/movies/${botResponse.data.movieId}`); 
+        }, 1500); 
+      }
+
     } catch (error) {
       setMessages(prev => [
         ...prev, 
@@ -107,7 +122,7 @@ export default function ChatBot() {
                       </div>
                     )}
 
-                    {/* Phần danh sách Phim (Chỉ hiện khi type là movie_list) */}
+                    {/* Phần danh sách Phim */}
                     {m.content?.type === 'movie_list' && m.content?.data?.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto px-3 pb-3 pt-1 snap-x scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {m.content.data.map((movie: any, idx: number) => (
