@@ -16,74 +16,26 @@ let server;
 
 async function startServer() {
   try {
-    // Validate critical environment variables
     const requiredEnvVars = ["JWT_SECRET", "MONGODB_URI"];
-
     const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 
     if (missingEnvVars.length > 0) {
-      console.error(" Missing required environment variables:", missingEnvVars.join(", "));
-      console.error(" Please check your .env file and ensure all required variables are set");
+      console.error("Missing env vars:", missingEnvVars.join(", "));
       process.exit(1);
     }
 
-    // Validate JWT_SECRET strength
-    if (process.env.JWT_SECRET.length < 32) {
-      console.error(" JWT_SECRET must be at least 32 characters long for security");
-      process.exit(1);
-    }
-
-    console.log(" Environment variables validated");
-
-    // Kết nối đến cơ sở dữ liệu
     await connectDB();
 
-    // Kết nối Redis nếu được bật
     if (process.env.REDIS_ENABLED !== "false") {
-      console.log("🔄 Connecting to Redis...");
-      try {
-        await redisService.connect();
-        console.log(" Redis connected successfully");
-      } catch (error) {
-        console.warn("  Redis connection failed, continuing without Redis:", error.message);
-        console.warn(" Set REDIS_ENABLED=false to disable Redis completely");
-      }
-    } else {
-      console.log("  Redis is disabled");
+      try { await redisService.connect(); } catch (e) { console.warn("Redis skip"); }
     }
 
     server = http.createServer(app);
-
-    // Khởi tạo WebSocket nếu được bật
-    if (process.env.WEBSOCKET_ENABLED !== "false") {
-      websocketService.initialize(server);
-    }
-
-    // Khởi tạo payment status polling
-    if (process.env.PAYMENT_POLLING_ENABLED !== "false") {
-      paymentStatusService.startPolling();
-    }
-
-    //  FIX #4 HIGH: Chỉ dùng 1 cleanup service duy nhất
-    // Khởi tạo expired holds cleanup service (handles all cleanup tasks)
-    if (process.env.CLEANUP_ENABLED !== "false") {
-      expiredHoldsCleanupService.start();
-      console.log(" Cleanup service started (expired holds, bookings, vouchers, products)");
-    }
-
-    // Khởi tạo data sync service
-    if (process.env.DATA_SYNC_ENABLED !== "false") {
-      dataSyncService.start();
-    }
-
-    // START SERVER
     const PORT = process.env.PORT || 5000;
 
+    // Mở cổng server NGAY LẬP TỨC 🔥
     server.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server is officially LIVE on port ${PORT}`);
-
-      // 🔥 CHUYỂN CÁC DỊCH VỤ VÀO ĐÂY 🔥
-      // Để server mở cổng trước, tránh bị Render báo Timed Out
 
       if (process.env.WEBSOCKET_ENABLED !== "false") {
         websocketService.initialize(server);
@@ -103,7 +55,7 @@ async function startServer() {
         dataSyncService.start();
       }
 
-      // Khởi tạo service tự động cập nhật trạng thái phim (Cái Cron Job 2 tháng ấy)
+      // Tự động cập nhật trạng thái phim (Sắp chiếu -> Đang chiếu)
       if (typeof movieStatusService !== 'undefined') {
         movieStatusService.start();
       }
