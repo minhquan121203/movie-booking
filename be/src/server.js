@@ -27,6 +27,7 @@ async function startServer() {
       process.exit(1);
     }
 
+    mongoose.set('autoIndex', false);
     await connectDB();
 
     if (process.env.REDIS_ENABLED !== "false") {
