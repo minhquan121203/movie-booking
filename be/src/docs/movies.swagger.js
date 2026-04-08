@@ -183,4 +183,43 @@
  *         description: Danh sách phim theo thể loại
  */
 
+/**
+ * @swagger
+ * /admin/movies/sync-tmdb:
+ *   post:
+ *     tags:
+ *       - Movies
+ *       - Admin
+ *     summary: Đồng bộ phim mới từ TMDB (Dành cho Admin)
+ *     description: Tự động gọi API của TMDB để kéo danh sách phim đang hot, lấy đủ poster, diễn viên, đạo diễn và tự động map thể loại vào DB.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Đồng bộ thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Húp thành công! Đã thêm 15 phim mới."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     addedCount:
+ *                       type: integer
+ *                       example: 15
+ *       401:
+ *         description: Chưa đăng nhập (Không có token)
+ *       403:
+ *         description: Không có quyền hạn (Không phải Admin)
+ *       500:
+ *         description: Lỗi Server hoặc API TMDB không phản hồi
+ */
+
 export default {};

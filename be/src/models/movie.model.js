@@ -13,6 +13,12 @@ const movieSchema = new Schema(
       maxlength: [200, "Tên phim không được quá 200 ký tự"],
       index: true,
     },
+    tmdbId: {
+        type: Number,
+        unique: true,
+        sparse: true,
+        index: true,
+    },
     slug: {
       type: String,
       unique: true,
