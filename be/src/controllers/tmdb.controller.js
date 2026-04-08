@@ -58,7 +58,7 @@ export const syncTMDB = async (req, res) => {
                     rating: "C13",
                     status: "Sắp chiếu",
                     language: "Tiếng Anh",
-                    country: "Mỹ",
+                    country: "Hoa Kỳ",
                     createdBy: req.userId
                 });
                 addedCount++;
