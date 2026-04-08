@@ -66,6 +66,10 @@ if (process.env.NODE_ENV === "development") {
 
 // ------SWAGGER DOCUMENTATION------
 
+app.get("/", (req, res) => {
+    res.status(200).send("Movie Booking API is running 🚀");
+});
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // -------ROUTES--------
