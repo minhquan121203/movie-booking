@@ -76,8 +76,6 @@ async function startServer() {
       dataSyncService.start();
     }
 
-    movieStatusService.start();
-
     // START SERVER
     const PORT = process.env.PORT || 5000;
 
