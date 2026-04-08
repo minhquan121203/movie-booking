@@ -51,8 +51,10 @@ async function startServer() {
       }
 
       if (process.env.DATA_SYNC_ENABLED !== "false") {
-        console.log("🎬 Starting Data Sync in background...");
-        dataSyncService.start();
+        setTimeout(() => {
+          console.log("🎬 Bắt đầu cào phim TMDB...");
+          dataSyncService.start();
+        }, 5000);
       }
 
       // Tự động cập nhật trạng thái phim (Sắp chiếu -> Đang chiếu)
