@@ -76,16 +76,41 @@ async function startServer() {
       dataSyncService.start();
     }
 
-    // movieStatusService.start();
+    movieStatusService.start();
 
     // START SERVER
     const PORT = process.env.PORT || 5000;
 
-    server.listen(PORT, "0.0.0.0",() => {
-      console.log(`Server is running on port ${PORT}`);
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server is officially LIVE on port ${PORT}`);
+
+      // 🔥 CHUYỂN CÁC DỊCH VỤ VÀO ĐÂY 🔥
+      // Để server mở cổng trước, tránh bị Render báo Timed Out
+
+      if (process.env.WEBSOCKET_ENABLED !== "false") {
+        websocketService.initialize(server);
+      }
+
+      if (process.env.PAYMENT_POLLING_ENABLED !== "false") {
+        paymentStatusService.startPolling();
+      }
+
+      if (process.env.CLEANUP_ENABLED !== "false") {
+        expiredHoldsCleanupService.start();
+        console.log("🧹 Cleanup service started");
+      }
+
+      if (process.env.DATA_SYNC_ENABLED !== "false") {
+        console.log("🎬 Starting Data Sync in background...");
+        dataSyncService.start();
+      }
+
+      // Khởi tạo service tự động cập nhật trạng thái phim (Cái Cron Job 2 tháng ấy)
+      if (typeof movieStatusService !== 'undefined') {
+        movieStatusService.start();
+      }
+
       console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`API Docs: http://localhost:${PORT}/api-docs`);
-      console.log(`Health Check: http://localhost:${PORT}/health`);
     });
 
     return server;
