@@ -8,9 +8,9 @@ import connectDB from "./config/db.js";
 import paymentStatusService from "./services/payment-status.service.js";
 import redisService from "./services/redis.service.js";
 import websocketService from "./services/websocket.service.js";
-//  FIX #4 HIGH: Removed duplicate cleanup.service.js, only use expired-holds-cleanup.service.js
 import dataSyncService from "./services/data-sync.service.js";
 import expiredHoldsCleanupService from "./services/expired-holds-cleanup.service.js";
+import movieStatusService from "./services/movie-status.service.js";
 
 let server;
 
@@ -75,6 +75,8 @@ async function startServer() {
     if (process.env.DATA_SYNC_ENABLED !== "false") {
       dataSyncService.start();
     }
+
+    movieStatusService.start();
 
     // START SERVER
     const PORT = process.env.PORT || 5000;

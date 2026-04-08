@@ -53,10 +53,10 @@ export const syncTMDB = async (req, res) => {
                     director: director,
                     actors: actors,
                     duration: details.runtime > 0 ? details.runtime : 120,
-                    releaseDate: m.release_date || new Date(),
+                    releaseDate: releaseDateObj,
                     genres: movieGenres,
                     rating: "C13",
-                    status: "Sắp chiếu",
+                    status: currentStatus,
                     language: "Tiếng Anh",
                     country: "Hoa Kỳ",
                     createdBy: req.userId
