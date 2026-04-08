@@ -27,6 +27,7 @@ import userController from "../controllers/user.controller.js";
 import voucherController from "../controllers/voucher.controller.js";
 import workScheduleController from "../controllers/workSchedule.controller.js";
 import chatController from "../controllers/chat.controller.js";
+import tmdbController from "../controllers/tmdb.controller.js";
 
 // Import middleware
 import { checkAge } from "../middlewares/age-check.middleware.js";
