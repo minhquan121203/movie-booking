@@ -3,8 +3,8 @@ import Movie from '../models/movie.model.js';
 
 const movieStatusService = {
     start: () => {
-        // Chạy vào lúc 00:01 mỗi đêm
-        cron.schedule('1 0 * * *', async () => {
+        // Chạy vào lúc 00:00 mỗi đêm
+        cron.schedule('0 0 * * *', async () => {
             console.log("⏰ [CRON JOB] Đang quét hệ thống để cập nhật vòng đời phim...");
 
             try {

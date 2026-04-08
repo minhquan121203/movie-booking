@@ -8,68 +8,67 @@ const BASE_URL = "https://api.themoviedb.org/3";
 
 export const syncTMDB = async (req, res) => {
     try {
-        console.log("🚀 BẮT ĐẦU ĐỒNG BỘ TỪ TMDB...");
+        let totalAddedCount = 0;
+        const categories = ["now_playing", "upcoming"];
 
-        // ĐỒNG BỘ THỂ LOẠI (GENRES)
-        const genreRes = await axios.get(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=vi-VN`);
-        const tmdbGenres = genreRes.data.genres;
-        const genreMap = {};
+        for (const category of categories) {
+            console.log(`Đang cào danh mục: ${category}...`);
 
-        for (let g of tmdbGenres) {
-            let genreDoc = await Genre.findOne({ name: g.name });
-            if (!genreDoc) {
-                // Tạo thể loại mới
-                genreDoc = await Genre.create({
-                    name: g.name,
-                    description: `Thể loại ${g.name} từ TMDB`,
-                    isActive: true
-                });
-            }
-            genreMap[g.id] = genreDoc._id;
-        }
-        console.log(`✅ Đã đồng bộ xong Thể loại!`);
+            const movieRes = await axios.get(
+                `${BASE_URL}/movie/${category}?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`
+            );
+            const movies = movieRes.data.results;
 
-        // ĐỒNG BỘ PHIM (MOVIES)
-        const movieRes = await axios.get(`${BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`);
-        const movies = movieRes.data.results;
-        let addedCount = 0;
+            for (const m of movies) {
+                // Kiểm tra xem phim đã có trong DB chưa
+                const exists = await Movie.findOne({ tmdbId: m.id });
 
-        for (let m of movies) {
-            const exists = await Movie.findOne({ tmdbId: m.id });
+                if (!exists) {
+                    let realDuration = 90;
+                    try {
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`
+                        );
+                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
+                            realDuration = detailRes.data.runtime;
+                        }
+                    } catch (err) {
+                        console.log(`⚠️ Không lấy được chi tiết phim ${m.id}, dùng mặc định 120 phút.`);
+                    }
 
-            if (!exists) {
-                const detailRes = await axios.get(`${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`);
-                const details = detailRes.data;
+                    const releaseDateObj = new Date(m.release_date || new Date());
+                    const now = new Date();
+                    const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
 
-                const director = details.credits.crew.find(c => c.job === "Director")?.name || "Đang cập nhật";
-                const actors = details.credits.cast.slice(0, 5).map(a => a.name);
-                const movieGenres = m.genre_ids.map(id => genreMap[id]).filter(Boolean);
+                    await Movie.create({
+                        title: m.title || m.original_title,
+                        tmdbId: m.id,
+                        description: m.overview,
+                        poster: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+                        releaseDate: releaseDateObj,
+                        status: currentStatus,
+                        country: "Hoa Kỳ",
+                        duration: realDuration,
+                        language: "Tiếng Anh",
+                        rating: "C13",
+                    });
 
-                await Movie.create({
-                    tmdbId: m.id,
-                    title: m.title,
-                    description: m.overview || "Đang cập nhật mô tả...",
-                    posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w780${m.poster_path}` : "",
-                    director: director,
-                    actors: actors,
-                    duration: details.runtime > 0 ? details.runtime : 120,
-                    releaseDate: releaseDateObj,
-                    genres: movieGenres,
-                    rating: "C13",
-                    status: currentStatus,
-                    language: "Tiếng Anh",
-                    country: "Hoa Kỳ",
-                    createdBy: req.userId
-                });
-                addedCount++;
+                    totalAddedCount++;
+                }
             }
         }
 
-        return successResponse(res, { addedCount }, `Húp thành công! Đã thêm ${addedCount} phim mới.`);
+        return res.status(200).json({
+            success: true,
+            message: `Húp trọn ổ thành công! Đã thêm ${totalAddedCount} phim mới từ cả 2 danh mục.`,
+            data: {
+                addedCount: totalAddedCount
+            }
+        });
 
     } catch (error) {
-        console.error("❌ Lỗi đồng bộ TMDB:", error.message);
-        return errorResponse(res, "Lỗi khi đồng bộ dữ liệu từ TMDB", 500);
+        console.error("❌ Lỗi đồng bộ TMDB:", error);
+        return res.status(500).json({ message: "Lỗi server khi đồng bộ" });
     }
 };
 
