@@ -188,7 +188,6 @@
  * /admin/movies/sync-tmdb:
  *   post:
  *     tags:
- *       - Movies
  *       - Admin
  *     summary: Đồng bộ phim mới từ TMDB (Dành cho Admin)
  *     description: Tự động gọi API của TMDB để kéo danh sách phim đang hot, lấy đủ poster, diễn viên, đạo diễn và tự động map thể loại vào DB.
