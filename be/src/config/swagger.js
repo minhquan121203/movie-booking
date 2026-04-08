@@ -15,9 +15,13 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000/api",
-        description: "Development server",
+        url: "https://movie-booking-api-bcfe.onrender.com/api",
+        description: "Production Server (Render)"
       },
+      {
+        url: "http://localhost:5000/api",
+        description: "Local Server"
+      }
     ],
     components: {
       securitySchemes: {
