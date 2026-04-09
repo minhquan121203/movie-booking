@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +47,8 @@ export default function ConcessionSalesPage() {
     isOpen: false,
     qrString: '',
     amount: 0,
-    orderCode: ''
+    orderCode: '',
+    payosOrderCode: ''
   })
 
   // API
@@ -56,6 +57,42 @@ export default function ConcessionSalesPage() {
     inStock: true,
   })
   const createConcession = useCreateConcession()
+
+  // 🔥 RADAR TỰ ĐỘNG KIỂM TRA THANH TOÁN
+  useEffect(() => {
+    let intervalId: any; // 🔥 Đổi NodeJS.Timeout thành any cho TypeScript câm nín luôn
+
+    if (qrModal.isOpen && qrModal.payosOrderCode) {
+      // Cứ 3 giây hỏi thăm Backend 1 lần
+      intervalId = setInterval(async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'}/api/bookings/payos-status/${qrModal.payosOrderCode}`);
+          const data = await response.json();
+
+          // Nếu PayOS báo đã nhận tiền
+          if (data.data?.status === 'PAID' || data.status === 'PAID') {
+            clearInterval(intervalId); // Tắt radar
+            
+            setQrModal(prev => ({...prev, isOpen: false})); // Đóng Modal
+            
+            showSuccess(
+              'Thanh toán thành công! 🎉',
+              `Khách đã chuyển khoản xong đơn: ${qrModal.orderCode}`
+            );
+            
+            clearCart(); // Xóa giỏ hàng bán tiếp
+          }
+        } catch (error) {
+          console.log("Vẫn đang chờ tiền vào...");
+        }
+      }, 3000);
+    }
+
+    // Dọn dẹp radar khi tắt Modal
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [qrModal.isOpen, qrModal.payosOrderCode]);
 
   // Cart functions
   const addToCart = (item: Product) => {
@@ -128,16 +165,13 @@ export default function ConcessionSalesPage() {
 
       // PAYOS 
       if (paymentMethod === 'bank_transfer' && result.data?.payosQrCode) {
-        
-        // Truyền dữ liệu QR vào State để bật Modal lên
         setQrModal({
           isOpen: true,
-          qrString: result.data.payosQrCode, // Chuỗi mã VietQR lấy từ BE
+          qrString: result.data.payosQrCode,
           amount: result.data.totalAmount || getTotalAmount(),
-          orderCode: result.data.transactionId || result.data.concessionId || 'Đơn hàng mới'
+          orderCode: result.data.transactionId || result.data.concessionId || 'Đơn hàng mới',
+          payosOrderCode: result.data.payosOrderCode 
         })
-
-        // Không cần thông báo Success vội, đợi khách quét xong mới báo
       } else {
         // Luồng tiền mặt cũ
         showSuccess(
