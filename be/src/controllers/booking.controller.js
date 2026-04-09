@@ -917,15 +917,30 @@ const bookingController = {
       const { orderCode } = req.params;
       if (!orderCode) return errorResponse(res, "Thiếu orderCode", 400);
 
-      const importedModule = await import("../services/payment/payos.service.js");
-      const payos = importedModule.default || importedModule;
+      const imported = await import("../services/payment/payos.service.js");
+      const payos = imported.default?.default || imported.default || imported;
 
-      const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
+      let orderInfo;
+
+      if (typeof payos.getPaymentLinkInformation === 'function') {
+        orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
+      }
+      else if (payos.paymentRequests && typeof payos.paymentRequests.getPaymentLinkInformation === 'function') {
+        orderInfo = await payos.paymentRequests.getPaymentLinkInformation(Number(orderCode));
+      }
+      else if (payos.payos && typeof payos.payos.getPaymentLinkInformation === 'function') {
+        orderInfo = await payos.payos.getPaymentLinkInformation(Number(orderCode));
+      }
+      else {
+        const { PayOS } = await import("@payos/node");
+        const tempPayos = new PayOS(process.env.PAYOS_CLIENT_ID, process.env.PAYOS_API_KEY, process.env.PAYOS_CHECKSUM_KEY);
+        orderInfo = await tempPayos.getPaymentLinkInformation(Number(orderCode));
+      }
 
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
     } catch (error) {
       console.error("❌ Lỗi Radar PayOS:", error.message);
-      return errorResponse(res, "Không thể kiểm tra trạng thái: " + error.message, 500);
+      return errorResponse(res, "Lỗi kiểm tra: " + error.message, 500);
     }
   },
 
