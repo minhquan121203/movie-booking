@@ -44,7 +44,9 @@ export const syncTMDB = async (req, res) => {
                         title: m.title || m.original_title,
                         tmdbId: m.id,
                         description: m.overview,
-                        poster: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+                        posterUrl: m.poster_path
+                            ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+                            : "https://via.placeholder.com/500x750?text=No+Poster",
                         releaseDate: releaseDateObj,
                         status: currentStatus,
                         country: "Hoa Kỳ",
