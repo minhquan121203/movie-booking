@@ -36,20 +36,30 @@ export const syncTMDB = async (req, res) => {
                     let realDuration = 90;
                     let trailerLink = "";
                     try {
-                        const videoRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}&language=vi-VN`
+                        // Lấy chi tiết phim và THỜI LƯỢNG
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`
                         );
-                        let videos = videoRes.data.results;
-
-                        if (videos.length === 0) {
-                            const videoResEn = await axios.get(
-                                `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
-                            );
-                            videos = videoResEn.data.results;
+                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
+                            realDuration = detailRes.data.runtime;
                         }
 
+                        const videoRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}`
+                        );
+                        const videos = videoRes.data.results;
+
                         if (videos.length > 0) {
+                            // 3. THUẬT TOÁN LỌC ƯU TIÊN:
+                            // Ưu tiên 1: Trailer tiếng Việt
+                            // Ưu tiên 2: Trailer tiếng Anh (iso_639_1 === 'en')
+                            // Ưu tiên 3: Bất kỳ Trailer nào (Nga, Pháp, Tàu...)
+                            // Ưu tiên 4: Bất kỳ Teaser nào
+                            // Cùng đường: Lấy đại cái video đầu tiên của YouTube
+
                             const selectedVideo =
+                                videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "vi") ||
+                                videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "en") ||
                                 videos.find(v => v.site === "YouTube" && v.type === "Trailer") ||
                                 videos.find(v => v.site === "YouTube" && v.type === "Teaser") ||
                                 videos.find(v => v.site === "YouTube");
@@ -59,7 +69,7 @@ export const syncTMDB = async (req, res) => {
                             }
                         }
                     } catch (err) {
-                        console.log(`⚠️ Lỗi lấy video cho phim ${m.id}`);
+                        console.log(`⚠️ Lỗi lấy chi tiết/video cho phim ${m.id}`);
                     }
 
                     await Movie.create({
