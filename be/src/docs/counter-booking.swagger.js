@@ -168,11 +168,10 @@
 
 /**
  * @swagger
- * /api/bookings/payos-status/{orderCode}:
+ * /bookings/payos-status/{orderCode}:
  *   get:
  *     summary: Lấy trạng thái thanh toán PayOS
- *     tags:
- *       - Booking
+ *     tags: [Bookings]
  *     description: API dùng để liên tục kiểm tra (polling) xem khách hàng đã chuyển khoản thành công cho đơn hàng PayOS chưa.
  *     parameters:
  *       - in: path
