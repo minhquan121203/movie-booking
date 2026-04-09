@@ -38,6 +38,43 @@ const counterBookingController = {
 
       const result = await counterBookingService.createConcessionTransaction(req.userId, req.body);
 
+      // PAYOS BÁN ĐỒ ĂN
+      if (req.body.paymentMethod === 'bank_transfer') {
+        try {
+          // Import service PayOS
+          const payosService = (await import("../services/payment/payos.service.js")).default;
+
+          // Mã đơn hàng PayOS (số nguyên ngẫu nhiên)
+          const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
+
+          // Tùy cấu trúc result của Service trả về, lấy tổng tiền và mã đơn
+          const amount = result.totalAmount || (result.transaction && result.transaction.totalAmount) || 0;
+          const txCode = result.transactionId || (result.transaction && result.transaction.transactionId) || "BAPNUOC";
+
+          const requestData = {
+            orderCode: payosOrderCode,
+            amount: amount,
+            description: `BUNNY ${txCode}`.substring(0, 25),
+            returnUrl: `https://movie-booking-cinema.vercel.app`,
+            cancelUrl: `https://movie-booking-cinema.vercel.app`
+          };
+
+          const paymentLink = await payosService.paymentRequests.create(requestData);
+
+          result.payosCheckoutUrl = paymentLink.checkoutUrl;
+          result.payosQrCode = paymentLink.qrCode;
+
+          const CounterTransaction = (await import("../models/counterTransaction.model.js")).default;
+          const docId = result._id || (result.transaction && result.transaction._id);
+          if (docId) {
+            await CounterTransaction.findByIdAndUpdate(docId, {
+              transactionId: payosOrderCode.toString()
+            });
+          }
+        } catch (payosError) {
+          console.error("Lỗi tạo link PayOS cho bán đồ ăn:", payosError);
+        }
+      }
 
       return successResponse(res, result, "Tạo giao dịch bán hàng thành công", 201);
     } catch (error) {
