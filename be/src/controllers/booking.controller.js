@@ -916,26 +916,27 @@ const bookingController = {
     try {
       const { orderCode } = req.params;
 
+      // Validate orderCode
       if (!orderCode) {
         return errorResponse(res, "Thiếu orderCode", 400);
       }
 
-      const imported = await import("../services/payment/payos.service.js");
+      // Import PayOS service
+      const { default: payos } =
+          await import("../services/payment/payos.service.js");
 
-      const payos =
-          imported.default?.default ||
-          imported.default ||
-          imported;
+      // Check SDK init
+      if (!payos?.getPaymentLinkInformation) {
+        throw new Error("PayOS SDK chưa khởi tạo đúng");
+      }
 
-      await payos.paymentRequests.getPaymentLinkInformation(
-          Number(orderCode)
-      );
-
+      // Call PayOS API lấy trạng thái thanh toán
       const orderInfo =
-          await payos.paymentRequests.getPaymentLinkInformation(
+          await payos.getPaymentLinkInformation(
               Number(orderCode)
           );
 
+      // Trả status về frontend
       return successResponse(
           res,
           { status: orderInfo.status },
