@@ -63,6 +63,7 @@ const counterBookingController = {
 
           result.payosCheckoutUrl = paymentLink.checkoutUrl;
           result.payosQrCode = paymentLink.qrCode;
+          result.payosOrderCode = payosOrderCode;
 
           const CounterTransaction = (await import("../models/counterTransaction.model.js")).default;
           const docId = result._id || (result.transaction && result.transaction._id);

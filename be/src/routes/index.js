@@ -910,6 +910,7 @@ router.get(
 
 // PayOS Webhook
 router.post("/bookings/payos-webhook", bookingController.payosWebhook);
+router.get("/bookings/payos-status/:orderCode", bookingController.getPayosStatus);
 
 // VNPay
 router.post("/bookings/:bookingId/payment/vnpay", authenticateToken, paymentController.createVNPayPayment);
