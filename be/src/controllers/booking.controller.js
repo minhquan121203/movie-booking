@@ -912,23 +912,25 @@ const bookingController = {
     } catch (error) { console.error("Get booking by code error:", error); return errorResponse(res, "Lỗi server", 500); }
   },
 
-  // Lấy trạng thái đơn hàng trực tiếp từ PayOS (Dùng cho Radar quét ở POS)
   getPayosStatus: async (req, res) => {
     try {
       const { orderCode } = req.params;
-      if (!orderCode) {
-        return errorResponse(res, "Thiếu orderCode", 400);
-      }
+      if (!orderCode) return errorResponse(res, "Thiếu orderCode", 400);
 
       const payos = (await import("../services/payment/payos.service.js")).default;
 
-      // Hỏi PayOS xem mã này đã trả tiền chưa
-      const orderInfo = await payos.paymentRequests.getPaymentLinkInformation(Number(orderCode));
+      let orderInfo;
+      if (typeof payos.getPaymentLinkInformation === 'function') {
+        orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
+      } else if (payos.paymentRequests && typeof payos.paymentRequests.getPaymentLinkInformation === 'function') {
+        orderInfo = await payos.paymentRequests.getPaymentLinkInformation(Number(orderCode));
+      } else {
+        throw new Error("Không tương thích phiên bản SDK PayOS");
+      }
 
-      // Trả về 'PAID' hoặc 'PENDING'
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
     } catch (error) {
-      console.error("Get PayOS status error:", error);
+      console.error("Lỗi Get PayOS status:", error);
       return errorResponse(res, error.message || "Lỗi server", 500);
     }
   },

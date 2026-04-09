@@ -42,7 +42,6 @@ const counterBookingController = {
       if (req.body.paymentMethod === 'bank_transfer') {
         try {
           const payosService = (await import("../services/payment/payos.service.js")).default;
-
           const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
           const amount = responseData.totalAmount || (responseData.transaction && responseData.transaction.totalAmount) || 0;
@@ -58,19 +57,22 @@ const counterBookingController = {
 
           const paymentLink = await payosService.paymentRequests.create(requestData);
 
-          responseData.payosCheckoutUrl = paymentLink.checkoutUrl;
-          responseData.payosQrCode = paymentLink.qrCode;
-          responseData.payosOrderCode = payosOrderCode;
+          const finalData = {
+            ...responseData,
+            payosCheckoutUrl: paymentLink.checkoutUrl,
+            payosQrCode: paymentLink.qrCode,
+            payosOrderCode: payosOrderCode
+          };
 
           const CounterTransaction = (await import("../models/counterTransaction.model.js")).default;
           const docId = responseData._id || (responseData.transaction && responseData.transaction._id);
           if (docId) {
-            await CounterTransaction.findByIdAndUpdate(docId, {
-              transactionId: payosOrderCode.toString()
-            });
+            await CounterTransaction.findByIdAndUpdate(docId, { transactionId: payosOrderCode.toString() });
           }
+
+          return successResponse(res, finalData, "Tạo giao dịch bán hàng thành công", 201);
         } catch (payosError) {
-          console.error("Lỗi tạo link PayOS cho bán đồ ăn:", payosError);
+          console.error("Lỗi tạo link PayOS:", payosError);
         }
       }
 
