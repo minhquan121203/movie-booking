@@ -34,16 +34,36 @@ export const syncTMDB = async (req, res) => {
                 if (!exists) {
                     // PHIM HOÀN TOÀN MỚI
                     let realDuration = 90;
+                    let trailerLink = "";
                     try {
-                        const detailRes = await axios.get(`${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`);
-                        if (detailRes.data.runtime && detailRes.data.runtime > 0) realDuration = detailRes.data.runtime;
-                    } catch (err) { }
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos&include_video_language=vi,en`
+                        );
+
+                        // Lấy thời lượng
+                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
+                            realDuration = detailRes.data.runtime;
+                        }
+
+                        if (detailRes.data.videos && detailRes.data.videos.results.length > 0) {
+                            const videos = detailRes.data.videos.results;
+                            const trailer = videos.find(v => v.site === "YouTube" && v.type === "Trailer")
+                                || videos.find(v => v.site === "YouTube"); // Nếu không có type Trailer thì lấy bừa 1 video Youtube
+
+                            if (trailer) {
+                                trailerLink = `https://www.youtube.com/watch?v=${trailer.key}`;
+                            }
+                        }
+                    } catch (err) {
+                        console.log(`⚠️ Không lấy được chi tiết/trailer phim ${m.id}`);
+                    }
 
                     await Movie.create({
                         title: m.title || m.original_title,
                         tmdbId: m.id,
                         description: m.overview,
-                        posterUrl: posterLink, // ✅ Link ảnh xịn
+                        posterUrl: posterLink,
+                        trailerUrl: trailerLink,
                         releaseDate: releaseDateObj,
                         status: currentStatus,
                         country: "Hoa Kỳ",
