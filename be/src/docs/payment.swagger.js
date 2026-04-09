@@ -209,5 +209,23 @@
  *         description: IPN test OK
  */
 
+/**
+ * @swagger
+ * /api/payment/payos-webhook:
+ *   post:
+ *     summary: PayOS Webhook (Server-to-Server)
+ *     tags:
+ *       - Payment
+ *     description: API để PayOS tự động gọi về khi khách chuyển khoản thành công.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook nhận thành công
+ */
 
 export default {};
