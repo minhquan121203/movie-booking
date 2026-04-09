@@ -48,10 +48,10 @@ export const syncTMDB = async (req, res) => {
                         if (detailRes.data.videos && detailRes.data.videos.results.length > 0) {
                             const videos = detailRes.data.videos.results;
                             const trailer = videos.find(v => v.site === "YouTube" && v.type === "Trailer")
-                                || videos.find(v => v.site === "YouTube"); // Nếu không có type Trailer thì lấy bừa 1 video Youtube
+                                || videos.find(v => v.site === "YouTube");
 
                             if (trailer) {
-                                trailerLink = `https://www.youtube.com/watch?v=${trailer.key}`;
+                                trailerLink = `https://www.youtube.com/embed/${trailer.key}`;
                             }
                         }
                     } catch (err) {
