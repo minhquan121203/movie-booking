@@ -66,7 +66,7 @@ function ScheduleManagementContent() {
     data: moviesData,
     isLoading: isLoadingMovies,
     isError: isErrorMovies,
-  } = useMovies({ limit: 100, status: 'Đang chiếu' })
+  } = useMovies({ limit: 1000, status: 'Đang chiếu, Sắp chiếu' })
   const {
     data: theatersData,
     isLoading: isLoadingTheaters,
