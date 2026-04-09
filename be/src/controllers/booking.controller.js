@@ -920,14 +920,13 @@ const bookingController = {
       const payosService = (await import("../services/payment/payos.service.js")).default;
 
       let orderInfo;
-      try {
+      if (payosService.paymentRequests && typeof payosService.paymentRequests.getPaymentLinkInformation === 'function') {
+        orderInfo = await payosService.paymentRequests.getPaymentLinkInformation(Number(orderCode));
+      } else if (typeof payosService.getPaymentLinkInformation === 'function') {
         orderInfo = await payosService.getPaymentLinkInformation(Number(orderCode));
-      } catch (err) {
-        if (payosService.payos) {
-          orderInfo = await payosService.payos.getPaymentLinkInformation(Number(orderCode));
-        } else {
-          throw err;
-        }
+      } else {
+        console.error("Cấu trúc payosService hiện tại:", Object.keys(payosService));
+        throw new Error("Không tìm thấy hàm getPaymentLinkInformation");
       }
 
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
