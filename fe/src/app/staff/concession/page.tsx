@@ -58,37 +58,39 @@ export default function ConcessionSalesPage() {
   })
   const createConcession = useCreateConcession()
 
-  // 🔥 RADAR TỰ ĐỘNG KIỂM TRA THANH TOÁN
+  // RADAR TỰ ĐỘNG KIỂM TRA THANH TOÁN
   useEffect(() => {
-    let intervalId: any; // 🔥 Đổi NodeJS.Timeout thành any cho TypeScript câm nín luôn
+    let intervalId: any; 
+
+    console.log("👉 Trạng thái Radar:", { Mở: qrModal.isOpen, MaPayOS: qrModal.payosOrderCode });
 
     if (qrModal.isOpen && qrModal.payosOrderCode) {
-      // Cứ 3 giây hỏi thăm Backend 1 lần
       intervalId = setInterval(async () => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'}/api/bookings/payos-status/${qrModal.payosOrderCode}`);
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com';
+          const endpoint = baseUrl.endsWith('/api') 
+              ? `${baseUrl}/bookings/payos-status/${qrModal.payosOrderCode}`
+              : `${baseUrl}/api/bookings/payos-status/${qrModal.payosOrderCode}`;
+
+          console.log("📡 Radar đang quét URL:", endpoint);
+
+          const response = await fetch(endpoint);
           const data = await response.json();
 
-          // Nếu PayOS báo đã nhận tiền
+          console.log("💰 Kết quả trả về:", data);
+
           if (data.data?.status === 'PAID' || data.status === 'PAID') {
-            clearInterval(intervalId); // Tắt radar
-            
-            setQrModal(prev => ({...prev, isOpen: false})); // Đóng Modal
-            
-            showSuccess(
-              'Thanh toán thành công! 🎉',
-              `Khách đã chuyển khoản xong đơn: ${qrModal.orderCode}`
-            );
-            
-            clearCart(); // Xóa giỏ hàng bán tiếp
+            clearInterval(intervalId);
+            setQrModal(prev => ({...prev, isOpen: false}));
+            showSuccess('Thanh toán thành công! 🎉', `Khách đã chuyển khoản xong đơn: ${qrModal.orderCode}`);
+            clearCart();
           }
         } catch (error) {
-          console.log("Vẫn đang chờ tiền vào...");
+          console.error("❌ Radar quét thất bại:", error);
         }
       }, 3000);
     }
 
-    // Dọn dẹp radar khi tắt Modal
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
@@ -165,11 +167,17 @@ export default function ConcessionSalesPage() {
 
       // PAYOS 
       if (paymentMethod === 'bank_transfer' && result.data?.payosQrCode) {
+
+        const txId = result.data.transaction?.transactionId || result.data.transactionId || result.data.concessionId;
+        const txAmount = result.data.transaction?.totalAmount || result.data.totalAmount || getTotalAmount();
+        
+        console.log("Check PayOS Code từ Backend:", result.data.payosOrderCode);
+
         setQrModal({
           isOpen: true,
           qrString: result.data.payosQrCode,
-          amount: result.data.totalAmount || getTotalAmount(),
-          orderCode: result.data.transactionId || result.data.concessionId || 'Đơn hàng mới',
+          amount: txAmount,
+          orderCode: txId || 'Đơn hàng mới',
           payosOrderCode: result.data.payosOrderCode 
         })
       } else {
