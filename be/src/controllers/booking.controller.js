@@ -912,22 +912,21 @@ const bookingController = {
     } catch (error) { console.error("Get booking by code error:", error); return errorResponse(res, "Lỗi server", 500); }
   },
 
+  // 🔥 API ĐỂ FRONTEND GỌI LÊN KIỂM TRA TRẠNG THÁI (RADAR QUÉT TIỀN)
   getPayosStatus: async (req, res) => {
     try {
       const { orderCode } = req.params;
       if (!orderCode) return errorResponse(res, "Thiếu orderCode", 400);
 
-      const payosService = (await import("../services/payment/payos.service.js")).default;
+      const importedModule = await import("../services/payment/payos.service.js");
 
-      let orderInfo;
-      if (payosService.paymentRequests && typeof payosService.paymentRequests.getPaymentLinkInformation === 'function') {
-        orderInfo = await payosService.paymentRequests.getPaymentLinkInformation(Number(orderCode));
-      } else if (typeof payosService.getPaymentLinkInformation === 'function') {
-        orderInfo = await payosService.getPaymentLinkInformation(Number(orderCode));
-      } else {
-        console.error("Cấu trúc payosService hiện tại:", Object.keys(payosService));
-        throw new Error("Không tìm thấy hàm getPaymentLinkInformation");
+      const payos = importedModule.default?.default || importedModule.default || importedModule;
+
+      if (typeof payos.getPaymentLinkInformation !== 'function') {
+        throw new Error("Vẫn không tìm thấy hàm, lõi PayOS hiện tại là: " + JSON.stringify(payos));
       }
+
+      const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
 
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
     } catch (error) {
@@ -941,7 +940,6 @@ const bookingController = {
     try {
       console.log("============= [WEBHOOK PAYOS START] =============");
 
-      // Bỏ qua hàm verify lằng nhằng, lấy thẳng data thô từ PayOS gửi về
       const code = req.body.code;
       const data = req.body.data || {};
 
@@ -998,7 +996,6 @@ const bookingController = {
 
       console.log("============= [WEBHOOK PAYOS END] =============");
 
-      // Luôn trả về OK để PayOS không gọi spam lại nữa
       return res.json({ error: 0, message: "Ok" });
 
     } catch (error) {
