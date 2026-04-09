@@ -166,41 +166,4 @@
  *         description: Unauthorized
 */
 
-/**
- * @swagger
- * /bookings/payos-status/{orderCode}:
- *   get:
- *     summary: Lấy trạng thái thanh toán PayOS
- *     tags: [Bookings]
- *     description: API dùng để liên tục kiểm tra (polling) xem khách hàng đã chuyển khoản thành công cho đơn hàng PayOS chưa.
- *     parameters:
- *       - in: path
- *         name: orderCode
- *         required: true
- *         schema:
- *           type: string
- *         description: Mã đơn hàng (orderCode) do PayOS cấp
- *     responses:
- *       200:
- *         description: Trả về trạng thái đơn hàng (PAID hoặc PENDING, CANCELLED)
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     status:
- *                       type: string
- *                       example: PAID
- *                     message:
- *                       type: string
- *       400:
- *         description: Lỗi thiếu orderCode
- *       500:
- *         description: Lỗi server hoặc không kết nối được PayOS
- */
 export default {};
