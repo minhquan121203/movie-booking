@@ -917,15 +917,17 @@ const bookingController = {
       const { orderCode } = req.params;
       if (!orderCode) return errorResponse(res, "Thiếu orderCode", 400);
 
-      const payos = (await import("../services/payment/payos.service.js")).default;
+      const payosService = (await import("../services/payment/payos.service.js")).default;
 
       let orderInfo;
-      if (typeof payos.getPaymentLinkInformation === 'function') {
-        orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
-      } else if (payos.paymentRequests && typeof payos.paymentRequests.getPaymentLinkInformation === 'function') {
-        orderInfo = await payos.paymentRequests.getPaymentLinkInformation(Number(orderCode));
-      } else {
-        throw new Error("Không tương thích phiên bản SDK PayOS");
+      try {
+        orderInfo = await payosService.getPaymentLinkInformation(Number(orderCode));
+      } catch (err) {
+        if (payosService.payos) {
+          orderInfo = await payosService.payos.getPaymentLinkInformation(Number(orderCode));
+        } else {
+          throw err;
+        }
       }
 
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
