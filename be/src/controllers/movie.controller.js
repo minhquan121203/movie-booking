@@ -43,7 +43,19 @@ const movieController = {
       };
 
       if (status) {
-        query.status = status;
+        const statuses = Array.isArray(status)
+            ? status
+            : status
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+        if (statuses.length === 1) {
+          query.status = statuses[0];
+        }
+        else if (statuses.length > 1) {
+          query.status = { $in: statuses };
+        }
       }
 
       const genreTokens = [];
