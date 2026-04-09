@@ -97,7 +97,7 @@ const counterTransactionSchema = new Schema(
     // Payment info
     paymentMethod: {
       type: String,
-      enum: ["cash", "card", "qr", "mixed"],
+      enum: ["cash", "card", "qr", "mixed", "bank_transfer", "MoMo", "VNPAY"],
       required: true,
     },
     totalAmount: {
