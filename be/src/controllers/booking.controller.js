@@ -912,26 +912,20 @@ const bookingController = {
     } catch (error) { console.error("Get booking by code error:", error); return errorResponse(res, "Lỗi server", 500); }
   },
 
-  // 🔥 API ĐỂ FRONTEND GỌI LÊN KIỂM TRA TRẠNG THÁI (RADAR QUÉT TIỀN)
   getPayosStatus: async (req, res) => {
     try {
       const { orderCode } = req.params;
       if (!orderCode) return errorResponse(res, "Thiếu orderCode", 400);
 
       const importedModule = await import("../services/payment/payos.service.js");
-
-      const payos = importedModule.default?.default || importedModule.default || importedModule;
-
-      if (typeof payos.getPaymentLinkInformation !== 'function') {
-        throw new Error("Vẫn không tìm thấy hàm, lõi PayOS hiện tại là: " + JSON.stringify(payos));
-      }
+      const payos = importedModule.default || importedModule;
 
       const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
 
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
     } catch (error) {
-      console.error("Lỗi Get PayOS status:", error);
-      return errorResponse(res, error.message || "Lỗi server", 500);
+      console.error("❌ Lỗi Radar PayOS:", error.message);
+      return errorResponse(res, "Không thể kiểm tra trạng thái: " + error.message, 500);
     }
   },
 
