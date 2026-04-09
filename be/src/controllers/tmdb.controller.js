@@ -36,26 +36,30 @@ export const syncTMDB = async (req, res) => {
                     let realDuration = 90;
                     let trailerLink = "";
                     try {
-                        const detailRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos&include_video_language=vi,en`
+                        const videoRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}&language=vi-VN`
                         );
+                        let videos = videoRes.data.results;
 
-                        // Lấy thời lượng
-                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
-                            realDuration = detailRes.data.runtime;
+                        if (videos.length === 0) {
+                            const videoResEn = await axios.get(
+                                `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+                            );
+                            videos = videoResEn.data.results;
                         }
 
-                        if (detailRes.data.videos && detailRes.data.videos.results.length > 0) {
-                            const videos = detailRes.data.videos.results;
-                            const trailer = videos.find(v => v.site === "YouTube" && v.type === "Trailer")
-                                || videos.find(v => v.site === "YouTube");
+                        if (videos.length > 0) {
+                            const selectedVideo =
+                                videos.find(v => v.site === "YouTube" && v.type === "Trailer") ||
+                                videos.find(v => v.site === "YouTube" && v.type === "Teaser") ||
+                                videos.find(v => v.site === "YouTube");
 
-                            if (trailer) {
-                                trailerLink = `https://www.youtube.com/embed/${trailer.key}`;
+                            if (selectedVideo) {
+                                trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
                             }
                         }
                     } catch (err) {
-                        console.log(`⚠️ Không lấy được chi tiết/trailer phim ${m.id}`);
+                        console.log(`⚠️ Lỗi lấy video cho phim ${m.id}`);
                     }
 
                     await Movie.create({
