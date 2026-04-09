@@ -23,6 +23,8 @@ import { useProducts } from '@/lib/api/products'
 import { useCreateConcession, type ConcessionProduct } from '@/lib/api/concession'
 import { useNotification } from '@/providers/NotificationProvider'
 import type { Product } from '@/types/product'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface CartItem extends Product {
   quantity: number
@@ -39,8 +41,14 @@ export default function ConcessionSalesPage() {
     email: '',
   })
   const [voucherCode, setVoucherCode] = useState('')
-  // 🔥 SỬA CHỖ NÀY: Khai báo thêm kiểu 'bank_transfer' cho State
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash')
+
+  const [qrModal, setQrModal] = useState({
+    isOpen: false,
+    qrString: '',
+    amount: 0,
+    orderCode: ''
+  })
 
   // API
   const { data: products, isLoading } = useProducts({
@@ -119,31 +127,25 @@ export default function ConcessionSalesPage() {
       const result: any = await createConcession.mutateAsync(concessionData as any)
 
       // PAYOS 
-      if (paymentMethod === 'bank_transfer' && result.data?.payosCheckoutUrl) {
-        const width = 600;
-        const height = 800;
-        const left = window.screen.width / 2 - width / 2;
-        const top = 100;
+      if (paymentMethod === 'bank_transfer' && result.data?.payosQrCode) {
+        
+        // Truyền dữ liệu QR vào State để bật Modal lên
+        setQrModal({
+          isOpen: true,
+          qrString: result.data.payosQrCode, // Chuỗi mã VietQR lấy từ BE
+          amount: result.data.totalAmount || getTotalAmount(),
+          orderCode: result.data.transactionId || result.data.concessionId || 'Đơn hàng mới'
+        })
 
-        const paymentWindow = window.open(
-          result.data.payosCheckoutUrl,
-          'PayOS_Payment',
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
-
-        showSuccess(
-          'Chờ thanh toán...',
-          `Mã đơn: ${result.data.concessionId} - Vui lòng quét mã trên cửa sổ vừa bật.`
-        );
-
+        // Không cần thông báo Success vội, đợi khách quét xong mới báo
       } else {
+        // Luồng tiền mặt cũ
         showSuccess(
           'Đơn hàng thành công!',
           `Mã đơn: ${result.data.concessionId} - Tổng: ${result.data.totalAmount.toLocaleString('vi-VN')}đ`
         )
+        clearCart()
       }
-
-      clearCart()
     } catch (error: any) {
       console.log('Create concession error:', error)
       showError(
@@ -435,6 +437,48 @@ export default function ConcessionSalesPage() {
           </Button>
         </div>
       </div>
+      <Dialog open={qrModal.isOpen} onOpenChange={(open) => !open && setQrModal(prev => ({...prev, isOpen: false}))}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold text-amber-600">
+              Thanh Toán Chuyển Khoản
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-500">
+              Vui lòng mời khách hàng quét mã QR bên dưới để thanh toán.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center p-4 space-y-6">
+            {/* Vẽ mã QR siêu nét */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              {qrModal.qrString ? (
+                <QRCodeSVG value={qrModal.qrString} size={256} />
+              ) : (
+                <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+              )}
+            </div>
+
+            {/* Hiển thị số tiền */}
+            <div className="text-center space-y-1">
+              <p className="text-sm text-gray-500">Tổng tiền cần thanh toán:</p>
+              <p className="text-3xl font-bold text-amber-600">
+                {qrModal.amount.toLocaleString('vi-VN')}đ
+              </p>
+            </div>
+
+            {/* Hiển thị mã đơn */}
+            <div className="text-center space-y-1">
+              <p className="text-sm text-gray-500">Mã đơn hàng:</p>
+              <p className="text-md font-medium text-gray-900">{qrModal.orderCode}</p>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-blue-600 animate-pulse bg-blue-50 px-4 py-2 rounded-full">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Đang chờ khách hàng thanh toán...</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
