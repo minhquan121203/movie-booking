@@ -64,7 +64,7 @@ const counterBookingController = {
             payosOrderCode: payosOrderCode
           };
 
-          const CounterTransaction = (await import("../models/countertransaction.model.js")).default;
+          const CounterTransaction = (await import("../models/counter-transaction.model.js")).default;
           const docId = responseData._id || (responseData.transaction && responseData.transaction._id);
           if (docId) {
             await CounterTransaction.findByIdAndUpdate(docId, { transactionId: payosOrderCode.toString() });
