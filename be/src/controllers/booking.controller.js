@@ -923,7 +923,7 @@ const bookingController = {
       const payos = (await import("../services/payment/payos.service.js")).default;
 
       // Hỏi PayOS xem mã này đã trả tiền chưa
-      const orderInfo = await payos.paymentRequests.getPaymentLinkInformation(orderCode);
+      const orderInfo = await payos.paymentRequests.getPaymentLinkInformation(Number(orderCode));
 
       // Trả về 'PAID' hoặc 'PENDING'
       return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
