@@ -23,30 +23,27 @@ export const syncTMDB = async (req, res) => {
                 // Kiểm tra xem phim đã có trong DB chưa
                 const exists = await Movie.findOne({ tmdbId: m.id });
 
+                // Chuẩn bị sẵn Data
+                const releaseDateObj = new Date(m.release_date || new Date());
+                const now = new Date();
+                const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
+                const posterLink = m.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+                    : "https://via.placeholder.com/500x750?text=No+Poster";
+
                 if (!exists) {
+                    // PHIM HOÀN TOÀN MỚI
                     let realDuration = 90;
                     try {
-                        const detailRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`
-                        );
-                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
-                            realDuration = detailRes.data.runtime;
-                        }
-                    } catch (err) {
-                        console.log(`⚠️ Không lấy được chi tiết phim ${m.id}, dùng mặc định 120 phút.`);
-                    }
-
-                    const releaseDateObj = new Date(m.release_date || new Date());
-                    const now = new Date();
-                    const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
+                        const detailRes = await axios.get(`${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`);
+                        if (detailRes.data.runtime && detailRes.data.runtime > 0) realDuration = detailRes.data.runtime;
+                    } catch (err) { }
 
                     await Movie.create({
                         title: m.title || m.original_title,
                         tmdbId: m.id,
                         description: m.overview,
-                        posterUrl: m.poster_path
-                            ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
-                            : "https://via.placeholder.com/500x750?text=No+Poster",
+                        posterUrl: posterLink, // ✅ Link ảnh xịn
                         releaseDate: releaseDateObj,
                         status: currentStatus,
                         country: "Hoa Kỳ",
@@ -54,7 +51,14 @@ export const syncTMDB = async (req, res) => {
                         language: "Tiếng Anh",
                         rating: "C13",
                     });
+                    totalAddedCount++;
 
+                } else if (exists.isDeleted) {
+                    // PHIM BỊ XÓA MỀM
+                    exists.isDeleted = false;
+                    exists.posterUrl = posterLink;
+                    exists.status = currentStatus;
+                    await exists.save();
                     totalAddedCount++;
                 }
             }
