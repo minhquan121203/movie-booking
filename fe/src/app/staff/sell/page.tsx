@@ -37,7 +37,7 @@ export default function TicketSales() {
   const [selectedMovieId, setSelectedMovieId] = useState<string>('ALL') // 'ALL' = tất cả phim
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'))
   const [showAllDates, setShowAllDates] = useState<boolean>(false)
-  const [paymentMethod, setPaymentMethod] = useState<string>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash')
   const { showSuccess, showError } = useNotification()
   const queryClient = useQueryClient()
   const [customerInfo, setCustomerInfo] = useState<CustomerFormData | null>(null)
@@ -95,7 +95,8 @@ export default function TicketSales() {
     if (selectedSeats.length === 0) return toast.error('Chưa chọn ghế')
     if (!customerInfo) return toast.error('Thiếu thông tin khách hàng')
 
-    const payload = {
+    // Thêm as any để tắt tiếng TypeScript kêu la
+    const payload: any = {
       scheduleId: selectedSchedule._id,
       seats: selectedSeats.map(s => ({
         seatNumber: s.seatNumber,
@@ -106,14 +107,41 @@ export default function TicketSales() {
         fullName: customerInfo.fullName,
         email: customerInfo.email || 'no-email@example.com',
       },
-      paymentMethod: paymentMethod,
+      paymentMethod: paymentMethod, // Truyền cash hoặc bank_transfer lên BE
       cashReceived: 0,
     }
 
     staffCreateBooking(payload, {
-      onSuccess: () => {
+      onSuccess: (result: any) => {
+        // 🔥 THÊM LOGIC XỬ LÝ POPUP PAYOS Ở ĐÂY
+        // Lưu ý: data trả về có thể bọc trong result.data hoặc tùy cấu trúc axios của fen
+        const responseData = result.data || result; 
+
+        if (paymentMethod === 'bank_transfer' && responseData?.payosCheckoutUrl) {
+          const width = 600;
+          const height = 800;
+          const left = window.screen.width / 2 - width / 2;
+          const top = 100;
+
+          // Bật Popup PayOS
+          const paymentWindow = window.open(
+            responseData.payosCheckoutUrl,
+            'PayOS_Payment',
+            `width=${width},height=${height},left=${left},top=${top}`
+          );
+
+          showSuccess(
+            'Chờ thanh toán...',
+            `Mã đơn: ${responseData.bookingCode} - Vui lòng quét mã trên cửa sổ vừa bật.`
+          );
+
+        } else {
+          // Luồng tiền mặt cũ
+          showSuccess('Tạo đơn thành công!')
+        }
+
+        // Reset dữ liệu sau khi xong
         queryClient.invalidateQueries({ queryKey: ['schedules'] })
-        showSuccess('Tạo đơn thành công!')
         setSelectedSchedule(null)
         setCustomerInfo(null)
         reset()
@@ -267,8 +295,8 @@ export default function TicketSales() {
             selectedSchedule={selectedSchedule}
             selectedSeats={selectedSeats}
             totalAmount={totalAmount}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
+            paymentMethod={paymentMethod as any}
+            setPaymentMethod={setPaymentMethod as any}
             onPayment={handlePayment}
             isProcessing={isPending}
           />

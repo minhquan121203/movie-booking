@@ -39,7 +39,8 @@ export default function ConcessionSalesPage() {
     email: '',
   })
   const [voucherCode, setVoucherCode] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash'>('cash')
+  // 🔥 SỬA CHỖ NÀY: Khai báo thêm kiểu 'bank_transfer' cho State
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash')
 
   // API
   const { data: products, isLoading } = useProducts({
@@ -115,12 +116,32 @@ export default function ConcessionSalesPage() {
     }
 
     try {
-      const result = await createConcession.mutateAsync(concessionData)
+      const result: any = await createConcession.mutateAsync(concessionData as any)
 
-      showSuccess(
-        'Đơn hàng thành công!',
-        `Mã đơn: ${result.data.concessionId} - Tổng: ${result.data.totalAmount.toLocaleString('vi-VN')}đ`
-      )
+      // PAYOS 
+      if (paymentMethod === 'bank_transfer' && result.data?.payosCheckoutUrl) {
+        const width = 600;
+        const height = 800;
+        const left = window.screen.width / 2 - width / 2;
+        const top = 100;
+
+        const paymentWindow = window.open(
+          result.data.payosCheckoutUrl,
+          'PayOS_Payment',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        showSuccess(
+          'Chờ thanh toán...',
+          `Mã đơn: ${result.data.concessionId} - Vui lòng quét mã trên cửa sổ vừa bật.`
+        );
+
+      } else {
+        showSuccess(
+          'Đơn hàng thành công!',
+          `Mã đơn: ${result.data.concessionId} - Tổng: ${result.data.totalAmount.toLocaleString('vi-VN')}đ`
+        )
+      }
 
       clearCart()
     } catch (error: any) {
@@ -158,8 +179,10 @@ export default function ConcessionSalesPage() {
     Combo: '🎁',
     Snack: '🍫',
   }
-
-  const paymentMethods = [{ value: 'cash', label: 'Tiền mặt', icon: '💵' }]
+  const paymentMethods = [
+    { value: 'cash', label: 'Tiền mặt', icon: '💵' },
+    { value: 'bank_transfer', label: 'Chuyển khoản (PayOS)', icon: '🏦' }
+  ]
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -291,11 +314,11 @@ export default function ConcessionSalesPage() {
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
                       <p className="text-xs text-gray-500">
-                        {item.price}đ × {item.quantity}
+                        {item.price.toLocaleString('vi-VN')}đ × {item.quantity}
                       </p>
                     </div>
                     <p className="font-semibold">
-                      {(item.price * item.quantity)}đ
+                      {(item.price * item.quantity).toLocaleString('vi-VN')}đ
                     </p>
                   </div>
                 ))}
@@ -304,7 +327,7 @@ export default function ConcessionSalesPage() {
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Tổng cộng</span>
                     <span className="text-lg font-bold text-amber-600">
-                      {getTotalAmount()}đ
+                      {getTotalAmount().toLocaleString('vi-VN')}đ
                     </span>
                   </div>
                 </div>
