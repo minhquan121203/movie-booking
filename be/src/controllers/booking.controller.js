@@ -915,8 +915,6 @@ const bookingController = {
   getPayosStatus: async (req, res) => {
     try {
       const { orderCode } = req.params;
-
-      // Validate orderCode
       if (!orderCode) {
         return errorResponse(res, "Thiếu orderCode", 400);
       }
@@ -929,22 +927,14 @@ const bookingController = {
           process.env.PAYOS_CHECKSUM_KEY
       );
 
+      // Gọi thẳng hàm lấy trạng thái
       const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
 
-      return successResponse(
-          res,
-          { status: orderInfo.status },
-          "Lấy trạng thái thành công"
-      );
+      return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
 
     } catch (error) {
       console.error("❌ Lỗi Radar PayOS:", error.message || error);
-
-      return errorResponse(
-          res,
-          "Lỗi kiểm tra: " + (error.message || "Lỗi server"),
-          500
-      );
+      return errorResponse(res, "Lỗi kiểm tra: " + (error.message || "Lỗi server"), 500);
     }
   },
 
