@@ -13,7 +13,6 @@ import emailService from "../services/email.service.js";
 import redisService from "../services/redis.service.js";
 import smsService from "../services/sms.service.js";
 import websocketService from "../services/websocket.service.js";
-const { default: payos } = await import("../services/payment/payos.service.js");
 
 import { BOOKING_CONSTANTS, BOOKING_STATUS } from "../constants/booking.js";
 import { errorResponse, successResponse } from "../utils/response.js";
