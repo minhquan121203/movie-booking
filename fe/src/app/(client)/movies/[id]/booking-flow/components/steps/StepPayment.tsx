@@ -13,25 +13,29 @@ interface StepPaymentProps {
 
 export function StepPayment({ paymentUrl, bookingCode, totalAmount, paymentMethod }: StepPaymentProps) {
   const isBankTransfer = paymentMethod === 'bank_transfer'
-  const isMomo = paymentMethod === 'MoMo'
-  const isVnpay = paymentMethod === 'VNPAY'
+  const isMomo = paymentMethod === 'MoMo' || paymentMethod === 'momo'
+  const isVnpay = paymentMethod === 'VNPAY' || paymentMethod === 'vnpay'
 
   useEffect(() => {
     if ((isMomo || isVnpay || isBankTransfer) && paymentUrl) {
       window.location.href = paymentUrl;
     }
-  }, [isMomo, isVnpay, paymentUrl]);
+  }, [isMomo, isVnpay, isBankTransfer, paymentUrl]);
 
-  if (isMomo || isVnpay) {
+  // Cập nhật giao diện chờ tải cho cả 3 cổng
+  if (isMomo || isVnpay || isBankTransfer) {
+    const gatewayName = isMomo ? 'MoMo' : isVnpay ? 'VNPAY' : 'Cổng thanh toán PayOS';
+    
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <h2 className="text-xl font-bold text-text-primary mb-2">Đang chuyển hướng đến {isMomo ? 'MoMo' : 'VNPAY'}...</h2>
+        <h2 className="text-xl font-bold text-text-primary mb-2">Đang chuyển hướng đến {gatewayName}...</h2>
         <p className="text-text-secondary text-sm">Vui lòng không đóng trình duyệt.</p>
       </div>
     )
   }
 
+  // Fallback (Phòng hờ nếu trình duyệt chặn tự động chuyển trang)
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <h2 className="mb-6 text-text-primary text-xl font-bold">Thanh toán đơn hàng</h2>
@@ -67,24 +71,14 @@ export function StepPayment({ paymentUrl, bookingCode, totalAmount, paymentMetho
 
         <div className="flex flex-col items-center justify-center bg-surface p-6 rounded-2xl border-2 border-primary/20 shadow-md">
           <p className="text-sm font-medium text-text-primary mb-4 text-center">
-            Quét mã QR để mở trang thanh toán
+            Click vào nút bên dưới nếu trình duyệt không tự chuyển trang
           </p>
-
-          <div className="relative w-56 h-56 mb-6 p-2 bg-white rounded-xl shadow-inner border border-border overflow-hidden flex items-center justify-center">
-            <Image
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentUrl)}`}
-              alt="Payment QR"
-              width={250}
-              height={250}
-              className="w-full h-full object-contain"
-            />
-          </div>
 
           <div className="w-full space-y-3">
             <Button asChild className="w-full bg-primary hover:bg-primary/90 h-12 text-base font-bold shadow-lg">
               <Link href={paymentUrl}>
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Thanh toán ngay
+                Đến trang thanh toán ngay
               </Link>
             </Button>
             
