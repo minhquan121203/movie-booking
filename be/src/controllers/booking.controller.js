@@ -373,7 +373,7 @@ const bookingController = {
       let checkoutUrl = null;
 
       if (paymentMethod === 'bank_transfer') {
-        const payosOrderCode = Number(String(Date.now()).slice(-9));
+        const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
         newBooking.paymentDetails.transactionId = payosOrderCode.toString();
         await newBooking.save();
@@ -387,29 +387,23 @@ const bookingController = {
         };
 
         try {
-          console.log("🚀 Đang gửi yêu cầu tạo mã QR tới PayOS trực tiếp...");
+          // 🔥 ÁP DỤNG CÔNG THỨC KHỞI TẠO ĐÃ THÀNH CÔNG LÚC SÁNG
+          const PayOSModule = await import("@payos/node");
+          const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
-          const response = await fetch('https://api-merchant.payos.vn/v2/payment-requests', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-client-id': process.env.PAYOS_CLIENT_ID,
-              'x-api-key': process.env.PAYOS_API_KEY,
-              'x-checksum-key': process.env.PAYOS_CHECKSUM_KEY
-            },
-            body: JSON.stringify(requestData)
-          });
+          const payosClient = new PayOSClass(
+              process.env.PAYOS_CLIENT_ID,
+              process.env.PAYOS_API_KEY,
+              process.env.PAYOS_CHECKSUM_KEY
+          );
 
-          const result = await response.json();
+          // Tạo link xịn 100%
+          const paymentLink = await payosClient.createPaymentLink(requestData);
+          checkoutUrl = paymentLink.checkoutUrl;
 
-          if (result.code === '00' || result.data?.checkoutUrl) {
-            checkoutUrl = result.data.checkoutUrl;
-            console.log("✅ Lấy link QR thành công:", checkoutUrl);
-          } else {
-            console.error("❌ PayOS từ chối:", result.desc);
-          }
+          console.log("✅ TẠO LINK QR THÀNH CÔNG:", checkoutUrl);
         } catch (payosError) {
-          console.error("❌ Lỗi mạng khi gọi PayOS:", payosError.message);
+          console.error("❌ Lỗi Backend tạo link PayOS:", payosError);
         }
       }
 
