@@ -93,18 +93,22 @@ export function SeatSelector({
                     <button
                       key={schedule._id}
                       onClick={() => onSelectSchedule(schedule)}
-                      className={`px-3 py-2 rounded-lg border text-sm transition-all relative overflow-hidden ${
+                      className={`px-3 py-2 rounded-lg border text-sm transition-all relative overflow-hidden w-full sm:w-[140px] ${
                         selectedSchedule?._id === schedule._id
                           ? 'border-primary bg-primary/5 ring-1 ring-primary text-primary font-medium'
                           : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50 text-gray-700'
                       }`}
                     >
-                      <div className="flex flex-col items-start">
-                        <span className="font-semibold">
-                          {new Date(schedule.showDate).toLocaleDateString('vi-VN')}
+                      <div className="flex flex-col items-start text-left">
+                        {/* 🔥 HIỂN THỊ TÊN PHIM NỔI BẬT */}
+                        <span className="font-bold text-blue-600 text-[11px] mb-1 line-clamp-1 w-full" title={schedule.movie?.title}>
+                          {schedule.movie?.title || 'Phim đang cập nhật'}
                         </span>
-                        <span className="font-semibold">{schedule.startTime}</span>
-                        <span className="text-[10px] text-gray-500">{schedule.roomName}</span>
+                        
+                        <div className="flex justify-between w-full items-end">
+                          <span className="font-semibold text-gray-900 text-sm">{schedule.startTime}</span>
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1 rounded">{schedule.roomName}</span>
+                        </div>
                       </div>
                     </button>
                   ))}
