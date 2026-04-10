@@ -113,30 +113,31 @@ export default function TicketSales() {
 
     staffCreateBooking(payload, {
       onSuccess: (result: any) => {
-        // 🔥 THÊM LOGIC XỬ LÝ POPUP PAYOS Ở ĐÂY
-        // Lưu ý: data trả về có thể bọc trong result.data hoặc tùy cấu trúc axios của fen
         const responseData = result.data || result; 
+        
+        const finalUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl;
+        const finalCode = responseData?.bookingCode || responseData?.data?.bookingCode;
 
-        if (paymentMethod === 'bank_transfer' && responseData?.payosCheckoutUrl) {
+        if (paymentMethod === 'bank_transfer' && finalUrl) {
           const width = 600;
           const height = 800;
           const left = window.screen.width / 2 - width / 2;
           const top = 100;
 
           // Bật Popup PayOS
-          const paymentWindow = window.open(
-            responseData.payosCheckoutUrl,
+          window.open(
+            finalUrl,
             'PayOS_Payment',
             `width=${width},height=${height},left=${left},top=${top}`
           );
 
           showSuccess(
             'Chờ thanh toán...',
-            `Mã đơn: ${responseData.bookingCode} - Vui lòng quét mã trên cửa sổ vừa bật.`
+            `Mã đơn: ${finalCode} - Đã mở cửa sổ quét mã QR!`
           );
 
         } else {
-          // Luồng tiền mặt cũ
+          // Luồng tiền mặt cũ hoặc không có link
           showSuccess('Tạo đơn thành công!')
         }
 
