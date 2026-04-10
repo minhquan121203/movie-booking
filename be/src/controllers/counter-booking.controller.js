@@ -30,8 +30,8 @@ const counterBookingController = {
             orderCode: payosOrderCode,
             amount: bookingData.totalAmount,
             description: `VEQUAY ${bookingData.bookingCode}`.substring(0, 25),
-            returnUrl: `https://movie-booking-cinema.vercel.app/staff/bookings`,
-            cancelUrl: `https://movie-booking-cinema.vercel.app/staff/bookings`
+            returnUrl: `https://movie-booking-cinema.vercel.app/staff/sell`,
+            cancelUrl: `https://movie-booking-cinema.vercel.app/staff/sell`
           };
 
           const PayOSModule = await import("@payos/node");
