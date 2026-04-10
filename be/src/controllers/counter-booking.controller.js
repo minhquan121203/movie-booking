@@ -124,6 +124,7 @@ const counterBookingController = {
           const finalData = {
             ...responseData,
             payosCheckoutUrl: paymentLink.checkoutUrl,
+            payosQrCode: paymentLink.qrCode,
             payosOrderCode: payosOrderCode
           };
 
