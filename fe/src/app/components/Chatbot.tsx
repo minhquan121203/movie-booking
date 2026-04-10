@@ -1,11 +1,12 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
 
 export default function ChatBot() {
   const router = useRouter();
-
+  
+  const pathname = usePathname();
   const role = useUserStore((state: any) => state.role);
   const _hasHydrated = useUserStore((state: any) => state._hasHydrated);
 
@@ -85,8 +86,15 @@ export default function ChatBot() {
   };
 
   if (!_hasHydrated) return null;
-  if (role === 'admin' || role === 'staff') {
-    return null;
+
+  if (
+    role === 'admin' || 
+    role === 'super-admin' || 
+    role === 'staff' || 
+    pathname.startsWith('/admin') || 
+    pathname.startsWith('/staff')
+  ) {
+    return null; 
   }
 
   return (
