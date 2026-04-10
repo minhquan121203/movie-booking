@@ -99,16 +99,16 @@ export function BookingSummary({
             >
               <Banknote className="w-4 h-4" /> Tiền mặt
             </button>
-            {/* <button
-              onClick={() => setPaymentMethod('VNPAY')}
+            <button
+              onClick={() => setPaymentMethod('bank_transfer')}
               className={`p-2 rounded-lg border text-xs font-medium flex flex-col items-center gap-1 transition-all ${
-                paymentMethod === 'VNPAY'
+                paymentMethod === 'bank_transfer'
                   ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-gray-200 hover:bg-gray-50'
+                  : 'border-gray-200 hover:bg-gray-50 text-gray-700'
               }`}
             >
-              <QrCode className="w-4 h-4" /> QR Code
-            </button> */}
+              <QrCode className="w-4 h-4" /> Chuyển khoản
+            </button>
           </div>
         </div>
 
