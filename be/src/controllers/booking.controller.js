@@ -387,19 +387,11 @@ const bookingController = {
         };
 
         try {
-          const PayOSModule = await import("@payos/node");
-          const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
-          const payosInstance = new PayOSClass(
-              process.env.PAYOS_CLIENT_ID,
-              process.env.PAYOS_API_KEY,
-              process.env.PAYOS_CHECKSUM_KEY
-          );
-
           let paymentLink;
-          if (typeof payosInstance.createPaymentLink === 'function') {
-            paymentLink = await payosInstance.createPaymentLink(requestData);
+          if (typeof payos.createPaymentLink === 'function') {
+            paymentLink = await payos.createPaymentLink(requestData);
           } else {
-            paymentLink = await payosInstance.paymentRequests.create(requestData);
+            paymentLink = await payos.paymentRequests.create(requestData);
           }
 
           checkoutUrl = paymentLink.checkoutUrl;
