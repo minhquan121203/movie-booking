@@ -52,7 +52,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
 
       try {
         const res = await fetch(
-          `https://movie-booking-api-bcfe.onrender.com/api/schedules/${preSelectedScheduleId}` 
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'}/api/schedules/${preSelectedScheduleId}` 
         )
         const json = await res.json()
 
@@ -129,15 +129,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   // --- HANDLERS ---
   const handleSeatClick = useCallback(
     async (seat: Seat) => {
-      if (!selectedSchedule) {
-        toast.error('Vui lòng chọn suất chiếu trước')
-        return
-      }
-
-      if (!isSeatAvailable(seat)) {
-        toast.warning('Ghế này không khả dụng')
-        return
-      }
+      if (!selectedSchedule) return toast.error('Vui lòng chọn suất chiếu trước')
+      if (!isSeatAvailable(seat)) return toast.warning('Ghế này không khả dụng')
 
       const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
 
@@ -150,10 +143,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
           setSelectedSeats(prev => prev.filter(s => s.seatNumber !== seat.seatNumber))
         }
       } else {
-        if (selectedSeats.length >= MAX_SEATS) {
-          toast.warning(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
-          return
-        }
+        if (selectedSeats.length >= MAX_SEATS) return toast.warning(`Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế`)
 
         try {
           await holdSeats([seat.seatNumber])
@@ -182,10 +172,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       .filter(item => item.product._id !== product._id)
       .reduce((sum, item) => sum + item.quantity, 0)
 
-    if (currentTotal + quantity > MAX_PRODUCTS) {
-      toast.warning(`Tổng số lượng sản phẩm không được vượt quá ${MAX_PRODUCTS}`)
-      return
-    }
+    if (currentTotal + quantity > MAX_PRODUCTS) return toast.warning(`Tổng số lượng sản phẩm không được vượt quá ${MAX_PRODUCTS}`)
 
     setCartItems(prev => {
       const exists = prev.find(item => item.product._id === product._id)
@@ -198,15 +185,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   // --- CORE LOGIC: TẠO ĐƠN ---
   const handleCreateBooking = async () => {
     const scheduleId = preSelectedScheduleId || selectedSchedule?._id
-
-    if (!scheduleId) {
-      toast.error('Vui lòng chọn suất chiếu')
-      return null
-    }
-    if (selectedSeats.length === 0) {
-      toast.error('Vui lòng chọn ít nhất 1 ghế')
-      return null
-    }
+    if (!scheduleId) { toast.error('Vui lòng chọn suất chiếu'); return null; }
+    if (selectedSeats.length === 0) { toast.error('Vui lòng chọn ít nhất 1 ghế'); return null; }
 
     const bookingPayload = {
       scheduleId: scheduleId,
@@ -227,10 +207,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     try {
       const bookingRes = await createBookingAsync(bookingPayload)
       const bookingData = bookingRes.data as BookingResponseData
-
       setCreatedBookingData(bookingData)
       toast.info('Thông tin đặt vé đã được ghi nhận!', { icon: '📝', duration: 2000 })
-
       return bookingData
     } catch (error) {
       console.error(error)
@@ -239,25 +217,24 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     }
   }
 
-  // --- CORE LOGIC: GỌI API PHỤ TẠO LINK (NẾU CẦN) ---
-  const handleCreatePayment = (bookingId: string) => {
+  // --- CORE LOGIC: GỌI API TẠO LINK VÀ BƠM XĂNG ---
+  const handleCreatePayment = (bookingId: string, currentMethod: string) => {
     toast.dismiss();
-    if (!paymentMethod) return toast.error('Vui lòng chọn phương thức thanh toán')
-
-    const onSuccessHandler = (res: any, method: string) => {
-      const link = res.paymentUrl || res.payUrl || res.data?.payUrl || res.checkoutUrl;
+    
+    const onSuccessHandler = (res: any, methodTitle: string) => {
+      const link = res.paymentUrl || res.payUrl || res.data?.payUrl || res.checkoutUrl || res.data?.checkoutUrl;
       if (link) {
-        toast.loading(`Đang chuyển hướng sang ${method}...`);
-        // 🚀 ĐÁ BAY SANG APP MOMO/VNPAY LUÔN
-        window.location.href = link; 
+        // 🔥 BƠM XĂNG VÀO ĐÂY VÀ CHUYỂN BƯỚC 5
+        setPaymentUrl(link);
+        setCurrentStep(5);
       } else {
-        toast.error('Lỗi: Không lấy được link thanh toán!');
+        toast.error(`Lỗi: Không lấy được link thanh toán ${methodTitle}!`);
       }
     }
 
-    if (paymentMethod === 'vnpay') {
+    if (currentMethod === 'vnpay') {
       createVNPayPayment(bookingId, { onSuccess: res => onSuccessHandler(res, 'VNPAY') })
-    } else if (paymentMethod === 'momo') {
+    } else if (currentMethod === 'momo') {
       createMoMoPayment(bookingId, { onSuccess: res => onSuccessHandler(res, 'MoMo') })
     }
   }
@@ -282,15 +259,23 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
 
         if (bookingData) {
           const bd = bookingData as any;
+          const payosUrl = bd.payosCheckoutUrl || bd.data?.payosCheckoutUrl;
 
-          if ((paymentMethod === 'bank_transfer' || paymentMethod === 'momo') && bd.payosCheckoutUrl) {
-            toast.loading(`Đang chuyển hướng sang trang thanh toán...`);
-            window.location.href = bd.payosCheckoutUrl;
+          // XỬ LÝ PAYOS 
+          if (paymentMethod === 'bank_transfer') {
+            if (payosUrl) {
+              setPaymentUrl(payosUrl); 
+              setCurrentStep(5); 
+            } else {
+              toast.error('Thiếu link PayOS từ Server! Cần thêm API PayOS vào booking.controller.js');
+              setCurrentStep(5);
+            }
             return; 
           }
 
-          const bookingId = bd._id || bd.bookingId
-          handleCreatePayment(bookingId) 
+          // VNPay, MoMo flow
+          const bookingId = bd._id || bd.bookingId || bd.data?._id;
+          handleCreatePayment(bookingId, paymentMethod);
           
           return; 
         }
