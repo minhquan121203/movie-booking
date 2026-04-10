@@ -115,37 +115,22 @@ export default function TicketSales() {
       onSuccess: (result: any) => {
         const responseData = result.data || result; 
         
-        const finalUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl;
-        const finalCode = responseData?.bookingCode || responseData?.data?.bookingCode;
+        // Bắt link QR
+        const qrUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl;
 
-        if (paymentMethod === 'bank_transfer' && finalUrl) {
-          const width = 600;
-          const height = 800;
-          const left = window.screen.width / 2 - width / 2;
-          const top = 100;
-
-          // Bật Popup PayOS
-          window.open(
-            finalUrl,
-            'PayOS_Payment',
-            `width=${width},height=${height},left=${left},top=${top}`
-          );
-
-          showSuccess(
-            'Chờ thanh toán...',
-            `Mã đơn: ${finalCode} - Đã mở cửa sổ quét mã QR!`
-          );
-
+        if (paymentMethod === 'bank_transfer' && qrUrl) {
+          showSuccess('Đang chuyển đến trang thanh toán...');
+          
+          // ĐỔI THÀNH CHUYỂN TRANG TRỰC TIẾP (Tránh bị trình duyệt chặn)
+          window.location.href = qrUrl;
+          
         } else {
-          // Luồng tiền mặt cũ hoặc không có link
-          showSuccess('Tạo đơn thành công!')
+          showSuccess('Tạo đơn thành công!');
+          queryClient.invalidateQueries({ queryKey: ['schedules'] });
+          setSelectedSchedule(null);
+          setCustomerInfo(null);
+          reset();
         }
-
-        // Reset dữ liệu sau khi xong
-        queryClient.invalidateQueries({ queryKey: ['schedules'] })
-        setSelectedSchedule(null)
-        setCustomerInfo(null)
-        reset()
       },
       onError: (error: any) => {
         showError('Lỗi', error?.response?.data?.message || 'Không thể tạo đơn')
