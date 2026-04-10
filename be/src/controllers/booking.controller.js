@@ -920,21 +920,32 @@ const bookingController = {
         return errorResponse(res, "Thiếu orderCode", 400);
       }
 
-      const PayOSModule = await import("@payos/node");
-      const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
+      const clientId = process.env.PAYOS_CLIENT_ID;
+      const apiKey = process.env.PAYOS_API_KEY;
 
-      const payos = new PayOSClass(
-          process.env.PAYOS_CLIENT_ID,
-          process.env.PAYOS_API_KEY,
-          process.env.PAYOS_CHECKSUM_KEY
-      );
+      if (!clientId || !apiKey) {
+        return errorResponse(res, "Server chưa cấu hình API Key của PayOS", 500);
+      }
 
-      const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
+      const response = await fetch(`https://api-merchant.payos.vn/v2/payment-requests/${orderCode}`, {
+        method: 'GET',
+        headers: {
+          'x-client-id': clientId,
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      return successResponse(res, { status: orderInfo.status }, "Lấy trạng thái thành công");
+      const data = await response.json();
+
+      if (data.code !== '00') {
+        return errorResponse(res, data.desc || "Lỗi từ PayOS", 400);
+      }
+
+      return successResponse(res, { status: data.data.status }, "Lấy trạng thái thành công");
 
     } catch (error) {
-      console.error("❌ Lỗi Radar PayOS:", error.message);
+      console.error("❌ Lỗi Radar PayOS (Gọi trực tiếp):", error.message);
       return errorResponse(res, "Lỗi kiểm tra: " + error.message, 500);
     }
   },
