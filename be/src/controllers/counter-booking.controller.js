@@ -79,15 +79,20 @@ const counterBookingController = {
         throw new AuthorizationError("Chỉ nhân viên mới có thể tạo giao dịch tại quầy");
       }
 
-      if (req.body.products && typeof req.body.products === "object" && !Array.isArray(req.body.products)) {
-        req.body.products = Object.values(req.body.products);
+      const productsData = req.body.products || req.body.items || [];
+      if (productsData && typeof productsData === "object" && !Array.isArray(productsData)) {
+        req.body.products = Object.values(productsData);
+      } else {
+        req.body.products = productsData;
+      }
+
+      if (req.body.paymentMethod === 'cash') {
+        req.body.paymentMethod = 'Tại quầy';
       }
 
       const result = await counterBookingService.createConcessionTransaction(req.userId, req.body);
-
       let responseData = result.toObject ? result.toObject() : { ...result._doc || result };
 
-      // PAYOS BÁN ĐỒ ĂN
       if (req.body.paymentMethod === 'bank_transfer') {
         try {
           const PayOSModule = await import("@payos/node");
@@ -99,7 +104,6 @@ const counterBookingController = {
           );
 
           const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
-
           const amount = responseData.totalAmount || (responseData.transaction && responseData.transaction.totalAmount) || 0;
           const txCode = responseData.transactionId || (responseData.transaction && responseData.transaction.transactionId) || "BAPNUOC";
 
@@ -107,16 +111,22 @@ const counterBookingController = {
             orderCode: payosOrderCode,
             amount: amount,
             description: `BUNNY ${txCode}`.substring(0, 25),
-            returnUrl: `https://movie-booking-cinema.vercel.app`,
-            cancelUrl: `https://movie-booking-cinema.vercel.app`
+            returnUrl: `https://movie-booking-cinema.vercel.app/staff/concession`,
+            cancelUrl: `https://movie-booking-cinema.vercel.app/staff/concession`
           };
 
-          const paymentLink = await payosClient.createPaymentLink(requestData);
+          let paymentLink;
+          if (typeof payosClient.createPaymentLink === 'function') {
+            paymentLink = await payosClient.createPaymentLink(requestData);
+          } else if (payosClient.paymentRequests && typeof payosClient.paymentRequests.create === 'function') {
+            paymentLink = await payosClient.paymentRequests.create(requestData);
+          } else {
+            throw new Error("Không tìm thấy hàm PayOS");
+          }
 
           const finalData = {
             ...responseData,
             payosCheckoutUrl: paymentLink.checkoutUrl,
-            payosQrCode: paymentLink.qrCode,
             payosOrderCode: payosOrderCode
           };
 
@@ -126,15 +136,16 @@ const counterBookingController = {
             await CounterTransaction.findByIdAndUpdate(docId, { transactionId: payosOrderCode.toString() });
           }
 
-          return successResponse(res, finalData, "Tạo giao dịch bán hàng thành công", 201);
+          return successResponse(res, finalData, "Đang tạo mã QR...", 201);
         } catch (payosError) {
-          console.error("Lỗi tạo link PayOS:", payosError);
+          console.error("Lỗi tạo link PayOS bán đồ ăn:", payosError);
+          return successResponse(res, responseData, "Tạo đơn thành công nhưng lỗi PayOS", 201);
         }
       }
 
       return successResponse(res, responseData, "Tạo giao dịch bán hàng thành công", 201);
     } catch (error) {
-      console.error("Create concession transaction error:", error);
+      console.error("❌ LỖI BÁN ĐỒ ĂN TẠI QUẦY:", error);
       return errorResponse(res, error.message || "Lỗi server", error.statusCode || 500);
     }
   },
