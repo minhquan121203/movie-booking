@@ -88,18 +88,18 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
       <div className="bg-surface rounded-2xl p-6 border border-border shadow-sm overflow-x-auto">
         <div className="flex flex-col items-center min-w-max gap-3">
           {rows.map(({ rowLabel, seats }) => (
-            <div key={rowLabel} className="flex items-center gap-2 sm:gap-4">
-              {/* Tên hàng */}
-              <span className="w-6 text-text-secondary text-center font-bold text-sm">
+            <div key={rowLabel} className="flex items-center gap-2 sm:gap-4 w-full">
+              {/* Tên hàng (Cố định bên trái) */}
+              <span className="w-6 shrink-0 text-text-secondary text-center font-bold text-sm">
                 {rowLabel}
               </span>
 
-              {/* Danh sách ghế */}
-              <div className="flex items-center gap-2">
+              {/* Danh sách ghế (Ép văng ra giữa cho cân) */}
+              <div className="flex-1 flex items-center justify-center gap-2">
                 {seats.map(seatInfo => {
                   const { isMerged, primary, secondary, displayNumber, seatType } = seatInfo
                   
-                  // 🔥 TRẠNG THÁI GỘP: Chỉ cần 1 ghế đã đặt hoặc đang chọn là cả cặp bị ảnh hưởng
+                  // 🔥 TRẠNG THÁI GỘP:
                   const isBooked = primary.isBooked || (secondary && secondary.isBooked)
                   const isSelected = selectedSeats.some(s => s.seatNumber === primary.seatNumber) ||
                                      (secondary && selectedSeats.some(s => s.seatNumber === secondary.seatNumber))
@@ -117,9 +117,7 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
                       key={primary.seatNumber}
                       disabled={status === 'booked'}
                       onClick={() => {
-                        // Gọi click cho ghế chính
                         onSeatClick(primary as unknown as Seat)
-                        // Nếu là ghế đôi, tự động click nốt ghế phụ cho vào giỏ hàng
                         if (isMerged && secondary) {
                           setTimeout(() => onSeatClick(secondary as unknown as Seat), 10)
                         }
@@ -127,32 +125,16 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
                       className={`
                         relative group transition-all duration-200 flex items-center justify-center border
                         ${isMerged ? 'w-20 sm:w-24 h-8 sm:h-10 rounded-xl' : 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg'}
-                        
                         ${
-                          status === 'selected'
-                            ? 'bg-primary text-white border-primary shadow-lg scale-105 z-10'
-                            : status === 'booked'
-                              ? 'bg-muted text-muted-foreground border-transparent cursor-not-allowed opacity-60'
-                              : status === 'vip'
-                                ? 'bg-orange-500/10 text-orange-600 border-orange-500/40 hover:bg-orange-500/20'
-                                : status === 'couple'
-                                  ? 'bg-pink-500/10 text-pink-600 border-pink-500/40 hover:bg-pink-500/20'
+                          status === 'selected' ? 'bg-primary text-white border-primary shadow-lg scale-105 z-10'
+                            : status === 'booked' ? 'bg-muted text-muted-foreground border-transparent cursor-not-allowed opacity-60'
+                              : status === 'vip' ? 'bg-orange-500/10 text-orange-600 border-orange-500/40 hover:bg-orange-500/20'
+                                : status === 'couple' ? 'bg-pink-500/10 text-pink-600 border-pink-500/40 hover:bg-pink-500/20'
                                   : 'bg-bg-secondary text-text-primary border-border hover:border-primary hover:bg-primary/5'
                         }
                       `}
                     >
-                      <span className="text-[10px] sm:text-xs font-medium">
-                        {displayNumber}
-                      </span>
-
-                      {/* Tooltip */}
-                      {status !== 'booked' && (
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] py-1.5 px-3 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                          <div className="font-bold">{seatType}</div>
-                          <div>{price.toLocaleString()}đ {isMerged && '(cả cặp)'}</div>
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                        </div>
-                      )}
+                      <span className="text-[10px] sm:text-xs font-medium">{displayNumber}</span>
                     </button>
                   )
                 })}
