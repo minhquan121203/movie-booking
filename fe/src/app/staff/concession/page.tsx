@@ -164,27 +164,27 @@ export default function ConcessionSalesPage() {
 
     try {
       const result: any = await createConcession.mutateAsync(concessionData as any)
+      const responseData = result.data || result;
+      const txId = responseData.transaction?.transactionId || responseData.transactionId || responseData.concessionId || 'Mới';
+      const txAmount = responseData.transaction?.totalAmount || responseData.totalAmount || getTotalAmount();
 
       // PAYOS 
-      if (paymentMethod === 'bank_transfer' && result.data?.payosQrCode) {
-
-        const txId = result.data.transaction?.transactionId || result.data.transactionId || result.data.concessionId;
-        const txAmount = result.data.transaction?.totalAmount || result.data.totalAmount || getTotalAmount();
+      if (paymentMethod === 'bank_transfer' && responseData.payosQrCode) {
         
-        console.log("Check PayOS Code từ Backend:", result.data.payosOrderCode);
+        console.log("Check PayOS Code từ Backend:", responseData.payosOrderCode);
 
         setQrModal({
           isOpen: true,
-          qrString: result.data.payosQrCode,
+          qrString: responseData.payosQrCode,
           amount: txAmount,
-          orderCode: txId || 'Đơn hàng mới',
-          payosOrderCode: result.data.payosOrderCode 
+          orderCode: txId,
+          payosOrderCode: responseData.payosOrderCode 
         })
       } else {
-        // Luồng tiền mặt cũ
+        // Luồng tiền mặt cũ (Đã được tiêm vắc-xin chống sập)
         showSuccess(
           'Đơn hàng thành công!',
-          `Mã đơn: ${result.data.concessionId} - Tổng: ${result.data.totalAmount.toLocaleString('vi-VN')}đ`
+          `Mã đơn: ${txId} - Tổng: ${txAmount.toLocaleString('vi-VN')}đ`
         )
         clearCart()
       }
