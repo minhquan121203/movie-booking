@@ -387,7 +387,6 @@ const bookingController = {
         };
 
         try {
-          // 🔥 ÁP DỤNG CÔNG THỨC KHỞI TẠO ĐÃ THÀNH CÔNG LÚC SÁNG
           const PayOSModule = await import("@payos/node");
           const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
@@ -397,8 +396,15 @@ const bookingController = {
               process.env.PAYOS_CHECKSUM_KEY
           );
 
-          // Tạo link xịn 100%
-          const paymentLink = await payosClient.createPaymentLink(requestData);
+          let paymentLink;
+          if (typeof payosClient.createPaymentLink === 'function') {
+            paymentLink = await payosClient.createPaymentLink(requestData);
+          } else if (payosClient.paymentRequests && typeof payosClient.paymentRequests.create === 'function') {
+            paymentLink = await payosClient.paymentRequests.create(requestData);
+          } else {
+            throw new Error("Không tìm thấy hàm tạo link thanh toán của PayOS");
+          }
+
           checkoutUrl = paymentLink.checkoutUrl;
 
           console.log("✅ TẠO LINK QR THÀNH CÔNG:", checkoutUrl);
