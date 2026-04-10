@@ -10,7 +10,7 @@ interface SeatMapsProps {
 }
 
 export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps) {
-  // 1. Xử lý dữ liệu: Gom nhóm ghế theo Hàng (Row)
+  // 1. Xử lý dữ liệu: Gom nhóm theo Hàng và GỘP GHẾ ĐÔI
   const rows = useMemo(() => {
     if (!schedule?.seatAvailability) return []
 
@@ -27,18 +27,49 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
     // Sắp xếp các hàng theo thứ tự A -> Z
     return Object.keys(groups)
       .sort()
-      .map(rowLabel => ({
-        rowLabel,
-        seats: groups[rowLabel].sort((a, b) => {
+      .map(rowLabel => {
+        const sortedSeats = groups[rowLabel].sort((a, b) => {
           // Sắp xếp ghế trong hàng theo số (A1 -> A2 -> A10)
           const numA = parseInt(a.seatNumber.slice(1))
           const numB = parseInt(b.seatNumber.slice(1))
           return numA - numB
-        }),
-      }))
+        })
+
+        // 🔥 THUẬT TOÁN "DÒ MÌN": Gộp 2 ghế đôi kề nhau thành 1
+        const mergedSeats = []
+        for (let i = 0; i < sortedSeats.length; i++) {
+          const current = sortedSeats[i]
+          
+          if (
+            current.seatType === 'Ghế đôi' && 
+            i < sortedSeats.length - 1 && 
+            sortedSeats[i+1].seatType === 'Ghế đôi'
+          ) {
+            const next = sortedSeats[i+1]
+            mergedSeats.push({
+              isMerged: true,
+              primary: current,
+              secondary: next,
+              displayNumber: `${current.seatNumber.slice(1)}-${next.seatNumber.slice(1)}`, // Tạo tên K1-2
+              seatType: 'Ghế đôi'
+            })
+            i++ // Bỏ qua ghế tiếp theo vì đã bị nuốt vào rồi
+          } else {
+            mergedSeats.push({
+              isMerged: false,
+              primary: current,
+              secondary: null,
+              displayNumber: current.seatNumber.slice(1),
+              seatType: current.seatType
+            })
+          }
+        }
+
+        return { rowLabel, seats: mergedSeats }
+      })
   }, [schedule])
 
-  // 2. Hàm lấy giá vé (chỉ để hiển thị tooltip, logic tính tiền chính nằm ở useBooking)
+  // 2. Hàm lấy giá vé (chỉ để hiển thị tooltip)
   const getSeatPrice = (seatType: string) => {
     if (!schedule?.ticketPrices) return 0
     switch (seatType) {
@@ -50,13 +81,6 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
       default:
         return schedule.ticketPrices.standard
     }
-  }
-
-  // 3. Xác định trạng thái hiển thị của ghế
-  const getSeatStatus = (seat: SeatAvailability) => {
-    if (seat.isBooked) return 'booked'
-    if (selectedSeats.some(s => s.seatNumber === seat.seatNumber)) return 'selected'
-    return seat.seatType === 'VIP' ? 'vip' : seat.seatType === 'Ghế đôi' ? 'couple' : 'standard'
   }
 
   return (
@@ -72,20 +96,37 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
 
               {/* Danh sách ghế */}
               <div className="flex items-center gap-2">
-                {seats.map(seat => {
-                  const status = getSeatStatus(seat)
-                  const price = getSeatPrice(seat.seatType)
-                  const isCouple = seat.seatType === 'Ghế đôi'
+                {seats.map(seatInfo => {
+                  const { isMerged, primary, secondary, displayNumber, seatType } = seatInfo
+                  
+                  // 🔥 TRẠNG THÁI GỘP: Chỉ cần 1 ghế đã đặt hoặc đang chọn là cả cặp bị ảnh hưởng
+                  const isBooked = primary.isBooked || (secondary && secondary.isBooked)
+                  const isSelected = selectedSeats.some(s => s.seatNumber === primary.seatNumber) ||
+                                     (secondary && selectedSeats.some(s => s.seatNumber === secondary.seatNumber))
+
+                  const status = isBooked ? 'booked'
+                               : isSelected ? 'selected'
+                               : seatType === 'VIP' ? 'vip'
+                               : seatType === 'Ghế đôi' ? 'couple'
+                               : 'standard'
+
+                  const price = getSeatPrice(seatType)
 
                   return (
                     <button
-                      key={seat.seatNumber}
+                      key={primary.seatNumber}
                       disabled={status === 'booked'}
-                      // Ép kiểu SeatAvailability -> Seat (giả định SeatAvailability có đủ trường cần thiết hoặc tương thích)
-                      onClick={() => onSeatClick(seat as unknown as Seat)}
+                      onClick={() => {
+                        // Gọi click cho ghế chính
+                        onSeatClick(primary as unknown as Seat)
+                        // Nếu là ghế đôi, tự động click nốt ghế phụ cho vào giỏ hàng
+                        if (isMerged && secondary) {
+                          setTimeout(() => onSeatClick(secondary as unknown as Seat), 10)
+                        }
+                      }}
                       className={`
                         relative group transition-all duration-200 flex items-center justify-center border
-                        ${isCouple ? 'w-20 sm:w-24 h-8 sm:h-10 rounded-xl' : 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg'}
+                        ${isMerged ? 'w-20 sm:w-24 h-8 sm:h-10 rounded-xl' : 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg'}
                         
                         ${
                           status === 'selected'
@@ -101,14 +142,14 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
                       `}
                     >
                       <span className="text-[10px] sm:text-xs font-medium">
-                        {seat.seatNumber.slice(1)}
+                        {displayNumber}
                       </span>
 
                       {/* Tooltip */}
                       {status !== 'booked' && (
                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] py-1.5 px-3 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                          <div className="font-bold">{seat.seatType}</div>
-                          <div>{price.toLocaleString()}đ</div>
+                          <div className="font-bold">{seatType}</div>
+                          <div>{price.toLocaleString()}đ {isMerged && '(cả cặp)'}</div>
                           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                         </div>
                       )}
@@ -131,7 +172,8 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
             <span className="text-sm text-text-secondary">VIP</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-5 rounded bg-pink-500/10 border border-pink-500/30"></div>
+            {/* Tớ làm cái icon legend ghế đôi dài ra xíu cho nó trực quan */}
+            <div className="w-10 h-5 rounded bg-pink-500/10 border border-pink-500/30"></div>
             <span className="text-sm text-text-secondary">Ghế đôi</span>
           </div>
           <div className="flex items-center gap-2">
