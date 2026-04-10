@@ -7,26 +7,20 @@ const counterBookingController = {
   // Create booking at counter
   createBooking: async (req, res) => {
     try {
-      // Verify staff role
       const staff = await User.findById(req.userId);
       if (!staff || staff.role !== "staff") {
         throw new AuthorizationError("Chỉ nhân viên mới có thể tạo booking tại quầy");
       }
 
-      // 1. Tạo đơn hàng trong Service
       const result = await counterBookingService.createCounterBooking(req.userId, req.body);
 
-      // Chuyển kết quả sang dạng object thuần để dễ chỉnh sửa
       let responseData = result.toObject ? result.toObject() : { ...result };
       const bookingData = responseData.booking || result.booking;
 
-      // 2. 🔥 TÍCH HỢP PAYOS BÁN VÉ TẠI QUẦY 🔥
       if (req.body.paymentMethod === 'bank_transfer' && bookingData) {
         try {
-          // Tạo mã đơn hàng duy nhất cho PayOS
           const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
-          // Cập nhật transactionId vào Booking
           const Booking = (await import("../models/booking.model.js")).default;
           await Booking.findByIdAndUpdate(bookingData._id, {
             "paymentDetails.transactionId": payosOrderCode.toString()
@@ -40,7 +34,6 @@ const counterBookingController = {
             cancelUrl: `https://movie-booking-cinema.vercel.app/staff/bookings`
           };
 
-          // Khởi tạo thư viện gốc PayOS để né lỗi
           const PayOSModule = await import("@payos/node");
           const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
@@ -50,10 +43,15 @@ const counterBookingController = {
               process.env.PAYOS_CHECKSUM_KEY
           );
 
-          // Tạo link xịn
-          const paymentLink = await payosClient.createPaymentLink(requestData);
+          let paymentLink;
+          if (typeof payosClient.createPaymentLink === 'function') {
+            paymentLink = await payosClient.createPaymentLink(requestData);
+          } else if (payosClient.paymentRequests && typeof payosClient.paymentRequests.create === 'function') {
+            paymentLink = await payosClient.paymentRequests.create(requestData);
+          } else {
+            throw new Error("Không tìm thấy hàm tạo link thanh toán của PayOS");
+          }
 
-          // Trả link QR về cho Frontend
           const finalData = {
             ...responseData,
             payosCheckoutUrl: paymentLink.checkoutUrl
@@ -62,12 +60,10 @@ const counterBookingController = {
           return successResponse(res, finalData, "Đang tạo mã QR thanh toán...", 201);
         } catch (payosError) {
           console.error("❌ Lỗi tạo link PayOS Bán vé tại quầy:", payosError);
-          // Nếu lỗi PayOS, vẫn trả về đơn hàng để nhân viên xử lý tiếp
           return successResponse(res, responseData, "Tạo đơn thành công nhưng lỗi kết nối PayOS", 201);
         }
       }
 
-      // Luồng tiền mặt bình thường
       return successResponse(res, responseData, "Tạo booking tại quầy thành công", 201);
     } catch (error) {
       console.error("Create counter booking error:", error);
@@ -75,7 +71,7 @@ const counterBookingController = {
     }
   },
 
-  // Create concession transaction at counter (Giữ nguyên của fen)
+  // Create concession transaction at counter
   createConcessionBooking: async (req, res) => {
     try {
       const staff = await User.findById(req.userId);
