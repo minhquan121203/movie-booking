@@ -92,7 +92,9 @@ export default function ChatBot() {
     role === 'super-admin' || 
     role === 'staff' || 
     pathname.startsWith('/admin') || 
-    pathname.startsWith('/staff')
+    pathname.startsWith('/staff') ||
+    pathname.startsWith('/login') ||    
+    pathname.startsWith('/register')
   ) {
     return null; 
   }
