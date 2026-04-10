@@ -373,7 +373,7 @@ const bookingController = {
       let checkoutUrl = null;
 
       if (paymentMethod === 'bank_transfer') {
-        const payosOrderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
+        const payosOrderCode = Number(String(Date.now()).slice(-9));
 
         newBooking.paymentDetails.transactionId = payosOrderCode.toString();
         await newBooking.save();
@@ -381,26 +381,35 @@ const bookingController = {
         const requestData = {
           orderCode: payosOrderCode,
           amount: newBooking.totalAmount,
-          description: `BUNNY ${newBooking.bookingCode}`.substring(0, 25),
+          description: `VE ${newBooking.bookingCode}`.substring(0, 25),
           returnUrl: `https://movie-booking-cinema.vercel.app/order-history`,
           cancelUrl: `https://movie-booking-cinema.vercel.app/order-history`
         };
 
         try {
-          let paymentLink;
-          if (typeof payos.createPaymentLink === 'function') {
-            paymentLink = await payos.createPaymentLink(requestData);
-          } else if (payos.paymentRequests) {
-            paymentLink = await payos.paymentRequests.create(requestData);
+          console.log("🚀 Đang gửi yêu cầu tạo mã QR tới PayOS trực tiếp...");
+
+          const response = await fetch('https://api-merchant.payos.vn/v2/payment-requests', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-client-id': process.env.PAYOS_CLIENT_ID,
+              'x-api-key': process.env.PAYOS_API_KEY,
+              'x-checksum-key': process.env.PAYOS_CHECKSUM_KEY
+            },
+            body: JSON.stringify(requestData)
+          });
+
+          const result = await response.json();
+
+          if (result.code === '00' || result.data?.checkoutUrl) {
+            checkoutUrl = result.data.checkoutUrl;
+            console.log("✅ Lấy link QR thành công:", checkoutUrl);
           } else {
-            throw new Error("Không tìm thấy hàm tạo link của PayOS");
+            console.error("❌ PayOS từ chối:", result.desc);
           }
-
-          checkoutUrl = paymentLink.checkoutUrl;
-          console.log("✅ TẠO LINK PAYOS THÀNH CÔNG:", checkoutUrl);
-
         } catch (payosError) {
-          console.error("❌ Lỗi tạo link PayOS:", payosError);
+          console.error("❌ Lỗi mạng khi gọi PayOS:", payosError.message);
         }
       }
 
