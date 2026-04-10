@@ -86,13 +86,10 @@ const counterBookingController = {
         req.body.products = productsData;
       }
 
-      if (req.body.paymentMethod === 'cash') {
-        req.body.paymentMethod = 'Tại quầy';
-      }
-
       const result = await counterBookingService.createConcessionTransaction(req.userId, req.body);
       let responseData = result.toObject ? result.toObject() : { ...result._doc || result };
 
+      // PAYOS BÁN ĐỒ ĂN
       if (req.body.paymentMethod === 'bank_transfer') {
         try {
           const PayOSModule = await import("@payos/node");
@@ -143,6 +140,7 @@ const counterBookingController = {
         }
       }
 
+      // Luồng tiền mặt bình thường
       return successResponse(res, responseData, "Tạo giao dịch bán hàng thành công", 201);
     } catch (error) {
       console.error("❌ LỖI BÁN ĐỒ ĂN TẠI QUẦY:", error);
