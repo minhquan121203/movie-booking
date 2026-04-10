@@ -17,7 +17,7 @@ export function StepPayment({ paymentUrl, bookingCode, totalAmount, paymentMetho
   const isVnpay = paymentMethod === 'VNPAY'
 
   useEffect(() => {
-    if ((isMomo || isVnpay) && paymentUrl) {
+    if ((isMomo || isVnpay || isBankTransfer) && paymentUrl) {
       window.location.href = paymentUrl;
     }
   }, [isMomo, isVnpay, paymentUrl]);

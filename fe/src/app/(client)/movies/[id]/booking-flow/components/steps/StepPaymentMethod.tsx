@@ -36,8 +36,6 @@ export function StepPaymentMethod({ selectedMethod, onSelect }: StepPaymentMetho
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <h2 className="mb-6 text-text-primary text-xl font-bold">Chọn phương thức thanh toán</h2>
-
-      {/* 3. SỬA GRID THÀNH grid-cols-3 ĐỂ HIỆN 3 CỘT */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {paymentMethods.map(method => {
           const isSelected = selectedMethod === method.id
@@ -52,7 +50,6 @@ export function StepPaymentMethod({ selectedMethod, onSelect }: StepPaymentMetho
                   : 'border-border hover:border-primary/30 hover:bg-bg-secondary hover:scale-102'
               }`}
             >
-              {/* Checkmark khi được chọn */}
               {isSelected && (
                 <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-10">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
@@ -61,7 +58,6 @@ export function StepPaymentMethod({ selectedMethod, onSelect }: StepPaymentMetho
                 </div>
               )}
 
-              {/* Icon/Logo */}
               <div
                 className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${method.color} flex items-center justify-center text-white mb-4 shadow-lg transform transition-transform group-hover:rotate-6`}
               >
@@ -94,14 +90,13 @@ export function StepPaymentMethod({ selectedMethod, onSelect }: StepPaymentMetho
         })}
       </div>
 
-      {/* Thông tin bổ sung */}
       <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm max-w-3xl mx-auto shadow-sm">
         <div className="flex gap-3">
           <div className="bg-blue-100 p-2 rounded-lg shrink-0">
              <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-bold mb-0.5">Lưu ý thanh toán Bunny Cinema</p>
+            <p className="font-bold mb-0.5">Lưu ý thanh toán</p>
             <p className="opacity-90">
               Vui lòng hoàn tất thanh toán trong vòng <strong>10 phút</strong>. Nếu chọn VietQR, hãy chụp màn hình bill sau khi chuyển để đối chiếu khi cần nhé!
             </p>
