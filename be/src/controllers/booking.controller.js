@@ -387,14 +387,20 @@ const bookingController = {
         };
 
         try {
-          let paymentLink;
-          if (typeof payos.createPaymentLink === 'function') {
-            paymentLink = await payos.createPaymentLink(requestData);
-          } else {
-            paymentLink = await payos.paymentRequests.create(requestData);
-          }
+          console.log("⏳ Đang tạo link PayOS...");
+          const PayOSModule = await import("@payos/node");
+          const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
+          const payosClient = new PayOSClass(
+              process.env.PAYOS_CLIENT_ID,
+              process.env.PAYOS_API_KEY,
+              process.env.PAYOS_CHECKSUM_KEY
+          );
+
+          const paymentLink = await payosClient.createPaymentLink(requestData);
           checkoutUrl = paymentLink.checkoutUrl;
+
+          console.log("✅ Tạo link PayOS thành công:", checkoutUrl);
         } catch (payosError) {
           console.error("❌ Lỗi tạo link PayOS (Bán vé):", payosError);
         }
