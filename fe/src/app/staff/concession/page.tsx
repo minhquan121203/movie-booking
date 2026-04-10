@@ -164,24 +164,27 @@ export default function ConcessionSalesPage() {
 
     try {
       const result: any = await createConcession.mutateAsync(concessionData as any)
+
       const responseData = result.data || result;
       const txId = responseData.transaction?.transactionId || responseData.transactionId || responseData.concessionId || 'Mới';
       const txAmount = responseData.transaction?.totalAmount || responseData.totalAmount || getTotalAmount();
 
+      const qrData = responseData.payosQrCode || responseData.payosCheckoutUrl;
+
       // PAYOS 
-      if (paymentMethod === 'bank_transfer' && responseData.payosQrCode) {
+      if (paymentMethod === 'bank_transfer' && qrData) {
         
         console.log("Check PayOS Code từ Backend:", responseData.payosOrderCode);
 
         setQrModal({
           isOpen: true,
-          qrString: responseData.payosQrCode,
+          qrString: qrData, 
           amount: txAmount,
           orderCode: txId,
           payosOrderCode: responseData.payosOrderCode 
         })
       } else {
-        // Luồng tiền mặt cũ (Đã được tiêm vắc-xin chống sập)
+        // Luồng tiền mặt 
         showSuccess(
           'Đơn hàng thành công!',
           `Mã đơn: ${txId} - Tổng: ${txAmount.toLocaleString('vi-VN')}đ`
