@@ -1,10 +1,14 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUserStore } from '@/store/userStore';
 
 export default function ChatBot() {
   const router = useRouter();
-  
+
+  const role = useUserStore((state: any) => state.role);
+  const _hasHydrated = useUserStore((state: any) => state._hasHydrated);
+
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +83,11 @@ export default function ChatBot() {
       return <span key={index}>{part}</span>;
     });
   };
+
+  if (!_hasHydrated) return null;
+  if (role === 'admin' || role === 'staff') {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-[9999]">
