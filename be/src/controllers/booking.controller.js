@@ -921,7 +921,7 @@ const bookingController = {
       }
 
       const PayOSModule = await import("@payos/node");
-      const PayOSClass = PayOSModule.default || PayOSModule.PayOS;
+      const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
       const payos = new PayOSClass(
           process.env.PAYOS_CLIENT_ID,
