@@ -921,22 +921,16 @@ const bookingController = {
         return errorResponse(res, "Thiếu orderCode", 400);
       }
 
-      // Import PayOS service
-      const { default: payos } =
-          await import("../services/payment/payos.service.js");
+      const { PayOS } = await import("@payos/node");
 
-      // Check SDK init
-      if (!payos?.getPaymentLinkInformation) {
-        throw new Error("PayOS SDK chưa khởi tạo đúng");
-      }
+      const payos = new PayOS(
+          process.env.PAYOS_CLIENT_ID,
+          process.env.PAYOS_API_KEY,
+          process.env.PAYOS_CHECKSUM_KEY
+      );
 
-      // Call PayOS API lấy trạng thái thanh toán
-      const orderInfo =
-          await payos.getPaymentLinkInformation(
-              Number(orderCode)
-          );
+      const orderInfo = await payos.getPaymentLinkInformation(Number(orderCode));
 
-      // Trả status về frontend
       return successResponse(
           res,
           { status: orderInfo.status },
@@ -944,11 +938,11 @@ const bookingController = {
       );
 
     } catch (error) {
-      console.error("❌ Lỗi Radar PayOS:", error);
+      console.error("❌ Lỗi Radar PayOS:", error.message || error);
 
       return errorResponse(
           res,
-          "Lỗi kiểm tra: " + error.message,
+          "Lỗi kiểm tra: " + (error.message || "Lỗi server"),
           500
       );
     }
