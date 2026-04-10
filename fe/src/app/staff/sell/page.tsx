@@ -114,26 +114,24 @@ export default function TicketSales() {
     staffCreateBooking(payload, {
       onSuccess: (result: any) => {
         const responseData = result.data || result; 
-        
-        // Bắt link QR
         const qrUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl;
 
-        if (paymentMethod === 'bank_transfer' && qrUrl) {
-          showSuccess('Đang chuyển đến trang thanh toán...');
-          
-          // ĐỔI THÀNH CHUYỂN TRANG TRỰC TIẾP (Tránh bị trình duyệt chặn)
-          window.location.href = qrUrl;
-          
+        if (paymentMethod === 'bank_transfer') {
+          if (qrUrl) {
+            showSuccess('Đang chuyển đến trang thanh toán...');
+            window.location.href = qrUrl; 
+          } else {
+            // NẾU BACKEND LỖI TRẢ VỀ NULL -> BÁO LỖI NGAY LẬP TỨC!
+            showError('Lỗi hệ thống', 'Không thể kết nối PayOS để tạo mã QR. Vui lòng thử lại!');
+          }
         } else {
+          // Luồng Tiền mặt
           showSuccess('Tạo đơn thành công!');
           queryClient.invalidateQueries({ queryKey: ['schedules'] });
           setSelectedSchedule(null);
           setCustomerInfo(null);
           reset();
         }
-      },
-      onError: (error: any) => {
-        showError('Lỗi', error?.response?.data?.message || 'Không thể tạo đơn')
       },
     })
   }
