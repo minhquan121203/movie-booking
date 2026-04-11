@@ -40,6 +40,12 @@ function OrderHistoryContent() {
     return () => clearTimeout(timer)
   }, [pageFromUrl, statusFromUrl])
 
+  // 🔥 BỘ DỊCH THUẬT: Đổi "Hoàn tất" thành "Thành công" để Backend hiểu được
+  let apiStatus: string | undefined = status === 'all' ? undefined : status;
+  if (apiStatus === 'Hoàn tất') {
+    apiStatus = 'Thành công';
+  }
+
   // Fetch Data từ API
   const {
     data: bookingData,
@@ -49,7 +55,7 @@ function OrderHistoryContent() {
   } = useMyBookings({
     page: currentPage,
     limit: itemsPerPage,
-    status: status === 'all' ? undefined : status,
+    status: apiStatus as any, // Gửi trạng thái đã dịch lên Backend
   })
 
   const bookings = bookingData?.bookings || []
@@ -84,7 +90,9 @@ function OrderHistoryContent() {
     if (newStatus !== 'all') {
       params.set('status', newStatus)
     }
-    router.push(`?${params.toString()}`, { scroll: false })
+    
+    // 🔥 FIX LỖI MÀN HÌNH ĐEN: Phải cộng thêm "pathname" ở đằng trước
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   // Handler thay đổi trang
