@@ -9,43 +9,50 @@ import { TopMovieCarousel } from '@/app/(client)/components/topMovieCarousel'
 import { useMovies } from '@/lib/api/movies'
 import { useTheaters } from '@/lib/api/theaters'
 import { useGenres } from '@/lib/api/genres'
-import { DEFAULT_MOVIE_LIST, DEFAULT_THEATER_LIST, DEFAULT_GENRE_LIST } from '@/constants'
+import { DEFAULT_THEATER_LIST, DEFAULT_GENRE_LIST } from '@/constants'
 
 export default function HomePage() {
-  // State cho city - được quản lý ở component cha
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
 
-  // Fetch data với selectedCity và các params khác
-  const {
-    data: listMovies = DEFAULT_MOVIE_LIST,
-    isLoading: loadingMovies,
-    error: errorMovies,
-  } = useMovies({})
+  // Fetch Top Movies (Sắp xếp theo Rating cao nhất)
+  const { data: topMovieData, isLoading: loadingTop } = useMovies({
+    limit: 10,
+    sortBy: 'averageRating', // Lấy phim điểm cao nhất làm Top
+    order: 'desc',
+  })
+
+  // Fetch Phim Đang Chiếu 
+  const { data: nowShowingData, isLoading: loadingNow } = useMovies({
+    limit: 8,
+    status: 'Đang chiếu', 
+  })
+
+  // Fetch Phim Sắp Chiếu 
+  const { data: comingSoonData, isLoading: loadingSoon } = useMovies({
+    limit: 8,
+    status: 'Sắp chiếu', 
+  })
 
   const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
-    limit: 100, // Lấy nhiều rạp hơn
-    isActive: 'true', // Chỉ lấy rạp đang hoạt động
+    limit: 100,
+    isActive: 'true',
     sortBy: 'name',
     order: 'asc',
   })
 
   const { data: listGenres = DEFAULT_GENRE_LIST, isLoading: loadingGenres } = useGenres({})
 
-  // Handler để update city từ ShowtimeSection
   const handleCityChange = (city: string) => {
     setSelectedCity(city)
   }
   
+  // Dùng Top Movies làm Banner luôn cho xịn
+  const heroMovies = topMovieData?.movies || []
+
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
-      <HeroSection movies={listMovies?.movies} isLoading={loadingMovies} />
-
-      {errorMovies && (
-        <div className="text-center text-red-500 py-4">
-          <span>Lỗi load data movies</span>
-        </div>
-      )}
+      <HeroSection movies={heroMovies} isLoading={loadingTop} />
 
       <main
         className="
@@ -56,22 +63,22 @@ export default function HomePage() {
       >
         <TopMovieCarousel
           title="🔥 Top Movies"
-          movies={listMovies.movies}
-          isLoading={loadingMovies}
+          movies={topMovieData?.movies || []}
+          isLoading={loadingTop}
         />
 
         <MovieSection
           title="🎟️ Đang chiếu"
-          movies={listMovies.movies.slice(5, 9)}
-          viewAllHref="/movies"
-          isLoading={loadingMovies}
+          movies={nowShowingData?.movies || []}
+          viewAllHref="/movies?status=Đang+chiếu"
+          isLoading={loadingNow}
         />
 
         <MovieSection
           title="📅 Sắp chiếu"
-          movies={listMovies.movies.slice(1, 5)}
-          viewAllHref="/movies"
-          isLoading={loadingMovies}
+          movies={comingSoonData?.movies || []}
+          viewAllHref="/movies?status=Sắp+chiếu"
+          isLoading={loadingSoon}
         />
 
         <GenreGrid genres={listGenres.items} isLoading={loadingGenres} />
