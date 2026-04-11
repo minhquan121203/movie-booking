@@ -20,10 +20,8 @@ export const syncTMDB = async (req, res) => {
             const movies = movieRes.data.results;
 
             for (const m of movies) {
-                // Kiểm tra xem phim đã có trong DB chưa
                 const exists = await Movie.findOne({ tmdbId: m.id });
 
-                // Chuẩn bị sẵn Data
                 const releaseDateObj = new Date(m.release_date || new Date());
                 const now = new Date();
                 const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
@@ -35,28 +33,34 @@ export const syncTMDB = async (req, res) => {
                     // PHIM HOÀN TOÀN MỚI
                     let realDuration = 90;
                     let trailerLink = "";
+                    let directorName = "Đang cập nhật";
+                    let actorsArray = [];
+
                     try {
-                        // Lấy chi tiết phim và THỜI LƯỢNG
                         const detailRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN`
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos,credits`
                         );
-                        if (detailRes.data.runtime && detailRes.data.runtime > 0) {
-                            realDuration = detailRes.data.runtime;
+
+                        const movieDetail = detailRes.data;
+
+                        if (movieDetail.runtime && movieDetail.runtime > 0) {
+                            realDuration = movieDetail.runtime;
                         }
 
-                        const videoRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}/videos?api_key=${TMDB_API_KEY}`
-                        );
-                        const videos = videoRes.data.results;
+                        if (movieDetail.credits) {
+                            const directorObj = movieDetail.credits.crew.find(c => c.job === 'Director');
+                            if (directorObj) {
+                                directorName = directorObj.name;
+                            }
 
+                            const topCast = movieDetail.credits.cast.slice(0, 10).map(actor => actor.name);
+                            if (topCast.length > 0) {
+                                actorsArray = topCast;
+                            }
+                        }
+
+                        const videos = movieDetail.videos?.results || [];
                         if (videos.length > 0) {
-                            // 3. THUẬT TOÁN LỌC ƯU TIÊN:
-                            // Ưu tiên 1: Trailer tiếng Việt
-                            // Ưu tiên 2: Trailer tiếng Anh (iso_639_1 === 'en')
-                            // Ưu tiên 3: Bất kỳ Trailer nào (Nga, Pháp, Tàu...)
-                            // Ưu tiên 4: Bất kỳ Teaser nào
-                            // Cùng đường: Lấy đại cái video đầu tiên của YouTube
-
                             const selectedVideo =
                                 videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "vi") ||
                                 videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "en") ||
@@ -69,9 +73,10 @@ export const syncTMDB = async (req, res) => {
                             }
                         }
                     } catch (err) {
-                        console.log(`⚠️ Lỗi lấy chi tiết/video cho phim ${m.id}`);
+                        console.log(`⚠️ Lỗi lấy chi tiết/video/credits cho phim ${m.id}`);
                     }
 
+                    // Lưu vào Database
                     await Movie.create({
                         title: m.title || m.original_title,
                         tmdbId: m.id,
@@ -84,6 +89,8 @@ export const syncTMDB = async (req, res) => {
                         duration: realDuration,
                         language: "Tiếng Anh",
                         rating: "C13",
+                        director: directorName,
+                        actors: actorsArray,
                     });
                     totalAddedCount++;
 
