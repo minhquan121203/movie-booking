@@ -54,7 +54,7 @@ function OrderHistoryContent() {
 
   const bookings = bookingData?.bookings || []
   const totalPages = bookingData?.pagination?.totalPages || 1
-  const totalBookings = bookingData?.pagination.totalItems || 0
+  const totalBookings = bookingData?.pagination?.totalItems || 0
 
   useEffect(() => {
     const hasPending = bookings.some(b => b.status === 'Chờ thanh toán');
