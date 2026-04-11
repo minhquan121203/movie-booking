@@ -2,7 +2,6 @@
 import { HeroSection } from '@/app/(client)/components/hero-section'
 import { GenreGrid } from '@/app/(client)/components/genre-grid'
 import { MovieSection } from '@/app/(client)/components/movie-section'
-import { FeaturedReviews } from '@/app/(client)/components/featured-reviews'
 import { useState } from 'react'
 import { ShowtimeSection } from '@/app/(client)/components/showtimeSection'
 import { ShowtimeSectionSkeleton } from '@/app/(client)/components/ShowtimeSectionSkeleton'
@@ -37,6 +36,7 @@ export default function HomePage() {
   const handleCityChange = (city: string) => {
     setSelectedCity(city)
   }
+  
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
       <HeroSection movies={listMovies?.movies} isLoading={loadingMovies} />
@@ -85,8 +85,6 @@ export default function HomePage() {
             onCityChange={handleCityChange}
           />
         )}
-
-        <FeaturedReviews />
       </main>
     </div>
   )
