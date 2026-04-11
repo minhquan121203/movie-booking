@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect, useMemo, Suspense } from 'react' // Thêm Suspense
+import { useState, useEffect, useMemo, Suspense } from 'react' 
 import { useReviews } from '@/lib/api/reviews'
 import { useReviewMutations } from './hooks/useReviewMutations'
 import { ReviewToolbar } from './components/ReviewToolbar'
@@ -24,7 +24,6 @@ import { DEFAULT_REVIEWS_LIST } from '@/constants'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 
-// 1. Tách nội dung chính ra một Component riêng
 function ReviewManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -60,6 +59,13 @@ function ReviewManagementContent() {
 
   const totalPages = reviewData?.pagination?.totalPages || 1
   const totalReviews = reviewData?.pagination?.totalItems || 0
+
+  const safeReviews = (reviewData?.reviews || []).map((review: any) => ({
+    ...review,
+    movie: review.movie || { title: 'Phim đã bị xóa', posterUrl: '' },
+    customer: review.customer || { fullName: 'Tài khoản đã xóa', email: 'Không xác định', profilePicture: '' },
+    comment: review.comment || 'Không có nội dung',
+  }))
 
   const { approveMutation, deleteMutation } = useReviewMutations()
 
@@ -117,7 +123,7 @@ function ReviewManagementContent() {
         ) : (
           <>
             <ReviewTable
-              reviews={reviewData.reviews}
+              reviews={safeReviews}
               isLoading={isLoading}
               onApprove={handleApprove}
               onRejectClick={setRejectId}
@@ -167,7 +173,6 @@ function ReviewManagementContent() {
   )
 }
 
-// 2. Export default bọc trong Suspense
 export default function ReviewManagementPage() {
   return (
     <Suspense fallback={
