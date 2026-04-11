@@ -15,7 +15,7 @@ function OrderHistoryContent() {
 
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   
-  // 🔥 FIX LOGIC CHẶN TRẠNG THÁI: Bỏ chữ CANCELLED đi để tab Đã hủy không bị lỗi
+  // Xử lý status trên URL
   let rawStatus = searchParams.get('status')
   if (rawStatus === 'PAID') {
     rawStatus = 'all'
@@ -41,9 +41,7 @@ function OrderHistoryContent() {
     return () => clearTimeout(timer)
   }, [pageFromUrl, statusFromUrl])
 
-  // Bộ dịch thuật API
-  let apiStatus: string | undefined = status === 'all' ? undefined : status;
-  if (apiStatus === 'Hoàn tất') apiStatus = 'Thành công';
+  const apiStatus = status === 'all' ? undefined : status;
 
   // Fetch Data từ API
   const {
@@ -61,12 +59,11 @@ function OrderHistoryContent() {
   const totalPages = bookingData?.pagination?.totalPages || 1
   const totalBookings = bookingData?.pagination?.totalItems || 0
 
-  // 🔥 MẶC ÁO GIÁP CHO DỮ LIỆU: Nếu vé khuyết thông tin thì bơm chữ "Không xác định" vào để BookingList không bị Crash
   const safeBookings = bookings.map((b: any) => ({
     ...b,
     schedule: {
       ...b.schedule,
-      movie: b.schedule?.movie || { title: 'Phim đã ẩn/xóa', posterUrl: '' },
+      movie: b.schedule?.movie || { title: 'Phim đã ẩn hoặc xóa', posterUrl: '' },
       theater: b.schedule?.theater || { name: 'Rạp không xác định' },
       room: b.schedule?.room || { name: 'Phòng không xác định' }
     },
@@ -154,7 +151,6 @@ function OrderHistoryContent() {
           </div>
         ) : safeBookings.length > 0 ? (
           <>
-            {/* 🔥 TRUYỀN MẢNG DỮ LIỆU ĐÃ BỌC ÁO GIÁP VÀO ĐÂY */}
             <BookingList bookings={safeBookings} />
 
             <PaginationInfo
