@@ -15,8 +15,9 @@ function OrderHistoryContent() {
 
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   
+  // 🔥 FIX LOGIC CHẶN TRẠNG THÁI: Bỏ chữ CANCELLED đi để tab Đã hủy không bị lỗi
   let rawStatus = searchParams.get('status')
-  if (rawStatus === 'PAID' || rawStatus === 'CANCELLED') {
+  if (rawStatus === 'PAID') {
     rawStatus = 'all'
   }
   const statusFromUrl = (rawStatus || 'all') as BookingStatus | 'all'
@@ -27,7 +28,7 @@ function OrderHistoryContent() {
 
   useEffect(() => {
     const currentStatus = searchParams.get('status')
-    if (currentStatus === 'PAID' || currentStatus === 'CANCELLED') {
+    if (currentStatus === 'PAID') {
       router.replace(pathname, { scroll: false }) 
     }
   }, [pathname, router, searchParams])
@@ -40,11 +41,9 @@ function OrderHistoryContent() {
     return () => clearTimeout(timer)
   }, [pageFromUrl, statusFromUrl])
 
-  // 🔥 BỘ DỊCH THUẬT: Đổi "Hoàn tất" thành "Thành công" để Backend hiểu được
+  // Bộ dịch thuật API
   let apiStatus: string | undefined = status === 'all' ? undefined : status;
-  if (apiStatus === 'Hoàn tất') {
-    apiStatus = 'Thành công';
-  }
+  if (apiStatus === 'Hoàn tất') apiStatus = 'Thành công';
 
   // Fetch Data từ API
   const {
@@ -55,54 +54,57 @@ function OrderHistoryContent() {
   } = useMyBookings({
     page: currentPage,
     limit: itemsPerPage,
-    status: apiStatus as any, // Gửi trạng thái đã dịch lên Backend
+    status: apiStatus as any, 
   })
 
   const bookings = bookingData?.bookings || []
   const totalPages = bookingData?.pagination?.totalPages || 1
   const totalBookings = bookingData?.pagination?.totalItems || 0
 
-  useEffect(() => {
-    const hasPending = bookings.some(b => b.status === 'Chờ thanh toán');
+  // 🔥 MẶC ÁO GIÁP CHO DỮ LIỆU: Nếu vé khuyết thông tin thì bơm chữ "Không xác định" vào để BookingList không bị Crash
+  const safeBookings = bookings.map((b: any) => ({
+    ...b,
+    schedule: {
+      ...b.schedule,
+      movie: b.schedule?.movie || { title: 'Phim đã ẩn/xóa', posterUrl: '' },
+      theater: b.schedule?.theater || { name: 'Rạp không xác định' },
+      room: b.schedule?.room || { name: 'Phòng không xác định' }
+    },
+    paymentDetails: b.paymentDetails || {},
+    qrCode: b.qrCode || '',
+  }))
 
+  useEffect(() => {
+    const hasPending = safeBookings.some(b => b.status === 'Chờ thanh toán');
     let intervalId: NodeJS.Timeout;
 
     if (hasPending) {
       console.log("🛰️ Đang tự động hóng kết quả thanh toán từ MoMo...");
-      
       intervalId = setInterval(() => {
-        if (typeof refetch === 'function') {
-           refetch(); 
-        }
+        if (typeof refetch === 'function') refetch(); 
         router.refresh(); 
       }, 3000); 
     }
-
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [bookings, router, refetch]); 
+  }, [safeBookings, router, refetch]); 
 
-  // Update URL params khi thay đổi page
   const updateUrlParams = (newPage: number, newStatus: BookingStatus | 'all') => {
     const params = new URLSearchParams()
     params.set('page', newPage.toString())
     if (newStatus !== 'all') {
       params.set('status', newStatus)
     }
-    
-    // 🔥 FIX LỖI MÀN HÌNH ĐEN: Phải cộng thêm "pathname" ở đằng trước
     router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
-  // Handler thay đổi trang
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
     updateUrlParams(page, status)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Handler thay đổi status
   const handleStatusChange = (newStatus: BookingStatus | 'all') => {
     setStatus(newStatus)
     setCurrentPage(1)
@@ -150,9 +152,10 @@ function OrderHistoryContent() {
               />
             ))}
           </div>
-        ) : bookings.length > 0 ? (
+        ) : safeBookings.length > 0 ? (
           <>
-            <BookingList bookings={bookings} />
+            {/* 🔥 TRUYỀN MẢNG DỮ LIỆU ĐÃ BỌC ÁO GIÁP VÀO ĐÂY */}
+            <BookingList bookings={safeBookings} />
 
             <PaginationInfo
               currentPage={currentPage}
@@ -190,7 +193,6 @@ function OrderHistoryContent() {
   )
 }
 
-// Bọc cái khiên Suspense ở ngoài cùng này
 export default function OrderHistoryPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Đang tải lịch sử đặt vé...</div>}>
