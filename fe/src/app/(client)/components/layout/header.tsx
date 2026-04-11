@@ -18,6 +18,7 @@ import {
   Clock,
   Star,
   Film,
+  Menu, 
 } from 'lucide-react'
 
 // UI Components
@@ -157,7 +158,7 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
           </div>
 
           {query.trim() && (
-            <div className="absolute top-full left-0 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 z-50">
+            <div className="absolute top-full right-0 w-screen md:w-full mt-2 bg-popover border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 z-50 max-w-[100vw] md:max-w-[400px] left-[-2rem] md:left-0">
               {isSearching ? (
                 <div className="flex justify-center items-center py-6">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -223,7 +224,6 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
                   </div>
                 </div>
               ) : (
-                // 👉 hết search nhưng không có kết quả
                 <div className="p-6 text-center">
                   <p className="text-sm text-muted-foreground">Không tìm thấy phim.</p>
                 </div>
@@ -338,12 +338,18 @@ const UserNav = () => {
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) 
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div
         className={cn(
-          'flex items-center justify-between w-full',
+          'flex items-center justify-between w-full relative',
           'h-[72px] md:h-[82px] xl:h-[70px]',
           'px-4 md:px-6 xl:px-[86px]'
         )}
@@ -351,10 +357,19 @@ export function Header() {
         {/* LEFT: Logo + Nav */}
         <div
           className={cn(
-            'flex items-center gap-10 transition-all duration-300',
+            'flex items-center gap-3 md:gap-10 transition-all duration-300',
             isSearchOpen ? 'hidden md:flex' : 'flex'
           )}
         >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+
           <Link href="/" className="flex items-center gap-2 shrink-0 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30 transition-transform group-hover:scale-105">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#6C63FF] to-[#8C82FF] flex items-center justify-center shadow-lg">
@@ -387,6 +402,26 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[72px] left-0 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-lg p-4 flex flex-col gap-2 animate-in slide-in-from-top-2 z-40">
+          {NAV_LINKS.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={cn(
+                'text-base font-semibold px-4 py-3 rounded-xl transition-all',
+                pathname === link.href 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </header>
   )
 }
