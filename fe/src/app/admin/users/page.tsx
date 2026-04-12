@@ -117,8 +117,7 @@ function UserManagementContent() {
           typeUser={typeUser}
           onTabChange={handleTypeUserChange}
           onAddStaff={() => setShowCreateStaffModal(true)}
-          // Chấp nhận cả admin và super-admin đều thấy (để test)
-          showAddAdmin={currentUser?.role === 'super-admin' || currentUser?.role === 'admin'}
+          showAddAdmin={currentUser?.role === 'super-admin'}
           onAddAdmin={() => setShowCreateAdminModal(true)}
         />
 
