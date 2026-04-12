@@ -17,14 +17,20 @@ export interface GetTheatersParams {
 // Thêm tham số signal
 export async function getTheaters(params: GetTheatersParams = {}, signal?: AbortSignal) {
   try {
+    // 1. Tìm thẻ căn cước (Token)
     const token = Cookies.get('authToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    
+    // 📸 CAMERA 1: Chụp xem FE có lấy được Token không?
+    console.log("🕵️‍♂️ Token chuẩn bị gửi đi:", token ? "✅ ĐÃ CÓ TOKEN" : "❌ KHÔNG TÌM THẤY TOKEN");
+
     const res = await api.get<TheaterListResponse>('/theaters', {
       params: { ...params },
-      signal, // 🟢 Truyền signal vào config axios
-      headers: token ? {
-        Authorization: `Bearer ${token}` 
-      } : undefined
+      signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined
     })
+
+    // 📸 CAMERA 2: Chụp xem Backend trả về mấy Rạp?
+    console.log("📦 Dữ liệu BE trả về:", res.data.data.theaters.map(t => t.name)); 
 
     return res.data.data
   } catch (error) {
