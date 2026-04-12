@@ -1,5 +1,120 @@
 /**
  * @swagger
+ * /api/admin/users:
+ *   post:
+ *     tags:
+ *       - Admin - User Management
+ *     summary: Tạo tài khoản nhân sự mới (Admin hoặc Staff)
+ *     description: |
+ *       - **Super-Admin**: Được quyền tạo cả `admin` và `staff`.
+ *       - **Admin**: Chỉ được quyền tạo `staff`.
+ *       Tài khoản được tạo sẽ bỏ qua bước xác thực Email (isEmailVerified: true).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - fullName
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email đăng nhập
+ *                 example: truongphong@cinebooking.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Mật khẩu khởi tạo
+ *                 example: "123456"
+ *               fullName:
+ *                 type: string
+ *                 description: Họ và tên nhân viên
+ *                 example: Nguyễn Văn Quản Lý
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - admin
+ *                   - staff
+ *                 description: Phân quyền tài khoản
+ *                 example: admin
+ *               phoneNumber:
+ *                 type: string
+ *                 description: Số điện thoại liên hệ
+ *                 example: "0987654321"
+ *               assignedTheater:
+ *                 type: string
+ *                 description: ID rạp chiếu (Bắt buộc nếu role là staff, để trống nếu là admin)
+ *                 example: 65a1b2c3d4e5f6g7h8i9j0k1
+ *     responses:
+ *       200:
+ *         description: Tạo tài khoản thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Tạo tài khoản thành công!
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: 60d0fe4f5311236168a109ca
+ *                     email:
+ *                       type: string
+ *                       example: truongphong@cinebooking.com
+ *                     fullName:
+ *                       type: string
+ *                       example: Nguyễn Văn Quản Lý
+ *                     role:
+ *                       type: string
+ *                       example: admin
+ *       400:
+ *         description: Lỗi dữ liệu hoặc Email đã được sử dụng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Email này đã được sử dụng trong hệ thống
+ *       401:
+ *         description: Chưa đăng nhập hoặc Token hết hạn
+ *       403:
+ *         description: Vi phạm quyền truy cập (Ví dụ Admin thường cố tạo Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Cảnh báo: Chỉ Super-Admin mới có quyền tạo tài khoản Quản trị (Admin)!
+ *       500:
+ *         description: Lỗi server
+ */
+
+/**
+ * @swagger
  * /user/profile:
  *   put:
  *     tags: [Users]

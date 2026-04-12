@@ -5,6 +5,55 @@ import { getDeleteFilter } from "../utils/query.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 
 const userController = {
+  // Hàm tạo admin mới dành cho superadmin
+  createUser: async (req, res) => {
+    try {
+      const { email, password, fullName, role, phoneNumber, assignedTheater } = req.body;
+
+      // 1. LẤY ROLE CỦA NGƯỜI ĐANG THỰC HIỆN (từ middleware verifyToken)
+      const currentUserRole = req.user.role;
+
+      // 2. VỆ SĨ KIỂM TRA QUYỀN (Logic cốt lõi)
+      // Nếu role muốn tạo là 'admin' nhưng người tạo KHÔNG PHẢI là 'super-admin'
+      if (role === 'admin' && currentUserRole !== 'super-admin') {
+        return res.status(403).json({ success: false, message: "Chỉ Super-Admin mới có quyền tạo Quản trị!" });
+      }
+
+      // 3. Kiểm tra email đã tồn tại chưa
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return errorResponse(res, "Email này đã được sử dụng trong hệ thống", 400);
+      }
+
+      // 4. Mã hóa mật khẩu
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // 5. Tạo User mới
+      const newUser = new User({
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        fullName,
+        role: role || 'staff', // Nếu không gửi role thì mặc định là staff
+        phoneNumber,
+        assignedTheater, // Gán rạp chiếu (nếu là staff)
+        authProviders: ['local'],
+        isEmailVerified: true // Admin tạo nên cho phép dùng luôn
+      });
+
+      await newUser.save();
+
+      // Trả về kết quả (ẩn mật khẩu đi cho bảo mật)
+      const userResponse = newUser.toObject();
+      delete userResponse.password;
+
+      return successResponse(res, userResponse, "Tạo tài khoản thành công!");
+    } catch (error) {
+      console.error("Create user error:", error);
+      return errorResponse(res, "Lỗi hệ thống khi tạo người dùng", 500);
+    }
+  },
+
   // Cập nhật profile
   updateProfile: async (req, res) => {
     try {

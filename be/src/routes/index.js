@@ -748,6 +748,7 @@ router.delete(
 );
 
 // User management (Admin)
+router.post("/admin/users", authenticateToken, authorize("admin", "super-admin"), userController.createUser);
 router.get("/admin/users", authenticateToken, authorize("admin", "super-admin"), userController.getAllUsers);
 router.get("/admin/users/:id", authenticateToken, authorize("admin", "super-admin"), userController.getUserById);
 router.put(
