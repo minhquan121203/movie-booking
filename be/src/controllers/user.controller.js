@@ -8,54 +8,35 @@ const userController = {
   // Hàm tạo admin mới dành cho superadmin
   createUser: async (req, res) => {
     try {
-      const {
-        email,
-        password,
-        confirmPassword, // 🔥 Lấy thêm confirmPassword từ FE gửi lên
-        fullName,
-        role,
-        phoneNumber,
-        assignedTheater,
-        assignedCity      // 🔥 Lấy thêm khu vực quản lý
-      } = req.body;
+      const { email, password, confirmPassword, fullName, role, phoneNumber, assignedTheater, assignedCity } = req.body;
 
-      // 1. KIỂM TRA QUYỀN (Vệ sĩ)
-      const currentUserRole = req.user.role;
-      if (role === 'admin' && currentUserRole !== 'super-admin') {
-        return res.status(403).json({ success: false, message: "Chỉ Super-Admin mới có quyền tạo Quản trị vùng!" });
+      // Check quyền: Chỉ Super Admin mới tạo được Admin vùng
+      if (role === 'admin' && req.user.role !== 'super-admin') {
+        return errorResponse(res, "Chỉ Super-Admin mới có quyền bổ nhiệm Quản trị vùng!", 403);
       }
 
-      // 2. 🔥 KIỂM TRA MẬT KHẨU NHẬP LẠI
       if (password !== confirmPassword) {
         return errorResponse(res, "Mật khẩu nhập lại không khớp!", 400);
       }
 
-      // 3. Kiểm tra email tồn tại
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
-        return errorResponse(res, "Email này đã được sử dụng trong hệ thống", 400);
+        return errorResponse(res, "Email này đã được sử dụng", 400);
       }
 
-      // ⚠️ LƯU Ý CỰC QUAN TRỌNG:
-      // Fen NÊN XÓA đoạn mã hóa mật khẩu (bcrypt) thủ công ở đây đi.
-      // LÝ DO: Trong file user.model.js của fen đã có "pre-save hook" tự động hash rồi.
-      // Nếu Fen hash ở đây 1 lần, rồi Model hash thêm 1 lần nữa => Pass bị sai, không login được.
-
-      // 4. Tạo User mới
       const newUser = new User({
         email: email.toLowerCase(),
-        password, // 🔥 Truyền mật khẩu thô vào đây, Model sẽ tự lo phần hash
+        password, // Model sẽ tự động hash (pre-save hook)
         fullName,
         role: role || 'staff',
         phoneNumber,
         assignedTheater,
-        assignedCity, // 🔥 LƯU KHU VỰC QUẢN LÝ (VÙNG)
+        assignedCity,
         authProviders: ['local'],
         isEmailVerified: true
       });
 
       await newUser.save();
-
       const userResponse = newUser.toObject();
       delete userResponse.password;
 
@@ -70,23 +51,35 @@ const userController = {
   updateUserRole: async (req, res) => {
     try {
       const { id } = req.params;
-      const { role, permissions, assignedCity } = req.body; // 🔥 Thêm assignedCity vào đây
+      const { role, permissions, assignedCity, fullName, phoneNumber } = req.body;
+      const currentUserRole = req.user.role; // Lấy role của người đang thực hiện lệnh sửa
 
       const user = await User.findById(id);
       if (!user) {
         return errorResponse(res, "Không tìm thấy người dùng", 404);
       }
 
+      // Chỉ Super Admin mới được sửa thông tin của Admin khác hoặc nâng cấp Role
+      if (user.role === 'admin' && currentUserRole !== 'super-admin') {
+        return errorResponse(res, "Bạn không có quyền chỉnh sửa tài khoản Quản trị viên này!", 403);
+      }
+
+      if (fullName) user.fullName = fullName;
+      if (phoneNumber) user.phoneNumber = phoneNumber;
+
       if (role) user.role = role;
       if (permissions) user.permissions = permissions;
-      if (assignedCity !== undefined) user.assignedCity = assignedCity; // 🔥 Cho phép đổi vùng
+
+      if (assignedCity !== undefined) {
+        user.assignedCity = assignedCity;
+      }
 
       await user.save();
 
-      return successResponse(res, user, "Cập nhật quyền hạn và khu vực thành công");
+      return successResponse(res, user, "Cập nhật thông tin và quyền hạn thành column thành công!");
     } catch (error) {
       console.error("Update user role error:", error);
-      return errorResponse(res, "Lỗi server", 500);
+      return errorResponse(res, "Lỗi server khi cập nhật", 500);
     }
   },
 
