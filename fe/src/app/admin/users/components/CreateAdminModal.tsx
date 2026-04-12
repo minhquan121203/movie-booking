@@ -4,76 +4,59 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'react-hot-toast'
 import Cookies from 'js-cookie'
 import { Loader2 } from 'lucide-react'
 
-interface CreateAdminModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+// Fen copy cái mảng này từ file location.js qua nhé
+const VIETNAM_CITIES = ["Hà Nội", "Hồ Chí Minh", "Hải Phòng", "Đà Nẵng", "Huế", "Cần Thơ","Cao Bằng", "Lai Châu", "Điện Biên", "Sơn La",
+                    "Lạng Sơn", "Quảng Ninh", "Thanh Hóa", "Nghệ An", "Hà Tĩnh", "Tuyên Quang", "Lào Cai", "Thái Nguyên", "Phú Thọ", "Bắc Ninh",
+                    "Hưng Yên", "Ninh Bình", "Quảng Trị", "Quảng Ngãi", "Gia Lai", "Khánh Hòa", "Lâm Đồng", "Đồng Nai", "Tây Ninh",
+                    "Đồng Tháp", "Vĩnh Long", "An Giang", "Cà Mau"];
 
-export function CreateAdminModal({ open, onOpenChange }: CreateAdminModalProps) {
+export function CreateAdminModal({ open, onOpenChange }: any) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
     password: '',
-    confirmPassword: '',
+    confirmPassword: '', 
     phoneNumber: '',
-    assignedCity: '',
+    assignedCity: '',    
     role: 'admin' 
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // KIỂM TRA MẬT KHẨU NHẬP LẠI
+
     if (formData.password !== formData.confirmPassword) {
-        return toast.error('Mật khẩu nhập lại không khớp fen ơi! ❌');
+      return toast.error('Mật khẩu nhập lại không khớp fen ơi!')
     }
 
-    // KIỂM TRA ĐÃ CHỌN VÙNG CHƯA 
     if (!formData.assignedCity) {
-        return toast.error('Vui lòng chọn khu vực quản lý! 📍');
+      return toast.error('Vui lòng chọn khu vực quản lý!')
     }
 
-    setLoading(true);
-
+    setLoading(true)
     try {
-      const token = Cookies.get('authToken');
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${baseUrl}/admin/users`, {
+      const token = Cookies.get('authToken')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)
-        });
+      })
 
-        const data = await response.json();
-
-        if (data.success) {
-        toast.success('Bổ nhiệm Quản trị viên vùng thành công! 🔑');
-        onOpenChange(false);
-        
-        setFormData({ 
-            email: '', 
-            fullName: '', 
-            password: '', 
-            confirmPassword: '', 
-            phoneNumber: '', 
-            assignedCity: '',   
-            role: 'admin' 
-        });
-
-        // Load lại trang để thấy admin mới
-        window.location.reload();
+      const data = await response.json()
+      if (data.success) {
+        toast.success(`Đã bổ nhiệm ${formData.fullName} quản lý vùng ${formData.assignedCity}! 🏢`)
+        onOpenChange(false)
+        window.location.reload()
       } else {
-        toast.error(data.message || 'Có lỗi xảy ra')
+        toast.error(data.message)
       }
     } catch (error) {
-      toast.error('Lỗi kết nối server!')
+      toast.error('Lỗi server!')
     } finally {
       setLoading(false)
     }
@@ -81,64 +64,52 @@ export function CreateAdminModal({ open, onOpenChange }: CreateAdminModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-white text-gray-900">
+      <DialogContent className="sm:max-w-[450px] bg-white text-gray-900">
         <DialogHeader>
-          <DialogTitle className="text-red-600 font-bold text-xl">Thêm Quản Trị Viên (Admin)</DialogTitle>
+          <DialogTitle className="text-red-600 font-bold text-xl">Thêm Quản Lý Vùng (Admin)</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="admin-name">Họ và tên</Label>
-            <Input 
-              id="admin-name" 
-              placeholder="Nguyễn Văn Admin"
-              required 
-              value={formData.fullName}
-              onChange={e => setFormData({...formData, fullName: e.target.value})}
-            />
+            <Label>Họ và tên</Label>
+            <Input required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="admin-email">Email</Label>
-            <Input 
-              id="admin-email" 
-              type="email" 
-              placeholder="admin@cinebooking.com"
-              required 
-              value={formData.email}
-              onChange={e => setFormData({...formData, email: e.target.value})}
-            />
+            <Label>Email đăng nhập</Label>
+            <Input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          </div>
+
+          {/* CHỌN THÀNH PHỐ PHỤ TRÁCH */}
+          <div className="space-y-2">
+            <Label className="text-blue-600">Khu vực quản lý</Label>
+            <Select onValueChange={(val) => setFormData({...formData, assignedCity: val})}>
+              <SelectTrigger>
+                <SelectValue placeholder="Bấm để chọn thành phố" />
+              </SelectTrigger>
+              <SelectContent>
+                {VIETNAM_CITIES.map(city => (
+                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="admin-password">Mật khẩu khởi tạo</Label>
-            <Input 
-              id="admin-password" 
-              type="password" 
-              placeholder="••••••••"
-              required 
-              value={formData.password}
-              onChange={e => setFormData({...formData, password: e.target.value})}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="admin-phone">Số điện thoại</Label>
-            <Input 
-              id="admin-phone" 
-              placeholder="09xx xxx xxx"
-              value={formData.phoneNumber}
-              onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Mật khẩu</Label>
+              <Input type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Nhập lại mật khẩu</Label>
+              <Input type="password" required value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
+            </div>
           </div>
           
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white" disabled={loading}>
+            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Xác nhận tạo Admin
+              Xác nhận bổ nhiệm
             </Button>
           </DialogFooter>
         </form>

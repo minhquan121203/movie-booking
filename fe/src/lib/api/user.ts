@@ -10,6 +10,7 @@ export interface GetUsersParams {
   limit?: number
   search?: string
   role?: string // "customer" | "staff" | "admin"
+  assignedCity?: string;
 }
 
 export interface UpdateRoleDTO {

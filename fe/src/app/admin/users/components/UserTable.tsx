@@ -19,6 +19,7 @@ interface UserTableProps {
   onAssignTheater?: (user: User) => void
   onEdit?: (user: User) => void 
   showAssignTheater?: boolean
+  isSuperAdmin?: boolean;
 }
 
 export function UserTable({

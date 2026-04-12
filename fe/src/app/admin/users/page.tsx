@@ -45,7 +45,6 @@ function UserManagementContent() {
   const [viewUserId, setViewUserId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   
-  // States cho Modals
   const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false)
   const [assignTheaterStaff, setAssignTheaterStaff] = useState<User | null>(null)
@@ -59,6 +58,8 @@ function UserManagementContent() {
     return () => clearTimeout(timer)
   }, [pageFromUrl, typeUserFromUrl])
 
+  const cityFilter = currentUser?.role === 'admin' ? currentUser.assignedCity : undefined;
+
   const {
     data: userData,
     isLoading,
@@ -68,6 +69,7 @@ function UserManagementContent() {
     limit: itemsPerPage,
     search: debouncedSearch,
     role: typeUser,
+    assignedCity: cityFilter, 
   })
   
   const users = userData?.users
@@ -109,7 +111,12 @@ function UserManagementContent() {
   return (
     <main className="flex-1 p-8 bg-gray-50 min-h-screen">
       <div className="max-w-[1440px] mx-auto space-y-6">
-        <h1 className="text-gray-900 text-3xl font-bold">Quản Lý Người Dùng</h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-gray-900 text-3xl font-bold">Quản Lý Người Dùng</h1>
+          {currentUser?.role === 'admin' && (
+            <p className="text-blue-600 font-medium">Khu vực: {currentUser.assignedCity}</p>
+          )}
+        </div>
 
         <UserToolbar
           search={search}
@@ -117,6 +124,7 @@ function UserManagementContent() {
           typeUser={typeUser}
           onTabChange={handleTypeUserChange}
           onAddStaff={() => setShowCreateStaffModal(true)}
+          // Chỉ Super Admin mới thấy nút này
           showAddAdmin={currentUser?.role === 'super-admin'}
           onAddAdmin={() => setShowCreateAdminModal(true)}
         />
@@ -133,6 +141,8 @@ function UserManagementContent() {
                 onAssignTheater={setAssignTheaterStaff}
                 showAssignTheater={typeUser === 'staff'}
                 onEdit={setEditingUser} 
+                // Truyền thêm prop này để Table biết có nên hiện cột "Thành phố" hay không
+                isSuperAdmin={currentUser?.role === 'super-admin'}
               />
               {isTransitioning && <LoadingOverlay />}
             </>
@@ -158,7 +168,6 @@ function UserManagementContent() {
         )}
       </div>
 
-      {/* Sheets & Modals */}
       <UserDetailSheet
         open={!!viewUserId}
         onOpenChange={() => setViewUserId(null)}
@@ -166,8 +175,6 @@ function UserManagementContent() {
       />
 
       <CreateStaffModal open={showCreateStaffModal} onOpenChange={setShowCreateStaffModal} />
-      
-      {/* Modal tạo Admin mới */}
       <CreateAdminModal open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal} />
 
       <EditStaffModal 

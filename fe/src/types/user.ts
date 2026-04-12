@@ -25,6 +25,7 @@ export interface User {
   profilePicture?: string
   cloudinaryPublicId?: string
   role: 'customer' | 'staff' | 'admin' | 'super-admin'
+  assignedCity?: string;
   staffInfo?: StaffInfo
   authProviders: string[]
   googleId?: string
