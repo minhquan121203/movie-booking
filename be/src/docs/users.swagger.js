@@ -5,8 +5,7 @@
  *     tags:
  *       - Admin - User Management
  *     summary: Tạo tài khoản nhân sự mới (Admin hoặc Staff)
- *     description: |
- *       Tài khoản được tạo sẽ bỏ qua bước xác thực Email (isEmailVerified: true).
+ *     description: Tài khoản được tạo sẽ bỏ qua bước xác thực Email (isEmailVerified: true).
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -95,7 +94,7 @@
  *       401:
  *         description: Chưa đăng nhập hoặc Token hết hạn
  *       403:
- *         description: Vi phạm quyền truy cập (Ví dụ Admin thường cố tạo Admin)
+ *         description: Vi phạm quyền truy cập
  *         content:
  *           application/json:
  *             schema:
