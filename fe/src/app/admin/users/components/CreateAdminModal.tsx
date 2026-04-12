@@ -8,12 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'react-hot-toast'
 import Cookies from 'js-cookie'
 import { Loader2 } from 'lucide-react'
-
-// Fen copy cái mảng này từ file location.js qua nhé
-const VIETNAM_CITIES = ["Hà Nội", "Hồ Chí Minh", "Hải Phòng", "Đà Nẵng", "Huế", "Cần Thơ","Cao Bằng", "Lai Châu", "Điện Biên", "Sơn La",
-                    "Lạng Sơn", "Quảng Ninh", "Thanh Hóa", "Nghệ An", "Hà Tĩnh", "Tuyên Quang", "Lào Cai", "Thái Nguyên", "Phú Thọ", "Bắc Ninh",
-                    "Hưng Yên", "Ninh Bình", "Quảng Trị", "Quảng Ngãi", "Gia Lai", "Khánh Hòa", "Lâm Đồng", "Đồng Nai", "Tây Ninh",
-                    "Đồng Tháp", "Vĩnh Long", "An Giang", "Cà Mau"];
+import { VIETNAM_CITIES } from '@/lib/location'
 
 export function CreateAdminModal({ open, onOpenChange }: any) {
   const [loading, setLoading] = useState(false)
