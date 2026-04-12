@@ -29,9 +29,22 @@ const theaterController = {
       const skip = (pageNumber - 1) * limitNumber;
 
       const query = {};
+      const currentUser = req.user;
 
-      // Thành phố (regex để không cần match chính xác)
-      if (city) {
+      // LƯỚI LỌC QUYỀN LỰC
+      if (currentUser && currentUser.role === 'admin' && currentUser.assignedCity) {
+        // Bắt buộc Rạp phải nằm trong Thành phố mà Admin này quản lý
+        query.city = currentUser.assignedCity;
+
+        // Nếu user cố tình search city khác, mình ghi đè luôn để chặn
+        if (city && city.toLowerCase() !== currentUser.assignedCity.toLowerCase()) {
+          return successResponse(res, {
+            theaters: [],
+            pagination: { currentPage: 1, totalPages: 0, totalItems: 0 }
+          }, "Không có rạp nào (Bạn không có quyền xem rạp ở khu vực này)");
+        }
+      } else if (city) {
+        // Dành cho Super Admin hoặc Customer search bình thường
         query.city = { $regex: city, $options: "i" };
       }
 
@@ -61,10 +74,7 @@ const theaterController = {
           .map((a) => a.trim())
           .filter(Boolean);
         if (amenityArr.length) {
-          // rạp phải có TẤT CẢ tiện ích truyền vào
           query.amenities = { $all: amenityArr };
-          // nếu chỉ cần 1 trong số đó thì dùng $in
-          // query.amenities = { $in: amenityArr };
         }
       }
 
