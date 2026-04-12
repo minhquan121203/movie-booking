@@ -43,6 +43,7 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
   } = useForm<EditStaffFormData>({
     resolver: zodResolver(editStaffSchema),
   })
+  console.log("🚩 Form Errors nè fen:", errors);
 
   // Đổ dữ liệu cũ vào form mỗi khi mở modal hoặc đổi user
   useEffect(() => {
@@ -57,13 +58,21 @@ export function EditStaffModal({ open, onOpenChange, user }: EditStaffModalProps
   }, [user, open, reset])
 
   const onSubmit = async (data: EditStaffFormData) => {
-    if (!user?._id) return
+    console.log("🚀 Dữ liệu chuẩn bị gửi đi:", data); // Kiểm tra xem data có đủ city chưa
+    console.log("🆔 ID người dùng:", user?._id);     // Kiểm tra xem ID có bị null không
+
+    if (!user?._id) {
+      showError("Lỗi!", "Không tìm thấy ID người dùng!"); // 🔥 Đổi toast thành showError
+      return;
+    }
+
     try {
-      // Gửi toàn bộ data (gồm cả assignedCity) lên server
+      // Nếu dòng dưới này bị lỗi logic, nó sẽ nhảy xuống catch ngay
       await updateStaffMutation.mutateAsync({ id: user._id, data })
-      showSuccess('Cập nhật thông tin thành công! ✨')
+      showSuccess('Cập nhật thành công!')
       onOpenChange(false)
     } catch (error: any) {
+      console.error("💥 Lỗi thật sự đây nè:", error); // In ra lỗi thật trong console
       showError('Lỗi!', error.response?.data?.message || 'Có lỗi xảy ra')
     }
   }
