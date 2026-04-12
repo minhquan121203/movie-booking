@@ -63,17 +63,12 @@ export function useUpdateStaff() {
   const { showSuccess, showError } = useNotification()
   
   return useMutation({
-    // Nếu API của fen tên khác thì đổi lại chỗ mutationFn nhé
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateUser(id, data), 
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateUserRole(id, data), 
     onSuccess: () => {
-      showSuccess('Cập nhật thông tin thành công!')
+      showSuccess('Cập nhật thông tin thành công! ✨')
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['user-detail'] })
     },
     onError: (error: any) => showError('Lỗi!', error.response?.data?.message),
   })
-}
-
-function updateUser(id: string, data: any): Promise<unknown> {
-  throw new Error('Function not implemented.')
 }
