@@ -182,6 +182,12 @@ const userSchema = new Schema(
       type: Date,
     },
 
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      ype: Date,
+    },
     verified_age_level: {
       type: Number,
       default: null,

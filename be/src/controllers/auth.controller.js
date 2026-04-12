@@ -135,6 +135,37 @@ const authController = {
         return errorResponse(res, "Email hoặc mật khẩu không đúng", 401);
       }
 
+      // Nếu là Admin, Super-admin hoặc Staff thì chặn lại đòi OTP
+      if (["admin", "super-admin", "staff"].includes(user.role)) {
+        // 1. Tạo mã OTP 6 số ngẫu nhiên
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // 2. Lưu vào Database (cho sống 5 phút)
+        user.otp = otpCode;
+        user.otpExpires = Date.now() + 5 * 60 * 1000;
+        await user.save();
+
+        // 3. Gọi SendGrid gửi mail (Nhớ đảm bảo file email.service.js có hàm này hoặc tương tự nhé)
+        try {
+          const emailService = (await import("../services/email.service.js")).default;
+          // Tạm thời log ra console để fen dễ test lúc dev
+          console.log(`🚀 [DEV OTP] Mã OTP của Admin ${user.email} là: ${otpCode}`);
+
+          // Gửi mail thực tế (fen có thể tự code thêm hàm sendOTP trong emailService)
+          // await emailService.sendEmail(user.email, "Mã xác thực Admin", `Mã OTP của bạn là: ${otpCode}. Mã có hiệu lực 5 phút.`);
+        } catch (err) {
+          console.log("Lỗi gửi mail OTP:", err);
+        }
+
+        // 4. Báo về Frontend là phải nhập OTP
+        return res.status(200).json({
+          success: true,
+          requireOTP: true,
+          email: user.email,
+          message: "Vui lòng kiểm tra email để lấy mã OTP xác thực."
+        });
+      }
+
       // Tạo token
       // const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
       // const token = generateAuthToken(user);
@@ -486,6 +517,65 @@ const authController = {
       );
     } catch (error) {
       return errorResponse(res, "Refresh token không hợp lệ", 401);
+    }
+  },
+
+  // 🔥 HÀM MỚI: Kiểm tra OTP của Admin
+  verifyAdminOTP: async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return errorResponse(res, "Vui lòng nhập email và mã OTP", 400);
+      }
+
+      // Tìm user có email, đúng mã OTP, và thời gian chưa hết hạn ($gt: greater than now)
+      const user = await User.findOne({
+        email: email.toLowerCase(),
+        otp: otp,
+        otpExpires: { $gt: Date.now() },
+        isDeleted: { $ne: true }
+      });
+
+      if (!user) {
+        return errorResponse(res, "Mã OTP không đúng hoặc đã hết hạn!", 401);
+      }
+
+      // Xác thực thành công -> Xóa OTP đi cho sạch sẽ
+      user.otp = undefined;
+      user.otpExpires = undefined;
+
+      // Tạo Token xịn cấp quyền cho vào
+      const accessToken = generateAuthToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      user.refreshToken = refreshToken;
+      user.refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await user.save();
+
+      const refreshTokenExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        expires: refreshTokenExpires,
+      });
+
+      const data = {
+        accessToken,
+        user: {
+          _id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          profilePicture: user.profilePicture,
+        },
+      };
+
+      return successResponse(res, data, "Xác thực OTP thành công! Chào mừng sếp.");
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      return errorResponse(res, "Lỗi server không xác định");
     }
   },
 };

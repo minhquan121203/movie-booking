@@ -63,6 +63,7 @@ router.post("/auth/google-login", authController.googleLogin);
 router.post("/auth/forgot-password", passwordResetRateLimiter, authController.forgotPassword);
 router.post("/auth/reset-password", passwordResetRateLimiter, authController.resetPassword);
 router.post("/auth/set-password", authenticateToken, authController.setPassword);
+router.post("/auth/verify-otp", authController.verifyAdminOTP);
 
 
 

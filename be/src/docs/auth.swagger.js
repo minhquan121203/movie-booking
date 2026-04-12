@@ -341,5 +341,56 @@
  *                   type: string
  *                   example: "Unauthorized"
  */
-
+/**
+ * @swagger
+ * /auth/verify-otp:
+ *   post:
+ *     summary: Xác thực mã OTP cho Admin (2FA)
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email của Admin
+ *                 example: admin@cinema.com
+ *               otp:
+ *                 type: string
+ *                 description: Mã OTP 6 số nhận được từ Email
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Xác thực OTP thành công, trả về Token đăng nhập
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Xác thực OTP thành công! Chào mừng sếp.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     user:
+ *                       type: object
+ *       400:
+ *         description: Thiếu email hoặc OTP
+ *       401:
+ *         description: Mã OTP không đúng hoặc đã hết hạn
+ */
 export default {};
