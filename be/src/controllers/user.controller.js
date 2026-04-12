@@ -8,49 +8,115 @@ const userController = {
   // Hàm tạo admin mới dành cho superadmin
   createUser: async (req, res) => {
     try {
-      const { email, password, fullName, role, phoneNumber, assignedTheater } = req.body;
+      const {
+        email,
+        password,
+        confirmPassword, // 🔥 Lấy thêm confirmPassword từ FE gửi lên
+        fullName,
+        role,
+        phoneNumber,
+        assignedTheater,
+        assignedCity      // 🔥 Lấy thêm khu vực quản lý
+      } = req.body;
 
-      // 1. LẤY ROLE CỦA NGƯỜI ĐANG THỰC HIỆN (từ middleware verifyToken)
+      // 1. KIỂM TRA QUYỀN (Vệ sĩ)
       const currentUserRole = req.user.role;
-
-      // 2. VỆ SĨ KIỂM TRA QUYỀN (Logic cốt lõi)
-      // Nếu role muốn tạo là 'admin' nhưng người tạo KHÔNG PHẢI là 'super-admin'
       if (role === 'admin' && currentUserRole !== 'super-admin') {
-        return res.status(403).json({ success: false, message: "Chỉ Super-Admin mới có quyền tạo Quản trị!" });
+        return res.status(403).json({ success: false, message: "Chỉ Super-Admin mới có quyền tạo Quản trị vùng!" });
       }
 
-      // 3. Kiểm tra email đã tồn tại chưa
+      // 2. 🔥 KIỂM TRA MẬT KHẨU NHẬP LẠI
+      if (password !== confirmPassword) {
+        return errorResponse(res, "Mật khẩu nhập lại không khớp!", 400);
+      }
+
+      // 3. Kiểm tra email tồn tại
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
         return errorResponse(res, "Email này đã được sử dụng trong hệ thống", 400);
       }
 
-      // 4. Mã hóa mật khẩu
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+      // ⚠️ LƯU Ý CỰC QUAN TRỌNG:
+      // Fen NÊN XÓA đoạn mã hóa mật khẩu (bcrypt) thủ công ở đây đi.
+      // LÝ DO: Trong file user.model.js của fen đã có "pre-save hook" tự động hash rồi.
+      // Nếu Fen hash ở đây 1 lần, rồi Model hash thêm 1 lần nữa => Pass bị sai, không login được.
 
-      // 5. Tạo User mới
+      // 4. Tạo User mới
       const newUser = new User({
         email: email.toLowerCase(),
-        password: hashedPassword,
+        password, // 🔥 Truyền mật khẩu thô vào đây, Model sẽ tự lo phần hash
         fullName,
-        role: role || 'staff', // Nếu không gửi role thì mặc định là staff
+        role: role || 'staff',
         phoneNumber,
-        assignedTheater, // Gán rạp chiếu (nếu là staff)
+        assignedTheater,
+        assignedCity, // 🔥 LƯU KHU VỰC QUẢN LÝ (VÙNG)
         authProviders: ['local'],
-        isEmailVerified: true // Admin tạo nên cho phép dùng luôn
+        isEmailVerified: true
       });
 
       await newUser.save();
 
-      // Trả về kết quả (ẩn mật khẩu đi cho bảo mật)
       const userResponse = newUser.toObject();
       delete userResponse.password;
 
-      return successResponse(res, userResponse, "Tạo tài khoản thành công!");
+      return successResponse(res, userResponse, "Bổ nhiệm nhân sự thành công!");
     } catch (error) {
       console.error("Create user error:", error);
       return errorResponse(res, "Lỗi hệ thống khi tạo người dùng", 500);
+    }
+  },
+
+  // Cập nhật role & khu vực (Để Super Admin có thể đổi vùng cho Admin)
+  updateUserRole: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role, permissions, assignedCity } = req.body; // 🔥 Thêm assignedCity vào đây
+
+      const user = await User.findById(id);
+      if (!user) {
+        return errorResponse(res, "Không tìm thấy người dùng", 404);
+      }
+
+      if (role) user.role = role;
+      if (permissions) user.permissions = permissions;
+      if (assignedCity !== undefined) user.assignedCity = assignedCity; // 🔥 Cho phép đổi vùng
+
+      await user.save();
+
+      return successResponse(res, user, "Cập nhật quyền hạn và khu vực thành công");
+    } catch (error) {
+      console.error("Update user role error:", error);
+      return errorResponse(res, "Lỗi server", 500);
+    }
+  },
+
+  // Xóa user (Super Admin)
+  deleteUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Không cho xóa chính mình
+      if (id === req.userId) {
+        return errorResponse(res, "Không thể xóa chính mình", 400);
+      }
+
+      const user = await User.findById(id);
+      if (!user) {
+        return errorResponse(res, "Không tìm thấy người dùng", 404);
+      }
+
+      user.isDeleted = true;
+      user.isActive = false; // Disable login
+      await user.save();
+      // const user = await User.findByIdAndDelete(id);
+      if (!user) {
+        return errorResponse(res, "Không tìm thấy người dùng", 404);
+      }
+
+      return successResponse(res, {}, "Xóa người dùng thành công");
+    } catch (error) {
+      console.error("Delete user error:", error);
+      return errorResponse(res, "Lỗi server", 500);
     }
   },
 
@@ -293,59 +359,6 @@ const userController = {
       });
     } catch (error) {
       console.error("Get user by id error:", error);
-      return errorResponse(res, "Lỗi server", 500);
-    }
-  },
-
-  // Cập nhật role user (Super Admin)
-  updateUserRole: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { role, permissions } = req.body;
-
-      const user = await User.findById(id);
-      if (!user) {
-        return errorResponse(res, "Không tìm thấy người dùng", 404);
-      }
-
-      if (role) user.role = role;
-      if (permissions) user.permissions = permissions;
-
-      await user.save();
-
-      return successResponse(res, user, "Cập nhật role thành công");
-    } catch (error) {
-      console.error("Update user role error:", error);
-      return errorResponse(res, "Lỗi server", 500);
-    }
-  },
-
-  // Xóa user (Super Admin)
-  deleteUser: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      // Không cho xóa chính mình
-      if (id === req.userId) {
-        return errorResponse(res, "Không thể xóa chính mình", 400);
-      }
-
-      const user = await User.findById(id);
-      if (!user) {
-        return errorResponse(res, "Không tìm thấy người dùng", 404);
-      }
-      
-      user.isDeleted = true;
-      user.isActive = false; // Disable login
-      await user.save();
-      // const user = await User.findByIdAndDelete(id);
-      if (!user) {
-        return errorResponse(res, "Không tìm thấy người dùng", 404);
-      }
-
-      return successResponse(res, {}, "Xóa người dùng thành công");
-    } catch (error) {
-      console.error("Delete user error:", error);
       return errorResponse(res, "Lỗi server", 500);
     }
   },
