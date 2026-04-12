@@ -19,37 +19,56 @@ export function CreateAdminModal({ open, onOpenChange }: CreateAdminModalProps) 
     email: '',
     fullName: '',
     password: '',
+    confirmPassword: '',
     phoneNumber: '',
+    assignedCity: '',
     role: 'admin' 
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    // KIỂM TRA MẬT KHẨU NHẬP LẠI
+    if (formData.password !== formData.confirmPassword) {
+        return toast.error('Mật khẩu nhập lại không khớp fen ơi! ❌');
+    }
+
+    // KIỂM TRA ĐÃ CHỌN VÙNG CHƯA 
+    if (!formData.assignedCity) {
+        return toast.error('Vui lòng chọn khu vực quản lý! 📍');
+    }
+
+    setLoading(true);
 
     try {
-      const token = Cookies.get('authToken')
-      // Lấy URL từ env hoặc xài tạm localhost nếu chưa có
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-      
-      const response = await fetch(`${baseUrl}/admin/users`, {
+      const token = Cookies.get('authToken');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${baseUrl}/admin/users`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
-      })
+        });
 
-      const data = await response.json()
+        const data = await response.json();
 
-      if (data.success) {
-        toast.success('Tạo tài khoản Quản trị viên thành công! 🔑')
-        onOpenChange(false)
-        // Reset form
-        setFormData({ email: '', fullName: '', password: '', phoneNumber: '', role: 'admin' })
+        if (data.success) {
+        toast.success('Bổ nhiệm Quản trị viên vùng thành công! 🔑');
+        onOpenChange(false);
+        
+        setFormData({ 
+            email: '', 
+            fullName: '', 
+            password: '', 
+            confirmPassword: '', 
+            phoneNumber: '', 
+            assignedCity: '',   
+            role: 'admin' 
+        });
+
         // Load lại trang để thấy admin mới
-        window.location.reload() 
+        window.location.reload();
       } else {
         toast.error(data.message || 'Có lỗi xảy ra')
       }
