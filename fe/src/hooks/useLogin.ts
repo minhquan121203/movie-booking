@@ -21,8 +21,16 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => loginApi(data),
 
-    onSuccess: async (response: LoginResponse) => {
-      const { accessToken, user } = response.data
+    onSuccess: async (response: any) => { 
+      const requireOTP = response?.requireOTP || response?.data?.requireOTP;
+
+      if (requireOTP) {
+        showSuccess('Kiểm tra Email', response?.message || response?.data?.message || 'Mã OTP đã được gửi!');
+        return; 
+      }
+
+      const { accessToken, user } = response.data || response;
+
       // 1. Lưu Cookie
       Cookies.set('authToken', accessToken, { 
         expires: 7,  
@@ -50,8 +58,9 @@ export const useLogin = () => {
         }
       }
 
-      toast.success(response.message || 'Đăng nhập thành công!')
+      // toast.success(response.message || 'Đăng nhập thành công!') // Bỏ cái này đi vì ở dưới có showSuccess rồi cho đỡ trùng
       queryClient.invalidateQueries({ queryKey: ['me'] })
+      
       // 4. QUAN TRỌNG: Refresh để Server Components nhận diện Cookie mới
       router.refresh()
 
