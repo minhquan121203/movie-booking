@@ -27,7 +27,7 @@ export function UserTable({
   onViewDetail,
   onDelete,
   onAssignTheater,
-  onEdit, // Nhận prop
+  onEdit, 
   showAssignTheater = false,
 }: UserTableProps) {
   if (users.length === 0)
@@ -43,7 +43,7 @@ export function UserTable({
             <TableHead>SĐT</TableHead>
             <TableHead>Vai Trò</TableHead>
             {showAssignTheater && <TableHead>Rạp</TableHead>}
-            <TableHead>Trạng Thái</TableHead>
+            <TableHead>Khu Vực</TableHead>
             <TableHead className="text-right">Thao Tác</TableHead>
           </TableRow>
         </TableHeader>
@@ -71,6 +71,8 @@ export function UserTable({
                   {user.role}
                 </Badge>
               </TableCell>
+
+              {/* Cột Rạp (Chỉ hiện khi xem Staff) */}
               {showAssignTheater && (
                 <TableCell className="text-gray-600">
                   {user.staffInfo?.assignedTheater ? (
@@ -82,15 +84,22 @@ export function UserTable({
                   )}
                 </TableCell>
               )}
+
+              {/*  CỘT KHU VỰC */}
               <TableCell>
-                <Badge
-                  className={
-                    user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }
-                >
-                  {user.isActive ? 'Hoạt động' : 'Khóa'}
-                </Badge>
+                {user.role === 'admin' ? (
+                  <span className="font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                    📍 {user.assignedCity || 'Chưa phân công'}
+                  </span>
+                ) : user.role === 'super-admin' ? (
+                  <span className="font-bold text-red-600">
+                    🌐 Toàn quốc
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
               </TableCell>
+
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button
