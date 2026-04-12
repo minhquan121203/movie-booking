@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/admin/users:
+ * /admin/users:
  *   post:
  *     tags:
  *       - Admin - User Management
