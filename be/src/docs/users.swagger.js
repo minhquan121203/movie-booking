@@ -5,7 +5,7 @@
  *     tags:
  *       - Admin - User Management
  *     summary: Tạo tài khoản nhân sự mới (Admin hoặc Staff)
- *     example: "Cảnh báo: Chỉ Super-Admin mới có quyền tạo tài khoản Quản trị (Admin)!"
+ *     description: Tài khoản được tạo sẽ bỏ qua bước xác thực Email (isEmailVerified: true).
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -105,7 +105,7 @@
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: Cảnh báo: Chỉ Super-Admin mới có quyền tạo tài khoản Quản trị (Admin)!
+ *                   example: "Cảnh báo: Chỉ Super-Admin mới có quyền tạo tài khoản Quản trị (Admin)!"
  *       500:
  *         description: Lỗi server
  */
