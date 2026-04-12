@@ -7,12 +7,14 @@ import { UserTable } from './components/UserTable'
 import { UserToolbar } from './components/UserToolbar'
 import { UserDetailSheet } from './components/UserDetailSheet'
 import { CreateStaffModal } from './components/CreateStaffModal'
+import { CreateAdminModal } from './components/CreateAdminModal'
 import { AssignTheaterModal } from './components/AssignTheaterModal'
 import { EditStaffModal } from './components/EditStaffModal' 
 import { useDebounce } from '@/hooks/useDebounce'
 import { LoadingOverlay, TableSkeleton } from '@/app/components/shared/skeleton'
 import { User } from '@/types/user'
 import { Loader2 } from 'lucide-react'
+import { useUserStore } from '@/store/userStore' 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +30,7 @@ import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom
 function UserManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user: currentUser } = useUserStore() 
 
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
   const typeUserFromUrl = searchParams.get('type-user') || 'customer'
@@ -41,9 +44,11 @@ function UserManagementContent() {
 
   const [viewUserId, setViewUserId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
-  const [assignTheaterStaff, setAssignTheaterStaff] = useState<User | null>(null)
   
+  // States cho Modals
+  const [showCreateStaffModal, setShowCreateStaffModal] = useState(false)
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false)
+  const [assignTheaterStaff, setAssignTheaterStaff] = useState<User | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
   useEffect(() => {
@@ -112,6 +117,8 @@ function UserManagementContent() {
           typeUser={typeUser}
           onTabChange={handleTypeUserChange}
           onAddStaff={() => setShowCreateStaffModal(true)}
+          showAddAdmin={currentUser?.role === 'super-admin'}
+          onAddAdmin={() => setShowCreateAdminModal(true)}
         />
 
         <div className="relative">
@@ -151,6 +158,7 @@ function UserManagementContent() {
         )}
       </div>
 
+      {/* Sheets & Modals */}
       <UserDetailSheet
         open={!!viewUserId}
         onOpenChange={() => setViewUserId(null)}
@@ -158,6 +166,9 @@ function UserManagementContent() {
       />
 
       <CreateStaffModal open={showCreateStaffModal} onOpenChange={setShowCreateStaffModal} />
+      
+      {/* Modal tạo Admin mới */}
+      <CreateAdminModal open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal} />
 
       <EditStaffModal 
         open={!!editingUser} 
