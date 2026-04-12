@@ -12,6 +12,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 
 const loginSchema = z.object({
   email: z
@@ -27,7 +28,6 @@ function LoginContent() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   
-  // 🔥 STATES MỚI: Dùng để điều khiển màn hình và lưu thông tin OTP
   const [step, setStep] = useState<1 | 2>(1)
   const [tempEmail, setTempEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -49,25 +49,22 @@ function LoginContent() {
     },
   })
 
-  // 🚀 XỬ LÝ SUBMIT BƯỚC 1 (ĐĂNG NHẬP)
   const onSubmit = (data: LoginFormData) => {
     login(
       { email: data.email, password: data.password },
       {
         onSuccess: (res: any) => {
-          // 🔥 Bắt bọc data kỹ lưỡng: Tránh việc Axios giấu data ở tuốt bên trong
           const isRequireOTP = res?.requireOTP || res?.data?.requireOTP;
           
           if (isRequireOTP) {
             setTempEmail(data.email)
-            setStep(2) // ÉP GIAO DIỆN CHUYỂN SANG FORM NHẬP OTP (BƯỚC 2)
+            setStep(2) 
           }
         },
       }
     )
   }
 
-  // 🚀 XỬ LÝ SUBMIT BƯỚC 2 (XÁC THỰC OTP)
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     if (otp.length !== 6) return
@@ -76,7 +73,6 @@ function LoginContent() {
     setOtpError('')
 
     try {
-      // Gọi API verify OTP
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
       const response = await fetch(`${baseUrl}/auth/verify-otp`, {
         method: 'POST',
@@ -87,9 +83,23 @@ function LoginContent() {
       const data = await response.json()
 
       if (data.success) {
-        // Lấy token và ép reload trang để middleware nhận diện Admin
-        // Vì làm thủ công nên mình dùng localStorage tạm hoặc reload trang để cookie ăn
-        window.location.href = '/admin'; 
+        const { accessToken, user } = data.data;
+        
+        Cookies.set('authToken', accessToken, { 
+          expires: 7,  
+          secure: true, 
+          sameSite: 'none' 
+        });
+
+        const role = user?.role?.toLowerCase() || '';
+        if (role === 'admin' || role === 'super-admin') {
+          window.location.href = '/admin';
+        } else if (role === 'staff') {
+          window.location.href = '/staff';
+        } else {
+          window.location.href = '/';
+        }
+        
       } else {
         setOtpError(data.message || 'Mã OTP không chính xác!')
       }
