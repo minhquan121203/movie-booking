@@ -1,6 +1,8 @@
 import Theater from "../models/theater.model.js";
 import { getDeleteFilter } from "../utils/query.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import jwt from 'jsonwebtoken';
+import User from '../models/user.model.js';
 
 const theaterController = {
   // Lấy danh sách rạp
@@ -29,22 +31,28 @@ const theaterController = {
       const skip = (pageNumber - 1) * limitNumber;
 
       const query = {};
-      const currentUser = req.user;
+      let currentUser = null;
+
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.split(' ')[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          // Lấy full thông tin user từ DB để có được assignedCity
+          currentUser = await User.findById(decoded.id || decoded._id);
+        } catch (error) {
+          console.log("Token không hợp lệ hoặc hết hạn, coi như khách vãng lai");
+        }
+      }
 
       // LƯỚI LỌC QUYỀN LỰC
       if (currentUser && currentUser.role === 'admin' && currentUser.assignedCity) {
-        // Bắt buộc Rạp phải nằm trong Thành phố mà Admin này quản lý
         query.city = currentUser.assignedCity;
-
-        // Nếu user cố tình search city khác, mình ghi đè luôn để chặn
+        // Nếu cố tình search sai vùng -> Chặn
         if (city && city.toLowerCase() !== currentUser.assignedCity.toLowerCase()) {
-          return successResponse(res, {
-            theaters: [],
-            pagination: { currentPage: 1, totalPages: 0, totalItems: 0 }
-          }, "Không có rạp nào (Bạn không có quyền xem rạp ở khu vực này)");
+          return successResponse(res, { theaters: [], pagination: { totalPages: 0 } }, "Không có rạp");
         }
       } else if (city) {
-        // Dành cho Super Admin hoặc Customer search bình thường
         query.city = { $regex: city, $options: "i" };
       }
 
