@@ -2,6 +2,7 @@ import { TheaterListResponse } from '@/types/theater'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api/axios'
 import axios from 'axios' // Import axios để check isCancel
+import Cookies from 'js-cookie'
 
 export interface GetTheatersParams {
   page?: number
@@ -16,9 +17,13 @@ export interface GetTheatersParams {
 // Thêm tham số signal
 export async function getTheaters(params: GetTheatersParams = {}, signal?: AbortSignal) {
   try {
+    const token = Cookies.get('authToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
     const res = await api.get<TheaterListResponse>('/theaters', {
       params: { ...params },
       signal, // 🟢 Truyền signal vào config axios
+      headers: token ? {
+        Authorization: `Bearer ${token}` 
+      } : undefined
     })
 
     return res.data.data
@@ -47,7 +52,7 @@ export function useTheaters(params: GetTheatersParams) {
     queryKey: ['theaters', params],
     // 🟢 Lấy signal từ context
     queryFn: ({ signal }) => getTheaters(params, signal),
-    staleTime: 1000 * 60 * 10, // cache 10 phút
+    staleTime: 0,
     retry: 2,
   })
 }
