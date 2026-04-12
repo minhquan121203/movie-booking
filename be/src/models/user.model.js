@@ -186,7 +186,7 @@ const userSchema = new Schema(
       type: String,
     },
     otpExpires: {
-      ype: Date,
+      type: Date,
     },
     verified_age_level: {
       type: Number,

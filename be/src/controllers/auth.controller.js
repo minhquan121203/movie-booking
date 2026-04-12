@@ -142,7 +142,7 @@ const authController = {
 
         // 2. Lưu vào Database (cho sống 5 phút)
         user.otp = otpCode;
-        user.otpExpires = Date.now() + 5 * 60 * 1000;
+        user.otpExpires = new Date(Date.now() + 5 * 60 * 1000);
         await user.save();
 
         // 3. Gọi SendGrid gửi mail (Nhớ đảm bảo file email.service.js có hàm này hoặc tương tự nhé)
