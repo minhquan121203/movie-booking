@@ -87,9 +87,9 @@ export function CreateAdminModal({ open, onOpenChange }: any) {
               <SelectTrigger>
                 <SelectValue placeholder="Bấm để chọn thành phố" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px]"> 
                 {VIETNAM_CITIES.map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
