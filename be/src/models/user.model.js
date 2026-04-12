@@ -60,6 +60,13 @@ const userSchema = new Schema(
       default: "customer",
       index: true,
     },
+    // 🔥QUẢN LÝ VÙNG (Hà Nội, Cần Thơ,...)
+    assignedCity: {
+      type: String,
+      trim: true,
+      default: null, // Super Admin và Customer sẽ để null
+      index: true,
+     },
     // Staff-specific information
     staffInfo: {
       staffId: {
@@ -273,9 +280,12 @@ userSchema.pre("save", async function (next) {
 });
 
 // === INSTANCE METHODS ===
-userSchema.methods.addLoyaltyPoints = function (points) {
-  this.loyaltyPoints += points;
-  return this.save();
+userSchema.methods.hasPermission = function (permission) {
+    if (this.role === "super-admin") return true;
+
+    if (!this.isActive) return false;
+
+    return this.permissions.includes(permission);
 };
 
 userSchema.methods.redeemLoyaltyPoints = function (points) {
