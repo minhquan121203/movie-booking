@@ -6,8 +6,6 @@
  *       - Admin - User Management
  *     summary: Tạo tài khoản nhân sự mới (Admin hoặc Staff)
  *     description: |
- *       - **Super-Admin**: Được quyền tạo cả `admin` và `staff`.
- *       - **Admin**: Chỉ được quyền tạo `staff`.
  *       Tài khoản được tạo sẽ bỏ qua bước xác thực Email (isEmailVerified: true).
  *     security:
  *       - bearerAuth: []
