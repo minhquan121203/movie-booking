@@ -347,7 +347,7 @@
  *   post:
  *     summary: Xác thực mã OTP cho Admin (2FA)
  *     tags:
- *       - Auth
+ *       - Authentication
  *     requestBody:
  *       required: true
  *       content:
