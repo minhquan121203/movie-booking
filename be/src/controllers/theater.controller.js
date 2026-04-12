@@ -34,30 +34,19 @@ const theaterController = {
       let currentUser = null;
 
       const authHeader = req.headers.authorization;
-      console.log("🕵️‍♂️ Auth Header nhận được:", authHeader ? "CÓ TRUYỀN LÊN" : "KHÔNG TRUYỀN");
 
       if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
           const token = authHeader.split(' ')[1];
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-          // 📸 CAMERA 2: Xem bên trong Token chứa cái gì
-          console.log("📦 Payload giải mã:", decoded);
-
-          // 🔥 Bắt trọn mọi loại tên biến ID (id, _id, userId)
           const userId = decoded.id || decoded._id || decoded.userId;
 
           if (userId) {
             currentUser = await User.findById(userId);
-            // 📸 CAMERA 3: Xem có tìm thấy ông Admin trong DB không
-            console.log("👤 Tìm thấy User:", currentUser ? `${currentUser.email} - Khu vực: ${currentUser.assignedCity}` : "NULL");
-          } else {
-            console.log("⚠️ Cảnh báo: Không tìm thấy ID nào trong Token!");
           }
-
         } catch (error) {
-          // 📸 CAMERA 4: Bắt tận tay lỗi (sai secret key, hết hạn...)
-          console.log("💥 LỖI BẮT TOKEN:", error.message);
+          // Im lặng bỏ qua lỗi token, Backend tự động coi đây là Khách vãng lai
         }
       }
 
