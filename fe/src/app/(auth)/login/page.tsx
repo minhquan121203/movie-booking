@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
+import { useUserStore } from '@/store/userStore'
 
 const loginSchema = z.object({
   email: z
@@ -27,7 +28,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 function LoginContent() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
-  
+  const { setUser, setStaffTheater, setStaffTheaterName } = useUserStore()
   const [step, setStep] = useState<1 | 2>(1)
   const [tempEmail, setTempEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -65,6 +66,7 @@ function LoginContent() {
     )
   }
 
+  // 🚀 XỬ LÝ SUBMIT BƯỚC 2 (XÁC THỰC OTP)
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     if (otp.length !== 6) return
@@ -74,6 +76,8 @@ function LoginContent() {
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      
+      // 1. Xác thực OTP
       const response = await fetch(`${baseUrl}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,19 +89,40 @@ function LoginContent() {
       if (data.success) {
         const { accessToken, user } = data.data;
         
-        Cookies.set('authToken', accessToken, { 
-          expires: 7,  
-          secure: true, 
-          sameSite: 'none' 
-        });
+        // 2. Lưu Cookie
+        Cookies.set('authToken', accessToken, { expires: 7, secure: true, sameSite: 'none' });
+        
+        // 3. 🔥 CẬP NHẬT STORE (Sửa lỗi tàng hình tên Avatar)
+        setUser(user);
 
+        // 4. 🔥 LẤY THÔNG TIN RẠP CHO STAFF (Sửa lỗi "Không có quyền")
         const role = user?.role?.toLowerCase() || '';
+        if (role === 'staff') {
+          try {
+            const profileRes = await fetch(`${baseUrl}/staff/profile`, {
+              headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const profileData = await profileRes.json();
+            const staffInfo = profileData?.data?.staff?.staffInfo;
+            
+            if (staffInfo?.assignedTheater?._id) {
+              setStaffTheater(staffInfo.assignedTheater._id);
+              setStaffTheaterName(staffInfo.assignedTheater.name);
+            }
+          } catch (error) {
+            console.error('Lỗi lấy thông tin rạp nhân viên:', error);
+          }
+        }
+
+        // 5. Điều hướng thông minh (Dùng router thay vì window.location)
+        router.refresh(); 
+        
         if (role === 'admin' || role === 'super-admin') {
-          window.location.href = '/admin';
+          router.push('/admin');
         } else if (role === 'staff') {
-          window.location.href = '/staff';
+          router.push('/staff');
         } else {
-          window.location.href = '/';
+          router.push('/');
         }
         
       } else {
