@@ -216,7 +216,7 @@ const authController = {
     }
   },
 
-  // Đăng nhập bằng   ogle
+  // Đăng nhập bằng google
   googleLogin: async (req, res) => {
     try {
       const { googleId, email, fullName, profilePicture } = req.body;

@@ -142,13 +142,21 @@ const theaterController = {
 
       // Filter rooms in returned theaters
       const activeParam = req.query.active;
-      if (activeParam !== 'all' && activeParam !== 'false') {
-        theaters.forEach(t => {
-          if (t.rooms) {
+      theaters.forEach(t => {
+        if (t.rooms) {
+          if (activeParam !== 'all' && activeParam !== 'false') {
             t.rooms = t.rooms.filter(r => !r.isDeleted);
           }
-        });
-      }
+
+          t.roomCount = t.rooms.length;
+          t.rooms.forEach(r => {
+            delete r.seatMap;
+          });
+
+        } else {
+          t.roomCount = 0;
+        }
+      });
 
       return successResponse(res, {
         theaters,
