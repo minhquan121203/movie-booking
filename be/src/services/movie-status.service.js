@@ -3,8 +3,11 @@ import Movie from '../models/movie.model.js';
 import { autoSyncTMDB } from '../controllers/tmdb.controller.js';
 
 const movieStatusService = {
-    start: () => {
-        cron.schedule('*/2 * * * *', async () => {
+    start: async () => {
+        console.log("🚀 [TEST] Đang ép Robot chạy ngay lập tức để fen kiểm tra...");
+        autoSyncTMDB();
+
+        cron.schedule('0 0 * * *', async () => {
             console.log("==========================================");
             console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
             console.log("==========================================");
