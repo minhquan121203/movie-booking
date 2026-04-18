@@ -1,6 +1,6 @@
 import axios from "axios";
 import Movie from "../models/movie.model.js";
-import authController from "./auth.controller.js";
+import Genre from "../models/genre.model.js";
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
@@ -34,6 +34,7 @@ export const autoSyncTMDB = async () => {
                     let trailerLink = "";
                     let directorName = "Đang cập nhật";
                     let actorsArray = [];
+                    let genreIdsArray = [];
 
                     try {
                         const detailRes = await axios.get(
@@ -55,7 +56,26 @@ export const autoSyncTMDB = async () => {
                             const selectedVideo = videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "vi") || videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "en") || videos.find(v => v.site === "YouTube");
                             if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
                         }
-                    } catch (err) { console.log(`⚠️ Lỗi lấy chi tiết phim ${m.id}`); }
+
+                        if (movieDetail.genres && movieDetail.genres.length > 0) {
+                            for (const g of movieDetail.genres) {
+                                const genreName = g.name;
+
+                                let existingGenre = await Genre.findOne({
+                                    name: { $regex: new RegExp('^' + genreName + '$', 'i') }
+                                });
+
+                                if (!existingGenre) {
+                                    existingGenre = await Genre.create({
+                                        name: genreName,
+                                        description: `Thể loại ${genreName}`
+                                    });
+                                }
+
+                                genreIdsArray.push(existingGenre._id);
+                            }
+                        }
+                    } catch (err) { }
 
                     await Movie.create({
                         title: m.title || m.original_title,
@@ -71,34 +91,45 @@ export const autoSyncTMDB = async () => {
                         rating: "C13",
                         director: directorName,
                         actors: actorsArray,
+                        genres: genreIdsArray,
                     });
                     newCount++;
 
                 } else {
                     let needsUpdate = false;
 
-                    if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
-                        try {
-                            const detailRes = await axios.get(
-                                `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`
-                            );
-                            const movieDetail = detailRes.data;
+                    try {
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`
+                        );
+                        const movieDetail = detailRes.data;
 
+                        if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
                             if (movieDetail.credits) {
                                 const directorObj = movieDetail.credits.crew.find(c => c.job === 'Director');
-                                if (directorObj) {
-                                    exists.director = directorObj.name;
-                                    needsUpdate = true;
-                                }
-
+                                if (directorObj) { exists.director = directorObj.name; needsUpdate = true; }
                                 const topCast = movieDetail.credits.cast.slice(0, 5).map(actor => actor.name);
-                                if (topCast.length > 0) {
-                                    exists.actors = topCast;
-                                    needsUpdate = true;
-                                }
+                                if (topCast.length > 0) { exists.actors = topCast; needsUpdate = true; }
                             }
-                        } catch (err) { console.log(`⚠️ Lỗi lấy cập nhật credits cho phim ${m.id}`); }
-                    }
+                        }
+
+                        if (!exists.genres || exists.genres.length === 0) {
+                            if (movieDetail.genres && movieDetail.genres.length > 0) {
+                                let genreIdsArray = [];
+                                for (const g of movieDetail.genres) {
+                                    let existingGenre = await Genre.findOne({
+                                        name: { $regex: new RegExp('^' + g.name + '$', 'i') }
+                                    });
+                                    if (!existingGenre) {
+                                        existingGenre = await Genre.create({ name: g.name, description: `Thể loại ${g.name}` });
+                                    }
+                                    genreIdsArray.push(existingGenre._id);
+                                }
+                                exists.genres = genreIdsArray;
+                                needsUpdate = true;
+                            }
+                        }
+                    } catch (err) { }
 
                     if (exists.isDeleted || needsUpdate) {
                         exists.isDeleted = false;
@@ -119,5 +150,3 @@ export const autoSyncTMDB = async () => {
         return false;
     }
 };
-
-export default autoSyncTMDB;
