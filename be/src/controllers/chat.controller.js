@@ -137,6 +137,20 @@ export const handleChat = async (req, res) => {
 
     } catch (error) {
         console.error("Lỗi Server hoặc AI:", error);
+
+        if (botResponse.type === 'movie_list' && botResponse.data && botResponse.data.movieIds) {
+            const listIds = botResponse.data.movieIds;
+
+            const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
+
+            botResponse.data = foundMovies.map(m => ({
+                _id: m._id,
+                title: m.title,
+                genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
+                poster: m.posterUrl || m.image || "https://placehold.co/150x200?text=No+Poster"
+            }));
+        }
+
         res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: {} } });
     }
 };
