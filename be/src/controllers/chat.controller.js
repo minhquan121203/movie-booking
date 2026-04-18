@@ -116,9 +116,12 @@ export const handleChat = async (req, res) => {
             Dựa vào Kho dữ liệu trên, hãy trả lời khách hàng.
             BẮT BUỘC trả về đúng cấu trúc JSON sau:
             {
-                "text": "Câu trả lời của bạn",
+                "text": "Câu trả lời an ủi/tư vấn của bạn",
                 "type": "text" | "movie_list" | "action_booking",
-                "data": { "movieId": "ID_phim_nếu_type_là_action_booking_hoặc_để_trống" }
+                "data": { 
+                    "movieId": "Dùng_khi_type_là_action_booking",
+                    "movieIds": ["ID_phim_1", "ID_phim_2"] 
+                }
             }
         `;
 
