@@ -16,129 +16,125 @@ export const handleChat = async (req, res) => {
         const next7Days = new Date();
         next7Days.setDate(now.getDate() + 7);
 
+        // 1. LẤY DATA VÀ POPULATE ĐẦY ĐỦ (ĐẶC BIỆT LÀ THỂ LOẠI)
         const [movies, theaters, rawSchedules, products, vouchers] = await Promise.all([
-            Movie.find().select('title genre description poster image hinhAnh thumbnail'),
-            Theater.find().select('name address'),
+            // 🔥 Thêm populate('genres') để lấy được chữ "Hành động", "Tình cảm"...
+            Movie.find({ status: "Đang chiếu" }).populate('genres', 'name'),
+            Theater.find({ isActive: true }),
             Schedule.find()
                 .populate('movie', 'title')
                 .populate('theater', 'name')
-                .select('startTime availableSeats')
                 .sort({ startTime: 1 }),
-            Product.find().select('name price description'),
-            Voucher.find({ isActive: true }).select('code discount description minSpend')
+            Product.find(),
+            Voucher.find({ isActive: true })
         ]);
 
-        console.log("=== TỔNG LỊCH (ĐÃ THÁO CHỐT) ===", rawSchedules.length);
-        const schedules = rawSchedules.map(s => {
-            if (!s.movie || !s.theater || !s.startTime) return null;
+        // 2. ÉP DỮ LIỆU THÀNH VĂN BẢN ĐỂ AI DỄ ĐỌC (TIẾT KIỆM TOKEN)
+        const moviesText = movies.map(m => {
+            const genres = m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang cập nhật";
+            return `- [ID: ${m._id}] Phim: "${m.title}" | Thể loại: ${genres} | Thời lượng: ${m.duration} phút | Đánh giá: ${m.rating} | Nội dung: ${m.description}`;
+        }).join("\n");
 
+        const theatersText = theaters.map(t => `- Rạp: ${t.name} (Địa chỉ: ${t.address}, ${t.city})`).join("\n");
+
+        const productsText = products.map(p => `- Bắp nước: ${p.name} | Giá: ${p.price} VNĐ`).join("\n");
+        const vouchersText = vouchers.map(v => `- Mã KM: ${v.code} | Giảm giá: ${v.discount}% | Điều kiện: ${v.description}`).join("\n");
+
+        const schedulesText = rawSchedules.filter(s => {
             const d = new Date(s.startTime);
+            return s.movie && s.theater && d >= now && d <= next7Days;
+        }).map(s => {
+            const d = new Date(s.startTime);
+            return `- Phim: ${s.movie.title} | Rạp: ${s.theater.name} | Thời gian: ${d.toLocaleTimeString('vi-VN')} ngày ${d.toLocaleDateString('vi-VN')} | Ghế trống: ${s.availableSeats}`;
+        }).join("\n");
 
-            if (d < now || d > next7Days) return null;
-
-            const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            const dateStr = d.toLocaleDateString('vi-VN');
-
-            return {
-                id: s.movie._id, // Ép lấy ID phim
-                title: s.movie.title, // Ép lấy tên phim
-                genre: s.movie.genre || "Đang hot",
-                poster: s.movie.poster || s.movie.image || s.movie.hinhAnh || s.movie.thumbnail, // Ép lấy link ảnh
-                rap: s.theater.name,
-                thoiGian: `${timeStr} ngày ${dateStr}`,
-                gheTrong: s.availableSeats
-            };
-        }).filter(item => item !== null);
-
+        // 3. XÂY DỰNG LUẬT CHƠI (SYSTEM PROMPT)
         const context = `
-          Bạn là trợ lý ảo CineBot của rạp phim CineBooking. 
-          Người đang chat với bạn tên là: "${userName}". Hãy xưng "tớ" và gọi họ bằng tên hoặc "fen".
-          
-          Dữ liệu hiện tại:
-          - Phim: ${JSON.stringify(movies)}
-          - Rạp: ${JSON.stringify(theaters)}
-          - Lịch: ${JSON.stringify(schedules)}
-          - Bắp nước: ${JSON.stringify(products)}  
-          - Khuyến mãi: ${JSON.stringify(vouchers)}
-        
-          LƯU Ý TỐI QUAN TRỌNG (CẤM VI PHẠM):
-          1. TUYỆT ĐỐI KHÔNG bịa đặt thông tin, KHÔNG tự chế tên phim, KHÔNG tự chế lịch chiếu.
-          2. CHỈ TƯ VẤN lịch chiếu CÓ THẬT trong mảng "Lịch" ở trên.
-          3. Nếu khách hỏi rạp X mà trong dữ liệu "Lịch" không có suất chiếu nào của rạp X, bạn PHẢI trả lời: "Hiện tại tớ chưa có thông tin lịch chiếu của rạp này trong thời gian tới fen ạ!".
-        
-          YÊU CẦU ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC):
-          Bạn PHẢI trả lời dưới dạng JSON hợp lệ, không có markdown.
-          Các "type" được phép:
-          1. "text": Trò chuyện bình thường, tư vấn bắp nước, khuyến mãi.
-          2. "movie_list": Liệt kê danh sách phim.
-          3. "action_booking": (QUAN TRỌNG) Dùng khi khách CÓ Ý ĐỊNH MUA VÉ/ĐẶT VÉ một phim cụ thể.
-
-          VÍ DỤ TRẢ LỜI - KHÁCH MUỐN ĐẶT VÉ (VIP 2):
-          Khách: "Cho tớ 1 vé Đào Phở Piano nhé" hoặc "Tớ muốn mua vé phim này".
-          {
-            "text": "Ok fen, tớ mở trang chọn ghế phim Đào, Phở và Piano cho fen luôn nè!",
-            "type": "action_booking",
-            "data": { "movieId": "_id_của_phim_trong_database" }
-          }
+            Bạn là CineBot, một trợ lý ảo siêu thân thiện của rạp phim CineBooking. 
+            Người đang chat tên là: "${userName}". Hãy xưng "tớ" và gọi họ bằng tên hoặc "fen".
+            
+            🎞️ [KHO DỮ LIỆU HIỆN TẠI TỚI 7 NGÀY TỚI]
+            - PHIM ĐANG CHIẾU: 
+            ${moviesText || "Không có phim nào"}
+            
+            - RẠP CHIẾU: 
+            ${theatersText || "Không có rạp nào"}
+            
+            - LỊCH CHIẾU THỰC TẾ: 
+            ${schedulesText || "Chưa có lịch chiếu"}
+            
+            - BẮP NƯỚC: 
+            ${productsText || "Hết bắp nước"}
+            
+            - KHUYẾN MÃI: 
+            ${vouchersText || "Không có khuyến mãi"}
+            
+            LƯU Ý TỐI QUAN TRỌNG:
+            1. TUYỆT ĐỐI KHÔNG BỊA ĐẶT. Nếu khách hỏi thông tin không có trong danh sách trên, hãy xin lỗi.
+            2. ĐỌC KỸ THỂ LOẠI PHIM: Để giới thiệu đúng thể loại khách tìm.
+            3. Nếu khách hỏi "phim đó", hãy tự đọc lại tin nhắn trước để biết đang nói về phim nào.
+            
+            KỸ NĂNG TƯ VẤN THEO TÂM LÝ (QUAN TRỌNG):
+            - Nếu khách than BUỒN / THẤT TÌNH / MỆT MỎI: Hãy an ủi nhẹ nhàng. Gợi ý 1-2 bộ phim thuộc thể loại Hài (Comedy), Hoạt hình (Animation) hoặc Tình cảm (Romance). Dựa vào "Nội dung" phim để nói lý do tại sao bộ phim này sẽ giúp họ vui lên.
+            - Nếu khách than CHÁN / THIẾU MUỐI / BUỒN NGỦ: Hãy khuấy động không khí. Gợi ý phim Hành động (Action), Kinh dị (Horror), hoặc Viễn tưởng kịch tính để họ tỉnh ngủ.
+            - Nếu khách muốn tìm PHIM HOT / PHIM HAY: Hãy ngẫu nhiên chọn ra 2 bộ phim nổi bật nhất (dựa vào tên phim hoặc nội dung hấp dẫn) để đề xuất.
+            - KHI TƯ VẤN TÂM LÝ: LUÔN trả về type là "movie_list" hoặc "text" kèm theo lời động viên.
         `;
 
+        // 4. LỊCH SỬ CHAT VÀ ÉP KIỂU JSON
         const safeHistory = Array.isArray(history) ? history : [];
-        const formattedHistory = safeHistory.map(msg => {
-            let plainText = "";
-            // Chỉ trích xuất phần text thuần túy để AI dễ ghi nhớ
-            if (typeof msg.content === 'string') {
-                plainText = msg.content;
-            } else if (msg.content && msg.content.text) {
-                plainText = msg.content.text;
-            } else {
-                plainText = JSON.stringify(msg.content);
-            }
-
-            return {
-                role: msg.role === 'bot' ? 'model' : 'user',
-                parts: [{ text: plainText }]
-            };
-        });
-
-        const rawHistory = [
-            { role: "user", parts: [{ text: context + "\n\nLƯU Ý QUAN TRỌNG: Nếu khách nói 'phim đó', 'phim ý', hãy tự động đọc lại tin nhắn trước đó để biết chính xác là phim nào và lấy đúng _id của phim đó để đặt vé!" }] },
-            { role: "model", parts: [{ text: 'Đã rõ! Tớ đã ghi nhớ toàn bộ luật và lịch sử trò chuyện.' }] },
-            ...formattedHistory
-        ];
-
         const validHistory = [];
-        for (const msg of rawHistory) {
-            if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === msg.role) {
-                validHistory[validHistory.length - 1].parts[0].text += "\n" + msg.parts[0].text;
-            } else {
-                validHistory.push(msg);
-            }
-        }
 
-        const chatSession = model.startChat({
-            history: validHistory
+        validHistory.push({ role: "user", parts: [{ text: context }] });
+        validHistory.push({ role: "model", parts: [{ text: `{"text": "Đã rõ, tớ đã nạp toàn bộ thông tin phim, rạp, bắp nước và khuyến mãi!", "type": "text"}` }] });
+
+        safeHistory.forEach(msg => {
+            let plainText = typeof msg.content === 'string' ? msg.content : (msg.content?.text || JSON.stringify(msg.content));
+
+            // Xử lý gộp các tin nhắn liên tiếp của cùng 1 role
+            if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === (msg.role === 'bot' ? 'model' : 'user')) {
+                validHistory[validHistory.length - 1].parts[0].text += "\n" + plainText;
+            } else {
+                validHistory.push({
+                    role: msg.role === 'bot' ? 'model' : 'user',
+                    parts: [{ text: plainText }]
+                });
+            }
         });
 
-        const result = await chatSession.sendMessage(userMessage);
-        let responseText = result.response.text();
+        // TÍNH NĂNG ĐỈNH CAO: Ép Gemini luôn luôn trả về chuẩn JSON Schema
+        const chatSession = model.startChat({
+            history: validHistory,
+            generationConfig: {
+                responseMimeType: "application/json", // Chống AI nói nhảm ngoài JSON
+            }
+        });
 
-        responseText = responseText.replace(/```json|```/g, "").trim();
+        const prompt = `
+            Câu hỏi của khách: "${userMessage}"
+            
+            Dựa vào Kho dữ liệu trên, hãy trả lời khách hàng.
+            BẮT BUỘC trả về đúng cấu trúc JSON sau:
+            {
+                "text": "Câu trả lời của bạn",
+                "type": "text" | "movie_list" | "action_booking",
+                "data": { "movieId": "ID_phim_nếu_type_là_action_booking_hoặc_để_trống" }
+            }
+        `;
+
+        const result = await chatSession.sendMessage(prompt);
+        const responseText = result.response.text();
 
         try {
             const botResponse = JSON.parse(responseText);
             res.json({ botMessage: botResponse });
         } catch (error) {
-            console.error("Lỗi Parse JSON:", error);
-            res.json({
-                botMessage: { text: responseText, type: "text", data: [] }
-            });
+            res.json({ botMessage: { text: "Tớ đang xử lý hơi lâu, fen đợi tí hỏi lại tớ nha!", type: "text", data: {} } });
         }
 
     } catch (error) {
         console.error("Lỗi Server hoặc AI:", error);
-        res.status(500).json({
-            botMessage: { text: "Tớ đang bận xíu việc ở rạp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] }
-        });
+        res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: {} } });
     }
 };
 
