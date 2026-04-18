@@ -73,7 +73,6 @@ export default function ChatBot() {
     }
   };
 
-  // Hàm "phù phép" biến text có chứa **chữ** thành in đậm
   const formatText = (text: string) => {
     if (!text) return null;
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -101,7 +100,6 @@ export default function ChatBot() {
 
   return (
     <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-[9999]">
-      {/* Nút bấm tròn */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="bg-blue-600 hover:bg-blue-700 text-white p-3.5 sm:p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 flex items-center justify-center"
@@ -109,7 +107,6 @@ export default function ChatBot() {
         {isOpen ? '❌' : '💬 AI Tư vấn'}
       </button>
 
-      {/* Khung Chat */}
       {isOpen && (
         <div className="absolute bottom-[70px] right-0 w-[90vw] max-w-[380px] h-[75vh] max-h-[600px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
           <div className="bg-blue-600 p-3 sm:p-4 text-white font-bold flex justify-between items-center shadow-md z-10">
@@ -123,39 +120,34 @@ export default function ChatBot() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
                 
-                {/* Avatar Bot */}
                 {m.role === 'bot' && (
                   <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0 mb-1">
                     🤖
                   </div>
                 )}
 
-                {/* Nội dung tin nhắn của User */}
                 {m.role === 'user' && (
                   <div className="max-w-[85%] p-3 rounded-2xl text-sm bg-blue-600 text-white rounded-br-none shadow-sm">
                     {m.content?.text}
                   </div>
                 )}
 
-                {/* Nội dung tin nhắn của Bot */}
                 {m.role === 'bot' && (
                   <div className="max-w-[85%] sm:max-w-[90%] bg-white border rounded-2xl rounded-tl-none shadow-sm overflow-hidden flex flex-col">
                     
-                    {/* Phần chữ của Bot (Đã được format in đậm) */}
                     {m.content?.text && (
                       <div className="p-3 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                         {formatText(m.content.text)}
                       </div>
                     )}
 
-                    {/* Phần danh sách Phim (Đã fix lỗi vuốt và thêm bắt nhiều loại tên ảnh) */}
-                    {m.content?.type === 'movie_list' && m.content?.data?.length > 0 && (
+                    {m.content?.type === 'movie_list' && Array.isArray(m.content?.data) && m.content.data.length > 0 && (
                       <div className="flex gap-3 overflow-x-auto px-3 pb-3 pt-1 snap-x scroll-smooth touch-pan-x w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {m.content.data.map((movie: any, idx: number) => {
-                          const title = movie.title || movie.phim || movie.name || movie.tenPhim || 'Phim Đang Chiếu';
-                          const genre = movie.genre || movie.theLoai || 'Đang hot';
-                          const imageUrl = movie.poster || movie.image || movie.hinhAnh || movie.thumbnail || 'https://placehold.co/150x200?text=No+Poster';
-                          const movieId = movie._id || movie.id || movie.movieId || '';
+                          const title = movie.title || 'Phim Đang Chiếu';
+                          const genre = movie.genre || 'Đang hot';
+                          const imageUrl = movie.poster || 'https://placehold.co/150x200?text=No+Poster';
+                          const movieId = movie._id || '';
 
                           return (
                             <div key={idx} className="flex-none w-[130px] border rounded-xl overflow-hidden snap-center flex flex-col bg-gray-50 shadow-sm shrink-0">
@@ -169,13 +161,15 @@ export default function ChatBot() {
                                   <h4 className="font-bold text-xs line-clamp-2" title={title}>{title}</h4>
                                   <p className="text-[10px] text-gray-500 truncate mt-1">{genre}</p>
                                 </div>
-                                <a 
-                                  href={`/movies/${movieId}`} 
-                                  target="_blank"
-                                  className="mt-2 text-center bg-blue-500 text-white py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-colors"
+                                <button 
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    router.push(`/movies/${movieId}`);
+                                  }}
+                                  className="mt-2 w-full text-center bg-blue-500 text-white py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-600 transition-colors cursor-pointer"
                                 >
                                   Đặt vé
-                                </a>
+                                </button>
                               </div>
                             </div>
                           );
