@@ -4,7 +4,7 @@ import { autoSyncTMDB } from '../controllers/tmdb.controller.js';
 
 const movieStatusService = {
     start: () => {
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('*/2 * * * *', async () => {
             console.log("==========================================");
             console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
             console.log("==========================================");
