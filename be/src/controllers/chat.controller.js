@@ -102,11 +102,27 @@ export const handleChat = async (req, res) => {
             }
         });
 
-        // TÍNH NĂNG ĐỈNH CAO: Ép Gemini luôn luôn trả về chuẩn JSON Schema
+        const agentTools = [{
+            functionDeclarations: [{
+                name: "check_seat_details",
+                description: "Hành động này được tự động gọi khi khách hỏi chi tiết về việc CÒN GHẾ KHÔNG cho một bộ phim tại một rạp cụ thể.",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        tenPhim: { type: "STRING", description: "Tên phim cần kiểm tra (VD: Deadpool)" },
+                        tenRap: { type: "STRING", description: "Tên rạp cần kiểm tra (VD: CineBooking Cầu Giấy)" }
+                    },
+                    required: ["tenPhim", "tenRap"]
+                }
+            }]
+        }];
+
+        // Ép AI luôn luôn trả về chuẩn JSON Schema
         const chatSession = model.startChat({
             history: validHistory,
+            tools: agentTools,
             generationConfig: {
-                responseMimeType: "application/json", // Chống AI nói nhảm ngoài JSON
+                responseMimeType: "application/json",
             }
         });
 
@@ -115,7 +131,7 @@ export const handleChat = async (req, res) => {
             
             Dựa vào Kho dữ liệu trên, hãy tư vấn cho khách.
             QUY TẮC BẮT BUỘC CHO KẾT QUẢ JSON:
-            1. NẾU BẠN GIỚI THIỆU PHIM (Gợi ý phim hot, phim theo thể loại, phim theo tâm trạng): BẮT BUỘC "type" PHẢI LÀ "movie_list", và "data.movieIds" BẮT BUỘC phải là 1 mảng chứa các ID phim (Lấy chính xác chuỗi ID nằm trong [ID: ...] ở kho dữ liệu).
+            1. NẾU BẠN GIỚI THIỆU PHIM: BẮT BUỘC "type" PHẢI LÀ "movie_list", và "data.movieIds" chứa mảng các ID phim.
             2. NẾU KHÁCH MUỐN ĐẶT 1 PHIM CỤ THỂ: "type" là "action_booking", "data.movieId" là ID phim đó.
             3. CÒN LẠI CHỈ LÀ TRÒ CHUYỆN: "type" là "text".
             
@@ -123,23 +139,50 @@ export const handleChat = async (req, res) => {
             {
                 "text": "Câu trả lời thân thiện của bạn",
                 "type": "movie_list", 
-                "data": {
-                    "movieIds": ["id_phim_1", "id_phim_2"]
-                }
+                "data": { "movieIds": ["id_phim_1"] }
             }
         `;
 
-        const result = await chatSession.sendMessage(prompt);
+        let result = await chatSession.sendMessage(prompt);
+        const functionCall = result.response.functionCalls()?.[0];
+
+        if (functionCall && functionCall.name === "check_seat_details") {
+            const { tenPhim, tenRap } = functionCall.args;
+            console.log(`\n==============================================`);
+            console.log(`🤖 [AI AGENT KÍCH HOẠT] Đang tự động quét Database...`);
+            console.log(`🔎 Mục tiêu: Phim [${tenPhim}] tại Rạp [${tenRap}]`);
+
+            // AI tự động chọc vào mảng lịch chiếu để tìm dữ liệu Real-time
+            const matchedSchedule = rawSchedules.find(s =>
+                s.movie?.title?.toLowerCase().includes(tenPhim.toLowerCase()) &&
+                s.theater?.name?.toLowerCase().includes(tenRap.toLowerCase())
+            );
+
+            let kqGhe = "Không tìm thấy suất chiếu nào phù hợp.";
+            if (matchedSchedule) {
+                const gheTrong = matchedSchedule.availableSeats;
+                kqGhe = `Hệ thống vừa check Database: Phim ${matchedSchedule.movie.title} tại ${matchedSchedule.theater.name} hiện đang còn chính xác ${gheTrong} ghế trống. Hãy giục khách chốt vé ngay!`;
+                console.log(`✅ [ĐÃ TÌM THẤY]: Còn ${gheTrong} ghế!`);
+            } else {
+                console.log(`❌ [KHÔNG TÌM THẤY SUẤT CHIẾU]`);
+            }
+            console.log(`==============================================\n`);
+
+            result = await chatSession.sendMessage([{
+                functionResponse: {
+                    name: "check_seat_details",
+                    response: { result: kqGhe }
+                }
+            }]);
+        }
+
         const responseText = result.response.text();
 
         try {
             const botResponse = JSON.parse(responseText);
 
-            console.log("🤖 [AI TRẢ VỀ]:", JSON.stringify(botResponse, null, 2));
-
             if (botResponse.type === 'movie_list' && botResponse.data && Array.isArray(botResponse.data.movieIds)) {
                 const listIds = botResponse.data.movieIds;
-
                 const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
 
                 botResponse.data = foundMovies.map(m => ({
