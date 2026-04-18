@@ -105,12 +105,18 @@ export const handleChat = async (req, res) => {
         const agentTools = [{
             functionDeclarations: [{
                 name: "check_seat_details",
-                description: "Hành động này được tự động gọi khi khách hỏi chi tiết về việc CÒN GHẾ KHÔNG cho một bộ phim tại một rạp cụ thể.",
+                description: "Hành động này được tự động gọi khi khách muốn biết CÒN GHẾ KHÔNG. Bạn PHẢI đọc cả câu nói hiện tại VÀ lịch sử chat để lấy dữ liệu.",
                 parameters: {
                     type: "OBJECT",
                     properties: {
-                        tenPhim: { type: "STRING", description: "Tên phim cần kiểm tra (VD: Deadpool)" },
-                        tenRap: { type: "STRING", description: "Tên rạp cần kiểm tra (VD: CineBooking Cầu Giấy)" }
+                        tenPhim: {
+                            type: "STRING",
+                            description: "Tên phim. CỰC KỲ QUAN TRỌNG: Nếu câu nói hiện tại của khách KHÔNG CÓ tên phim, BẮT BUỘC phải đọc ngược lại lịch sử chat để tìm xem trước đó khách đang nói về phim nào."
+                        },
+                        tenRap: {
+                            type: "STRING",
+                            description: "Tên rạp. Tương tự, nếu câu hiện tại chỉ có tên phim, BẮT BUỘC tìm trong lịch sử chat xem khách có nhắc đến rạp nào không."
+                        }
                     },
                     required: ["tenPhim", "tenRap"]
                 }
@@ -124,7 +130,12 @@ export const handleChat = async (req, res) => {
         });
 
         const prompt = `
-            Câu hỏi của khách: "${userMessage}"
+            Lịch sử trò chuyện đã được cung cấp đầy đủ trong bộ nhớ của bạn.
+            Câu nói HIỆN TẠI của khách là: "${userMessage}"
+            
+            🚨 LỜI NHẮC ĐẶC BIỆT:
+            Khách hàng thường nói chuyện ngắt quãng. (VD: Câu trước hỏi "Phim Cô Dâu", câu sau trả lời "Rạp Cầu Giấy"). 
+            Nhiệm vụ của bạn là: TỰ LẮP GHÉP thông tin từ lịch sử. Nếu đã có đủ "Tên Phim" và "Tên Rạp" từ các câu thoại trước đó + hiện tại, BẮT BUỘC gọi ngay hàm "check_seat_details", KHÔNG ĐƯỢC CHAT NHẢM HỎI LẠI!
             
             Dựa vào Kho dữ liệu trên, hãy tư vấn cho khách.
             QUY TẮC BẮT BUỘC CHO KẾT QUẢ JSON:
@@ -135,8 +146,8 @@ export const handleChat = async (req, res) => {
             Format JSON TRẢ VỀ:
             {
                 "text": "Câu trả lời thân thiện của bạn",
-                "type": "movie_list", 
-                "data": { "movieIds": ["id_phim_1"] }
+                "type": "text", 
+                "data": []
             }
         `;
 
