@@ -121,9 +121,6 @@ export const handleChat = async (req, res) => {
         const chatSession = model.startChat({
             history: validHistory,
             tools: agentTools,
-            generationConfig: {
-                responseMimeType: "application/json",
-            }
         });
 
         const prompt = `
@@ -176,7 +173,8 @@ export const handleChat = async (req, res) => {
             }]);
         }
 
-        const responseText = result.response.text();
+        let responseText = result.response.text();
+        responseText = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
         try {
             const botResponse = JSON.parse(responseText);
