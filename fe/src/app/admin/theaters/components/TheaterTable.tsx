@@ -32,7 +32,7 @@ export function TheaterTable({ theaters, isLoading, onEdit, onDelete }: TheaterT
             <TableHead>Địa Chỉ</TableHead>
             <TableHead>Thành Phố</TableHead>
             <TableHead>Liên Hệ</TableHead>
-            <TableHead className="text-center">Phòng/Ghế</TableHead>
+            <TableHead className="text-center">Số Phòng</TableHead>
             <TableHead className="text-center">Trạng Thái</TableHead>
             <TableHead className="text-right">Hành Động</TableHead>
           </TableRow>
@@ -54,8 +54,7 @@ export function TheaterTable({ theaters, isLoading, onEdit, onDelete }: TheaterT
                 </div>
               </TableCell>
               <TableCell className="text-center text-sm">
-                <div className="font-medium">{theater.totalRooms || 0} phòng</div>
-                <div className="text-gray-500 text-xs">~{theater.totalCapacity || 0} ghế</div>
+                <div className="font-medium">{(theater as any).roomCount || 0} phòng</div>
               </TableCell>
               <TableCell className="text-center">
                 <Badge
