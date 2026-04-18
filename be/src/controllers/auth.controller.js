@@ -135,8 +135,11 @@ const authController = {
         return errorResponse(res, "Email hoặc mật khẩu không đúng", 401);
       }
 
+      //Bật/tắt OTP
+      const ENABLE_OTP_LOGIN = false;
+
       // Nếu là Admin, Super-admin hoặc Staff thì chặn lại đòi OTP
-      if (["admin", "super-admin", "staff"].includes(user.role)) {
+      if (ENABLE_OTP_LOGIN && ["admin", "super-admin", "staff"].includes(user.role)) {
         // 1. Tạo mã OTP 6 số ngẫu nhiên
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
