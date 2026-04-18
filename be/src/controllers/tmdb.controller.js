@@ -13,21 +13,15 @@ export const autoSyncTMDB = async () => {
 
         for (const category of categories) {
             console.log(`[TMDB] Đang cào danh mục: ${category}...`);
-
-            const movieRes = await axios.get(
-                `${BASE_URL}/movie/${category}?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`
-            );
+            const movieRes = await axios.get(`${BASE_URL}/movie/${category}?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`);
             const movies = movieRes.data.results;
 
             for (const m of movies) {
                 const exists = await Movie.findOne({ tmdbId: m.id });
-
                 const releaseDateObj = new Date(m.release_date || new Date());
                 const now = new Date();
                 const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
-                const posterLink = m.poster_path
-                    ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
-                    : "https://via.placeholder.com/500x750?text=No+Poster";
+                const posterLink = m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : "https://via.placeholder.com/500x750?text=No+Poster";
 
                 if (!exists) {
                     let realDuration = 90;
@@ -37,13 +31,10 @@ export const autoSyncTMDB = async () => {
                     let genreIdsArray = [];
 
                     try {
-                        const detailRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos,credits`
-                        );
+                        const detailRes = await axios.get(`${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos,credits`);
                         const movieDetail = detailRes.data;
 
                         if (movieDetail.runtime && movieDetail.runtime > 0) realDuration = movieDetail.runtime;
-
                         if (movieDetail.credits) {
                             const directorObj = movieDetail.credits.crew.find(c => c.job === 'Director');
                             if (directorObj) directorName = directorObj.name;
@@ -59,23 +50,14 @@ export const autoSyncTMDB = async () => {
 
                         if (movieDetail.genres && movieDetail.genres.length > 0) {
                             for (const g of movieDetail.genres) {
-                                const genreName = g.name;
-
-                                let existingGenre = await Genre.findOne({
-                                    name: { $regex: new RegExp('^' + genreName + '$', 'i') }
-                                });
-
+                                let existingGenre = await Genre.findOne({ name: { $regex: new RegExp('^' + g.name + '$', 'i') } });
                                 if (!existingGenre) {
-                                    existingGenre = await Genre.create({
-                                        name: genreName,
-                                        description: `Thể loại ${genreName}`
-                                    });
+                                    existingGenre = await Genre.create({ name: g.name, description: `Thể loại ${g.name}` });
                                 }
-
                                 genreIdsArray.push(existingGenre._id);
                             }
                         }
-                    } catch (err) { }
+                    } catch (err) {}
 
                     await Movie.create({
                         title: m.title || m.original_title,
@@ -97,11 +79,8 @@ export const autoSyncTMDB = async () => {
 
                 } else {
                     let needsUpdate = false;
-
                     try {
-                        const detailRes = await axios.get(
-                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`
-                        );
+                        const detailRes = await axios.get(`${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`);
                         const movieDetail = detailRes.data;
 
                         if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
@@ -117,9 +96,7 @@ export const autoSyncTMDB = async () => {
                             if (movieDetail.genres && movieDetail.genres.length > 0) {
                                 let genreIdsArray = [];
                                 for (const g of movieDetail.genres) {
-                                    let existingGenre = await Genre.findOne({
-                                        name: { $regex: new RegExp('^' + g.name + '$', 'i') }
-                                    });
+                                    let existingGenre = await Genre.findOne({ name: { $regex: new RegExp('^' + g.name + '$', 'i') } });
                                     if (!existingGenre) {
                                         existingGenre = await Genre.create({ name: g.name, description: `Thể loại ${g.name}` });
                                     }
@@ -129,7 +106,7 @@ export const autoSyncTMDB = async () => {
                                 needsUpdate = true;
                             }
                         }
-                    } catch (err) { }
+                    } catch (err) {}
 
                     if (exists.isDeleted || needsUpdate) {
                         exists.isDeleted = false;
@@ -141,10 +118,8 @@ export const autoSyncTMDB = async () => {
                 }
             }
         }
-
         console.log(`✅ [TMDB XONG]: Thêm mới ${newCount} phim, Cập nhật ${updateCount} phim.`);
         return true;
-
     } catch (error) {
         console.error("❌ Lỗi cào phim TMDB:", error);
         return false;

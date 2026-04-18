@@ -4,7 +4,6 @@ import { autoSyncTMDB } from '../controllers/tmdb.controller.js';
 
 const movieStatusService = {
     start: () => {
-        // Chạy vào lúc 00:00 mỗi đêm
         cron.schedule('0 0 * * *', async () => {
             console.log("==========================================");
             console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
@@ -15,7 +14,6 @@ const movieStatusService = {
                 const twoMonthsAgo = new Date();
                 twoMonthsAgo.setMonth(now.getMonth() - 2);
 
-                // Cập nhật trạng thái
                 const startShowing = await Movie.updateMany(
                     { status: "Sắp chiếu", releaseDate: { $lte: now } },
                     { $set: { status: "Đang chiếu" } }
@@ -28,7 +26,6 @@ const movieStatusService = {
                 );
                 if (stopShowing.modifiedCount > 0) console.log(`❌ Đã cất kho ${stopShowing.modifiedCount} phim!`);
 
-                // Kích hoạt cỗ máy cào phim
                 console.log("🤖 Đang gọi Robot đi cào phim TMDB...");
                 await autoSyncTMDB();
 
