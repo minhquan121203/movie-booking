@@ -179,6 +179,7 @@ export const handleChat = async (req, res) => {
         try {
             const botResponse = JSON.parse(responseText);
 
+            // Xử lý móc ảnh Poster...
             if (botResponse.type === 'movie_list' && botResponse.data && Array.isArray(botResponse.data.movieIds)) {
                 const listIds = botResponse.data.movieIds;
                 const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
@@ -196,8 +197,17 @@ export const handleChat = async (req, res) => {
             res.json({ botMessage: botResponse });
 
         } catch (error) {
-            console.error("Lỗi Parse JSON:", error);
-            res.json({ botMessage: { text: "Tớ đang xử lý hơi lâu, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
+            // 🔥 NẾU LỖI PARSE JSON (TỨC LÀ AI NÓI CHỮ BÌNH THƯỜNG)
+            console.log("⚠️ AI lười không trả JSON, tự động bọc lại text:", responseText);
+
+            // Tự tạo object chuẩn gửi về cho Frontend
+            res.json({
+                botMessage: {
+                    text: responseText, // Lấy nguyên câu nói của AI nhét vào đây
+                    type: "text",
+                    data: []
+                }
+            });
         }
 
     } catch (error) {
