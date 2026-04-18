@@ -1,6 +1,7 @@
 import axios from "axios";
 import Movie from "../models/movie.model.js";
 import Genre from "../models/genre.model.js";
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
@@ -161,5 +162,3 @@ export const autoSyncTMDB = async () => {
         return false;
     }
 };
-
-export default movieStatusService;
