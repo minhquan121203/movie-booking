@@ -113,14 +113,18 @@ export const handleChat = async (req, res) => {
         const prompt = `
             Câu hỏi của khách: "${userMessage}"
             
-            Dựa vào Kho dữ liệu trên, hãy trả lời khách hàng.
-            BẮT BUỘC trả về đúng cấu trúc JSON sau:
+            Dựa vào Kho dữ liệu trên, hãy tư vấn cho khách.
+            QUY TẮC BẮT BUỘC CHO KẾT QUẢ JSON:
+            1. NẾU BẠN GIỚI THIỆU PHIM (Gợi ý phim hot, phim theo thể loại, phim theo tâm trạng): BẮT BUỘC "type" PHẢI LÀ "movie_list", và "data.movieIds" BẮT BUỘC phải là 1 mảng chứa các ID phim (Lấy chính xác chuỗi ID nằm trong [ID: ...] ở kho dữ liệu).
+            2. NẾU KHÁCH MUỐN ĐẶT 1 PHIM CỤ THỂ: "type" là "action_booking", "data.movieId" là ID phim đó.
+            3. CÒN LẠI CHỈ LÀ TRÒ CHUYỆN: "type" là "text".
+            
+            Format JSON TRẢ VỀ:
             {
-                "text": "Câu trả lời an ủi/tư vấn của bạn",
-                "type": "text" | "movie_list" | "action_booking",
-                "data": { 
-                    "movieId": "Dùng_khi_type_là_action_booking",
-                    "movieIds": ["ID_phim_1", "ID_phim_2"] 
+                "text": "Câu trả lời thân thiện của bạn",
+                "type": "movie_list", 
+                "data": {
+                    "movieIds": ["id_phim_1", "id_phim_2"]
                 }
             }
         `;
@@ -130,28 +134,34 @@ export const handleChat = async (req, res) => {
 
         try {
             const botResponse = JSON.parse(responseText);
+
+            console.log("🤖 [AI TRẢ VỀ]:", JSON.stringify(botResponse, null, 2));
+
+            if (botResponse.type === 'movie_list' && botResponse.data && Array.isArray(botResponse.data.movieIds)) {
+                const listIds = botResponse.data.movieIds;
+
+                const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
+
+                botResponse.data = foundMovies.map(m => ({
+                    _id: m._id,
+                    title: m.title,
+                    genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
+                    poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
+                }));
+            } else if (botResponse.type === 'text' || !botResponse.data) {
+                botResponse.data = [];
+            }
+
             res.json({ botMessage: botResponse });
+
         } catch (error) {
-            res.json({ botMessage: { text: "Tớ đang xử lý hơi lâu, fen đợi tí hỏi lại tớ nha!", type: "text", data: {} } });
+            console.error("Lỗi Parse JSON:", error);
+            res.json({ botMessage: { text: "Tớ đang xử lý hơi lâu, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
         }
 
     } catch (error) {
         console.error("Lỗi Server hoặc AI:", error);
-
-        if (botResponse.type === 'movie_list' && botResponse.data && botResponse.data.movieIds) {
-            const listIds = botResponse.data.movieIds;
-
-            const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
-
-            botResponse.data = foundMovies.map(m => ({
-                _id: m._id,
-                title: m.title,
-                genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
-                poster: m.posterUrl || m.image || "https://placehold.co/150x200?text=No+Poster"
-            }));
-        }
-
-        res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: {} } });
+        res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
     }
 };
 
