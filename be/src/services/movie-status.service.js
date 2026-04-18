@@ -37,6 +37,9 @@ const movieStatusService = {
             } catch (error) {
                 console.error("❌ Lỗi Cron Job cập nhật trạng thái phim:", error);
             }
+        },{
+            scheduled: true,
+            timezone: "Asia/Ho_Chi_Minh"
         });
 
         console.log("🎬 Movie Status Updater (Vòng đời phim & Đồng bộ TMDB) started!");
