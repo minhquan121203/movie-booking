@@ -637,12 +637,6 @@ router.get(
 // ============================================
 
 // Movie management (Admin)
-router.post(
-    "/admin/movies/sync-tmdb",
-    authenticateToken,
-    authorize("admin", "super-admin"),
-    tmdbController.syncTMDB
-);  //API TMDB
 router.post("/admin/movies", authenticateToken, authorize("admin", "super-admin"), movieController.createMovie);
 router.put("/admin/movies/:id", authenticateToken, authorize("admin", "super-admin"), movieController.updateMovie);
 router.delete("/admin/movies/:id", authenticateToken, authorize("admin", "super-admin"), movieController.deleteMovie);
