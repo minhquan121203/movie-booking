@@ -7,9 +7,9 @@ const movieStatusService = {
         console.log("🚀 [TEST] Đang ép Robot chạy ngay lập tức để fen kiểm tra...");
         autoSyncTMDB();
 
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('0 2 * * *', async () => {
             console.log("==========================================");
-            console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
+            console.log("⏰ [CRON JOB 02:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
             console.log("==========================================");
 
             try {
