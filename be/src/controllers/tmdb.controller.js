@@ -1,19 +1,18 @@
 import axios from "axios";
 import Movie from "../models/movie.model.js";
-import Genre from "../models/genre.model.js";
-import { successResponse, errorResponse } from "../utils/response.js";
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
-export const syncTMDB = async (req, res) => {
+// 🔥 Hàm này giờ là CỖ MÁY CHẠY NGẦM, không dính dáng gì tới API Frontend nữa
+export const autoSyncTMDB = async () => {
     try {
         let newCount = 0;
         let updateCount = 0;
         const categories = ["now_playing", "upcoming"];
 
         for (const category of categories) {
-            console.log(`Đang cào danh mục: ${category}...`);
+            console.log(`[TMDB] Đang cào danh mục: ${category}...`);
 
             const movieRes = await axios.get(
                 `${BASE_URL}/movie/${category}?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`
@@ -30,7 +29,6 @@ export const syncTMDB = async (req, res) => {
                     ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
                     : "https://via.placeholder.com/500x750?text=No+Poster";
 
-                // 🔥 NẾU PHIM CHƯA CÓ -> TẠO MỚI (Như cũ)
                 if (!exists) {
                     let realDuration = 90;
                     let trailerLink = "";
@@ -76,12 +74,9 @@ export const syncTMDB = async (req, res) => {
                     });
                     newCount++;
 
-                }
-                // 🔥 NẾU PHIM ĐÃ CÓ MÀ THIẾU DIỄN VIÊN -> ÉP CẬP NHẬT LUÔN
-                else {
+                } else {
                     let needsUpdate = false;
 
-                    // Kiểm tra xem phim có bị thiếu Đạo diễn hoặc Diễn viên không
                     if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
                         try {
                             const detailRes = await axios.get(
@@ -105,10 +100,9 @@ export const syncTMDB = async (req, res) => {
                         } catch (err) { console.log(`⚠️ Lỗi lấy cập nhật credits cho phim ${m.id}`); }
                     }
 
-                    // Nếu phim bị xóa mềm hoặc cần update dữ liệu -> Lưu lại
                     if (exists.isDeleted || needsUpdate) {
                         exists.isDeleted = false;
-                        exists.posterUrl = posterLink; // Cập nhật luôn poster mới nhất
+                        exists.posterUrl = posterLink;
                         exists.status = currentStatus;
                         await exists.save();
                         updateCount++;
@@ -117,15 +111,12 @@ export const syncTMDB = async (req, res) => {
             }
         }
 
-        return res.status(200).json({
-            success: true,
-            message: `Hoàn tất! Đã thêm mới ${newCount} phim và cập nhật Đạo diễn/Diễn viên cho ${updateCount} phim cũ.`,
-        });
+        // Thay vì res.json, mình chỉ cần in log ra màn hình server
+        console.log(`✅ [TMDB XONG]: Thêm mới ${newCount} phim, Cập nhật ${updateCount} phim.`);
+        return true;
 
     } catch (error) {
-        console.error("❌ Lỗi đồng bộ TMDB:", error);
-        return res.status(500).json({ message: "Lỗi server khi đồng bộ" });
+        console.error("❌ Lỗi cào phim TMDB:", error);
+        return false;
     }
 };
-
-export default { syncTMDB };

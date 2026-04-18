@@ -1,11 +1,14 @@
 import cron from 'node-cron';
 import Movie from '../models/movie.model.js';
+import { autoSyncTMDB } from '../controllers/movie.controller.js';
 
 const movieStatusService = {
     start: () => {
         // Chạy vào lúc 00:00 mỗi đêm
         cron.schedule('0 0 * * *', async () => {
-            console.log("⏰ [CRON JOB] Đang quét hệ thống để cập nhật vòng đời phim...");
+            console.log("==========================================");
+            console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
+            console.log("==========================================");
 
             try {
                 const now = new Date();
@@ -14,7 +17,7 @@ const movieStatusService = {
                 const twoMonthsAgo = new Date();
                 twoMonthsAgo.setMonth(now.getMonth() - 2);
 
-                // SẮP CHIẾU -> ĐANG CHIẾU (Phim Sắp chiếu mà ngày phát hành <= hôm nay)
+                // SẮP CHIẾU -> ĐANG CHIẾU
                 const startShowing = await Movie.updateMany(
                     {
                         status: "Sắp chiếu",
@@ -27,7 +30,7 @@ const movieStatusService = {
                     console.log(`✅ [CRON JOB] Đã đưa ${startShowing.modifiedCount} phim ra rạp (Đang chiếu)!`);
                 }
 
-                // ĐANG CHIẾU -> NGỪNG CHIẾU (Phim Đang chiếu mà ngày phát hành <= 2 tháng trước)
+                // ĐANG CHIẾU -> NGỪNG CHIẾU
                 const stopShowing = await Movie.updateMany(
                     {
                         status: "Đang chiếu",
@@ -44,12 +47,17 @@ const movieStatusService = {
                     console.log("💤 [CRON JOB] Hôm nay không có phim nào cần đổi trạng thái.");
                 }
 
+                // GỌI ROBOT ĐI CÀO PHIM TMDB
+                console.log("🤖 Đang gọi Robot đi cào phim TMDB...");
+                await autoSyncTMDB();
+                console.log("🏁 [CRON JOB] HOÀN TẤT TOÀN BỘ CÔNG VIỆC ĐÊM NAY!");
+
             } catch (error) {
                 console.error("❌ Lỗi Cron Job cập nhật trạng thái phim:", error);
             }
         });
 
-        console.log("🎬 Movie Status Updater (Vòng đời phim 2 tháng) started!");
+        console.log("🎬 Movie Status Updater (Vòng đời phim & Đồng bộ TMDB) started!");
     }
 };
 
