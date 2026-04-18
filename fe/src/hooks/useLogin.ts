@@ -74,6 +74,7 @@ export const useLogin = () => {
 
       // Ưu tiên 2: Điều hướng theo Role
       switch (role) {
+        case 'super-admin':
         case 'admin':
           router.push('/admin')
           break

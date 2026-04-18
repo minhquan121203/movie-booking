@@ -169,7 +169,6 @@ function LoginContent() {
         <div className="max-w-md w-full space-y-8">
           
           {step === 1 ? (
-            // ================= FORM ĐĂNG NHẬP (BƯỚC 1) =================
             <div className="animate-in fade-in slide-in-from-left-4 duration-500">
               <div className="space-y-2 mb-8">
                 <h2 className="text-3xl font-semibold text-gray-900">Hey there, welcome back.</h2>
@@ -232,7 +231,7 @@ function LoginContent() {
               </form>
             </div>
           ) : (
-            // ================= FORM NHẬP OTP 6 SỐ (BƯỚC 2) =================
+            //NHẬP OTP 6 SỐ 
             <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center space-y-3">
                 <div className="mx-auto w-16 h-16 bg-primary/10 text-primary flex items-center justify-center rounded-full mb-4">
