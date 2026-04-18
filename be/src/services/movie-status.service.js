@@ -1,63 +1,164 @@
-import cron from 'node-cron';
-import Movie from '../models/movie.model.js';
-import { autoSyncTMDB } from '../controllers/movie.controller.js';
+import axios from "axios";
+import Movie from "../models/movie.model.js";
+import Genre from "../models/genre.model.js";
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const BASE_URL = "https://api.themoviedb.org/3";
 
-const movieStatusService = {
-    start: () => {
-        // Chạy vào lúc 00:00 mỗi đêm
-        cron.schedule('0 0 * * *', async () => {
-            console.log("==========================================");
-            console.log("⏰ [CRON JOB 00:00] BẮT ĐẦU DỌN DẸP & CẬP NHẬT HỆ THỐNG");
-            console.log("==========================================");
+export const autoSyncTMDB = async () => {
+    try {
+        let newCount = 0;
+        let updateCount = 0;
+        const categories = ["now_playing", "upcoming"];
 
-            try {
+        for (const category of categories) {
+            console.log(`[TMDB] Đang cào danh mục: ${category}...`);
+
+            const movieRes = await axios.get(
+                `${BASE_URL}/movie/${category}?api_key=${TMDB_API_KEY}&language=vi-VN&page=1`
+            );
+            const movies = movieRes.data.results;
+
+            for (const m of movies) {
+                const exists = await Movie.findOne({ tmdbId: m.id });
+
+                const releaseDateObj = new Date(m.release_date || new Date());
                 const now = new Date();
+                const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
+                const posterLink = m.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+                    : "https://via.placeholder.com/500x750?text=No+Poster";
 
-                // Tính toán mốc thời gian 2 tháng trước (Khoảng 60 ngày)
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(now.getMonth() - 2);
+                if (!exists) {
+                    let realDuration = 90;
+                    let trailerLink = "";
+                    let directorName = "Đang cập nhật";
+                    let actorsArray = [];
+                    let genreIdsArray = []; // 🔥 Mảng chứa ID thể loại
 
-                // SẮP CHIẾU -> ĐANG CHIẾU
-                const startShowing = await Movie.updateMany(
-                    {
-                        status: "Sắp chiếu",
-                        releaseDate: { $lte: now }
-                    },
-                    { $set: { status: "Đang chiếu" } }
-                );
+                    try {
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=videos,credits`
+                        );
+                        const movieDetail = detailRes.data;
 
-                if (startShowing.modifiedCount > 0) {
-                    console.log(`✅ [CRON JOB] Đã đưa ${startShowing.modifiedCount} phim ra rạp (Đang chiếu)!`);
+                        if (movieDetail.runtime && movieDetail.runtime > 0) realDuration = movieDetail.runtime;
+
+                        if (movieDetail.credits) {
+                            const directorObj = movieDetail.credits.crew.find(c => c.job === 'Director');
+                            if (directorObj) directorName = directorObj.name;
+                            const topCast = movieDetail.credits.cast.slice(0, 5).map(actor => actor.name);
+                            if (topCast.length > 0) actorsArray = topCast;
+                        }
+
+                        const videos = movieDetail.videos?.results || [];
+                        if (videos.length > 0) {
+                            const selectedVideo = videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "vi") || videos.find(v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "en") || videos.find(v => v.site === "YouTube");
+                            if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
+                        }
+
+                        // LOGIC XỬ LÝ THỂ LOẠI (GENRES)
+                        if (movieDetail.genres && movieDetail.genres.length > 0) {
+                            for (const g of movieDetail.genres) {
+                                const genreName = g.name;
+
+                                let existingGenre = await Genre.findOne({
+                                    name: { $regex: new RegExp('^' + genreName + '$', 'i') }
+                                });
+
+                                if (!existingGenre) {
+                                    existingGenre = await Genre.create({
+                                        name: genreName,
+                                        description: `Thể loại ${genreName}`
+                                    });
+                                    console.log(`🆕 Đã tự động tạo thêm thể loại mới: ${genreName}`);
+                                }
+
+                                genreIdsArray.push(existingGenre._id);
+                            }
+                        }
+                    } catch (err) { console.log(`⚠️ Lỗi lấy chi tiết phim ${m.id}`); }
+
+                    await Movie.create({
+                        title: m.title || m.original_title,
+                        tmdbId: m.id,
+                        description: m.overview,
+                        posterUrl: posterLink,
+                        trailerUrl: trailerLink,
+                        releaseDate: releaseDateObj,
+                        status: currentStatus,
+                        country: "Hoa Kỳ",
+                        duration: realDuration,
+                        language: "Tiếng Anh",
+                        rating: "C13",
+                        director: directorName,
+                        actors: actorsArray,
+                        genres: genreIdsArray,
+                    });
+                    newCount++;
+
+                } else {
+                    let needsUpdate = false;
+
+                    try {
+                        const detailRes = await axios.get(
+                            `${BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&language=vi-VN&append_to_response=credits`
+                        );
+                        const movieDetail = detailRes.data;
+
+                        // Cập nhật Đạo diễn / Diễn viên nếu thiếu
+                        if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
+                            if (movieDetail.credits) {
+                                const directorObj = movieDetail.credits.crew.find(c => c.job === 'Director');
+                                if (directorObj) {
+                                    exists.director = directorObj.name;
+                                    needsUpdate = true;
+                                }
+
+                                const topCast = movieDetail.credits.cast.slice(0, 5).map(actor => actor.name);
+                                if (topCast.length > 0) {
+                                    exists.actors = topCast;
+                                    needsUpdate = true;
+                                }
+                            }
+                        }
+
+                        // CẬP NHẬT LẠI THỂ LOẠI NẾU PHIM CŨ ĐANG BỊ TRỐNG
+                        if (!exists.genres || exists.genres.length === 0) {
+                            if (movieDetail.genres && movieDetail.genres.length > 0) {
+                                let genreIdsArray = [];
+                                for (const g of movieDetail.genres) {
+                                    let existingGenre = await Genre.findOne({
+                                        name: { $regex: new RegExp('^' + g.name + '$', 'i') }
+                                    });
+                                    if (!existingGenre) {
+                                        existingGenre = await Genre.create({ name: g.name, description: `Thể loại ${g.name}` });
+                                    }
+                                    genreIdsArray.push(existingGenre._id);
+                                }
+                                exists.genres = genreIdsArray;
+                                needsUpdate = true;
+                            }
+                        }
+
+                    } catch (err) { console.log(`⚠️ Lỗi lấy cập nhật chi tiết cho phim ${m.id}`); }
+
+                    if (exists.isDeleted || needsUpdate) {
+                        exists.isDeleted = false;
+                        exists.posterUrl = posterLink;
+                        exists.status = currentStatus;
+                        await exists.save();
+                        updateCount++;
+                    }
                 }
-
-                // ĐANG CHIẾU -> NGỪNG CHIẾU
-                const stopShowing = await Movie.updateMany(
-                    {
-                        status: "Đang chiếu",
-                        releaseDate: { $lte: twoMonthsAgo }
-                    },
-                    { $set: { status: "Ngừng chiếu" } }
-                );
-
-                if (stopShowing.modifiedCount > 0) {
-                    console.log(`❌ [CRON JOB] Đã cất kho ${stopShowing.modifiedCount} phim quá hạn 2 tháng (Ngừng chiếu)!`);
-                }
-
-                if (startShowing.modifiedCount === 0 && stopShowing.modifiedCount === 0) {
-                    console.log("💤 [CRON JOB] Hôm nay không có phim nào cần đổi trạng thái.");
-                }
-
-                // GỌI ROBOT ĐI CÀO PHIM TMDB
-                console.log("🤖 Đang gọi Robot đi cào phim TMDB...");
-                await autoSyncTMDB();
-                console.log("🏁 [CRON JOB] HOÀN TẤT TOÀN BỘ CÔNG VIỆC ĐÊM NAY!");
-
-            } catch (error) {
-                console.error("❌ Lỗi Cron Job cập nhật trạng thái phim:", error);
             }
-        });
+        }
 
-        console.log("🎬 Movie Status Updater (Vòng đời phim & Đồng bộ TMDB) started!");
+        console.log(`✅ [TMDB XONG]: Thêm mới ${newCount} phim, Cập nhật ${updateCount} phim.`);
+        return true;
+
+    } catch (error) {
+        console.error("❌ Lỗi cào phim TMDB:", error);
+        return false;
     }
 };
 

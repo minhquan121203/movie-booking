@@ -1,10 +1,10 @@
 import axios from "axios";
 import Movie from "../models/movie.model.js";
+import authController from "./auth.controller.js";
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
-// 🔥 Hàm này giờ là CỖ MÁY CHẠY NGẦM, không dính dáng gì tới API Frontend nữa
 export const autoSyncTMDB = async () => {
     try {
         let newCount = 0;
@@ -111,7 +111,6 @@ export const autoSyncTMDB = async () => {
             }
         }
 
-        // Thay vì res.json, mình chỉ cần in log ra màn hình server
         console.log(`✅ [TMDB XONG]: Thêm mới ${newCount} phim, Cập nhật ${updateCount} phim.`);
         return true;
 
@@ -120,3 +119,5 @@ export const autoSyncTMDB = async () => {
         return false;
     }
 };
+
+export default autoSyncTMDB;
