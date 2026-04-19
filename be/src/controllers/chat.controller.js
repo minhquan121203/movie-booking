@@ -5,20 +5,29 @@ import Schedule from "../models/schedule.model.js";
 import Product from "../models/product.model.js";
 import Voucher from "../models/voucher.model.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const apiKeys = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()) : [];
+let currentKeyIndex = 0; // Biến đánh dấu đang dùng Key số mấy
 
 export const handleChat = async (req, res) => {
     const { userMessage, history = [], userName = "Khách VIP" } = req.body;
 
     try {
+        // 🔥 GỌI AI BẰNG KEY HIỆN TẠI TRƯỚC KHI LÀM NHỮNG VIỆC KHÁC
+        if (apiKeys.length === 0) {
+            console.error("❌ Chưa cấu hình biến GEMINI_API_KEYS trong file .env");
+            return res.status(500).json({ botMessage: { text: "Hệ thống đang bảo trì AI, fen quay lại sau nhé!", type: "text", data: [] } });
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKeys[currentKeyIndex]);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
         const now = new Date();
         const next7Days = new Date();
         next7Days.setDate(now.getDate() + 7);
 
         // 1. LẤY DATA VÀ POPULATE ĐẦY ĐỦ (ĐẶC BIỆT LÀ THỂ LOẠI)
         const [movies, theaters, rawSchedules, products, vouchers] = await Promise.all([
-            // 🔥 Thêm populate('genres') để lấy được chữ "Hành động", "Tình cảm"...
+            // Thêm populate('genres') để lấy được chữ "Hành động", "Tình cảm"...
             Movie.find({ status: "Đang chiếu" }).populate('genres', 'name'),
             Theater.find({ isActive: true }),
             Schedule.find()
@@ -223,6 +232,26 @@ export const handleChat = async (req, res) => {
 
     } catch (error) {
         console.error("Lỗi Server hoặc AI:", error);
+
+        // LỖI 429: NẾU GOOGLE BÁO HẾT LƯỢT THÌ TỰ ĐỘNG ĐỔI KEY
+        if (error.message && error.message.includes("429")) {
+            console.log(`❌ Cảnh báo: Key số ${currentKeyIndex + 1} đã cạn kiệt!`);
+
+            // Sang số: Tăng index lên 1. Nếu hết key thì quay vòng lại số 0.
+            currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+
+            console.log(`✅ Đã tự động sang số, chuyển sang Key số ${currentKeyIndex + 1}.`);
+
+            return res.json({
+                botMessage: {
+                    text: "Hệ thống vừa đổi cụm máy chủ để tăng tốc độ. Fen vui lòng gửi lại tin nhắn vừa rồi giúp tớ nhé!",
+                    type: "text",
+                    data: []
+                }
+            });
+        }
+
+        // Các lỗi khác không phải 429 (mất mạng, code sai...)
         res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
     }
 };
