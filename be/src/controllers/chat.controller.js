@@ -138,21 +138,31 @@ export const handleChat = async (req, res) => {
             tools: agentTools,
         });
 
-        const prompt = `
-            Câu nói HIỆN TẠI của khách là: "${userMessage}"
-            
-            BƯỚC 1: KIỂM TRA ĐIỀU KIỆN GỌI HÀM
-            - Nếu câu nói của khách đưa ra Tên Rạp (trong khi câu trước đang nói về một bộ phim): Bạn BẮT BUỘC phải TỰ GHÉP tên phim đó và tên rạp này lại, rồi GỌI NGAY HÀM "check_seat_details".
-            - KHÔNG ĐƯỢC HỎI LẠI KHÁCH LÀ "BẠN MUỐN XEM PHIM GÌ" nếu trong lịch sử gần nhất bạn vừa nhắc đến tên phim đó xong! Trí nhớ của bạn phải hoạt động!
+        const recentChats = safeHistory.slice(-4).map(msg => {
+            let text = typeof msg.content === 'string' ? msg.content : (msg.content?.text || "");
+            return `${msg.role === 'user' ? 'Khách' : 'Bot'}: ${text}`;
+        }).join('\n');
 
-            BƯỚC 2: QUY TẮC TRẢ JSON
-            1. NẾU GIỚI THIỆU PHIM: BẮT BUỘC "type" là "movie_list", và "data.movieIds" chứa ID phim.
-            2. NẾU ĐẶT 1 PHIM: "type" là "action_booking", "data.movieId" là ID phim đó.
-            3. TRÒ CHUYỆN BÌNH THƯỜNG: "type" là "text".
+        const prompt = `
+            🚨 BỐI CẢNH GIAO TIẾP (ĐỌC KỸ TRƯỚC KHI TRẢ LỜI):
+            Đoạn hội thoại vừa diễn ra:
+            ${recentChats}
+            
+            Câu nói HIỆN TẠI của khách: "${userMessage}"
+            
+            🚨 LỆNH BẮT BUỘC KHẨN CẤP:
+            Nhìn vào đoạn hội thoại trên! Nếu Khách đang bổ sung Tên Rạp (hoặc Tên Phim), hãy TỰ ĐỘNG GHÉP với câu hỏi ngay trước đó của họ.
+            -> NẾU TRONG BỐI CẢNH TRÊN ĐÃ XUẤT HIỆN ĐỦ TÊN PHIM VÀ TÊN RẠP: BẮT BUỘC GỌI HÀM "check_seat_details" NGAY LẬP TỨC! 
+            -> TUYỆT ĐỐI KHÔNG ĐƯỢC CHAT HỎI LẠI LÀ "Bạn muốn xem phim gì/ở rạp nào?" NỮA!!!
+            
+            QUY TẮC TRẢ JSON (Chỉ áp dụng nếu không gọi hàm):
+            1. NẾU GIỚI THIỆU PHIM: "type" là "movie_list", "data.movieIds" chứa mảng ID.
+            2. NẾU ĐẶT 1 PHIM: "type" là "action_booking", "data.movieId" là ID.
+            3. TRÒ CHUYỆN BÌNH THƯỜNG: "type" là "text", "data": [].
             
             Format JSON TRẢ VỀ:
             {
-                "text": "Câu trả lời thân thiện của bạn",
+                "text": "Câu trả lời của bạn",
                 "type": "text", 
                 "data": []
             }
