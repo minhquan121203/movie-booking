@@ -114,18 +114,12 @@ export const handleChat = async (req, res) => {
         const agentTools = [{
             functionDeclarations: [{
                 name: "check_seat_details",
-                description: "Kiểm tra số lượng ghế trống của một suất chiếu.",
+                description: "Kiểm tra số lượng ghế trống. BẮT BUỘC gọi hàm này khi bạn đã thu thập đủ Tên Phim và Tên Rạp từ cuộc trò chuyện.",
                 parameters: {
                     type: "OBJECT",
                     properties: {
-                        tenPhim: {
-                            type: "STRING",
-                            description: "Trích xuất CHÍNH XÁC tên phim mà khách đã nhắc đến trong lịch sử chat. TUYỆT ĐỐI KHÔNG tự bịa ra tên phim khác, KHÔNG tự ý thay thế bằng các phim có trong danh sách."
-                        },
-                        tenRap: {
-                            type: "STRING",
-                            description: "Tên rạp mà khách muốn xem (Ví dụ: royal city, lotte hà đông). Tự động lấy từ câu nói hiện tại hoặc lịch sử."
-                        }
+                        tenPhim: { type: "STRING", description: "Tên phim. Phải tự động tìm trong lịch sử chat nếu câu hiện tại không có." },
+                        tenRap: { type: "STRING", description: "Tên rạp. Phải tự động tìm trong lịch sử chat nếu câu hiện tại không có." }
                     },
                     required: ["tenPhim", "tenRap"]
                 }
@@ -144,22 +138,20 @@ export const handleChat = async (req, res) => {
         }).join('\n');
 
         const prompt = `
-            Đoạn chat gần nhất:
-            ${recentChats}
+            Câu nói HIỆN TẠI của khách: "${userMessage}"
             
-            Câu khách vừa gõ: "${userMessage}"
-            
-            🚨 LỆNH KHẨN CẤP DÀNH CHO BẠN:
-            1. Dựa vào đoạn chat trên, Khách đang muốn hỏi ghế cho phim nào và rạp nào?
-            2. Nếu đã gom đủ Tên Phim và Tên Rạp -> BẮT BUỘC GỌI HÀM "check_seat_details" NGAY. 
-            3. QUAN TRỌNG: Phải truyền ĐÚNG tên phim khách gõ vào hàm. Tuyệt đối không được tự ý đổi tên phim của khách thành "Super Mario", "Thoát Khỏi Tận Thế" hay bất kỳ phim nào khác!!!
+            🚨 LỆNH TỐI CAO TỪ HỆ THỐNG:
+            - Chú ý: Khách hàng thường chat ngắt quãng! (Ví dụ: Câu trước hỏi phim, câu này mới nhập tên rạp).
+            - NHIỆM VỤ CỦA BẠN: Khám xét ngay lịch sử chat. Nếu câu trước khách vừa nhắc đến một bộ phim, và câu này khách nhập tên rạp -> BẠN ĐÃ CÓ ĐỦ 2 THAM SỐ.
+            - NGHIÊM CẤM BẠN CHAT BẰNG CHỮ ĐỂ HỎI LẠI TÊN PHIM/TÊN RẠP NỮA! 
+            - BẮT BUỘC PHẢI GỌI HÀM "check_seat_details" NGAY LẬP TỨC!
 
-            QUY TẮC TRẢ JSON (Nếu không gọi hàm):
-            1. GIỚI THIỆU PHIM: "type": "movie_list", "data": { "movieIds": ["id_phim"] }
-            2. ĐẶT PHIM: "type": "action_booking", "data": { "movieId": "id_phim" }
-            3. TRÒ CHUYỆN: "type": "text", "data": []
+            QUY TẮC JSON (Chỉ dùng khi trò chuyện bình thường, KHÔNG dùng khi gọi hàm):
+            1. GIỚI THIỆU PHIM: "type": "movie_list"
+            2. ĐẶT PHIM: "type": "action_booking"
+            3. TRÒ CHUYỆN: "type": "text"
             
-            Format JSON:
+            Format JSON TRẢ VỀ:
             {
                 "text": "Câu trả lời của bạn",
                 "type": "text", 
