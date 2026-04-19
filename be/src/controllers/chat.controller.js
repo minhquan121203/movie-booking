@@ -114,17 +114,17 @@ export const handleChat = async (req, res) => {
         const agentTools = [{
             functionDeclarations: [{
                 name: "check_seat_details",
-                description: "Hành động này được tự động gọi khi khách muốn biết CÒN GHẾ KHÔNG. Bạn PHẢI đọc cả câu nói hiện tại VÀ lịch sử chat để lấy dữ liệu.",
+                description: "Kiểm tra ghế trống. BẮT BUỘC GỌI HÀM NÀY nếu khách đang hỏi ghế và bạn ĐÃ BIẾT đủ tên phim + tên rạp (từ lịch sử hoặc hiện tại).",
                 parameters: {
                     type: "OBJECT",
                     properties: {
                         tenPhim: {
                             type: "STRING",
-                            description: "Tên phim. CỰC KỲ QUAN TRỌNG: Nếu câu nói hiện tại của khách KHÔNG CÓ tên phim, BẮT BUỘC phải đọc ngược lại lịch sử chat để tìm xem trước đó khách đang nói về phim nào."
+                            description: "Tên phim. (TỰ ĐỘNG TÌM TRONG LỊCH SỬ nếu câu hiện tại khách chỉ đọc tên rạp)"
                         },
                         tenRap: {
                             type: "STRING",
-                            description: "Tên rạp. Tương tự, nếu câu hiện tại chỉ có tên phim, BẮT BUỘC tìm trong lịch sử chat xem khách có nhắc đến rạp nào không."
+                            description: "Tên rạp. (TỰ ĐỘNG TÌM TRONG LỊCH SỬ nếu câu hiện tại khách chỉ đọc tên phim)"
                         }
                     },
                     required: ["tenPhim", "tenRap"]
@@ -139,18 +139,16 @@ export const handleChat = async (req, res) => {
         });
 
         const prompt = `
-            Lịch sử trò chuyện đã được cung cấp đầy đủ trong bộ nhớ của bạn.
             Câu nói HIỆN TẠI của khách là: "${userMessage}"
             
-            🚨 LỜI NHẮC ĐẶC BIỆT:
-            Khách hàng thường nói chuyện ngắt quãng. (VD: Câu trước hỏi "Phim Cô Dâu", câu sau trả lời "Rạp Cầu Giấy"). 
-            Nhiệm vụ của bạn là: TỰ LẮP GHÉP thông tin từ lịch sử. Nếu đã có đủ "Tên Phim" và "Tên Rạp" từ các câu thoại trước đó + hiện tại, BẮT BUỘC gọi ngay hàm "check_seat_details", KHÔNG ĐƯỢC CHAT NHẢM HỎI LẠI!
-            
-            Dựa vào Kho dữ liệu trên, hãy tư vấn cho khách.
-            QUY TẮC BẮT BUỘC CHO KẾT QUẢ JSON:
-            1. NẾU BẠN GIỚI THIỆU PHIM: BẮT BUỘC "type" PHẢI LÀ "movie_list", và "data.movieIds" chứa mảng các ID phim.
-            2. NẾU KHÁCH MUỐN ĐẶT 1 PHIM CỤ THỂ: "type" là "action_booking", "data.movieId" là ID phim đó.
-            3. CÒN LẠI CHỈ LÀ TRÒ CHUYỆN: "type" là "text".
+            BƯỚC 1: KIỂM TRA ĐIỀU KIỆN GỌI HÀM
+            - Nếu câu nói của khách đưa ra Tên Rạp (trong khi câu trước đang nói về một bộ phim): Bạn BẮT BUỘC phải TỰ GHÉP tên phim đó và tên rạp này lại, rồi GỌI NGAY HÀM "check_seat_details".
+            - KHÔNG ĐƯỢC HỎI LẠI KHÁCH LÀ "BẠN MUỐN XEM PHIM GÌ" nếu trong lịch sử gần nhất bạn vừa nhắc đến tên phim đó xong! Trí nhớ của bạn phải hoạt động!
+
+            BƯỚC 2: QUY TẮC TRẢ JSON
+            1. NẾU GIỚI THIỆU PHIM: BẮT BUỘC "type" là "movie_list", và "data.movieIds" chứa ID phim.
+            2. NẾU ĐẶT 1 PHIM: "type" là "action_booking", "data.movieId" là ID phim đó.
+            3. TRÒ CHUYỆN BÌNH THƯỜNG: "type" là "text".
             
             Format JSON TRẢ VỀ:
             {
