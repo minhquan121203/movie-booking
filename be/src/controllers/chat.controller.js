@@ -114,17 +114,17 @@ export const handleChat = async (req, res) => {
         const agentTools = [{
             functionDeclarations: [{
                 name: "check_seat_details",
-                description: "Kiểm tra ghế trống. BẮT BUỘC GỌI HÀM NÀY nếu khách đang hỏi ghế và bạn ĐÃ BIẾT đủ tên phim + tên rạp (từ lịch sử hoặc hiện tại).",
+                description: "Kiểm tra số lượng ghế trống của một suất chiếu.",
                 parameters: {
                     type: "OBJECT",
                     properties: {
                         tenPhim: {
                             type: "STRING",
-                            description: "Tên phim. (TỰ ĐỘNG TÌM TRONG LỊCH SỬ nếu câu hiện tại khách chỉ đọc tên rạp)"
+                            description: "Trích xuất CHÍNH XÁC tên phim mà khách đã nhắc đến trong lịch sử chat. TUYỆT ĐỐI KHÔNG tự bịa ra tên phim khác, KHÔNG tự ý thay thế bằng các phim có trong danh sách."
                         },
                         tenRap: {
                             type: "STRING",
-                            description: "Tên rạp. (TỰ ĐỘNG TÌM TRONG LỊCH SỬ nếu câu hiện tại khách chỉ đọc tên phim)"
+                            description: "Tên rạp mà khách muốn xem (Ví dụ: royal city, lotte hà đông). Tự động lấy từ câu nói hiện tại hoặc lịch sử."
                         }
                     },
                     required: ["tenPhim", "tenRap"]
@@ -144,23 +144,22 @@ export const handleChat = async (req, res) => {
         }).join('\n');
 
         const prompt = `
-            🚨 BỐI CẢNH GIAO TIẾP (ĐỌC KỸ TRƯỚC KHI TRẢ LỜI):
-            Đoạn hội thoại vừa diễn ra:
+            Đoạn chat gần nhất:
             ${recentChats}
             
-            Câu nói HIỆN TẠI của khách: "${userMessage}"
+            Câu khách vừa gõ: "${userMessage}"
             
-            🚨 LỆNH BẮT BUỘC KHẨN CẤP:
-            Nhìn vào đoạn hội thoại trên! Nếu Khách đang bổ sung Tên Rạp (hoặc Tên Phim), hãy TỰ ĐỘNG GHÉP với câu hỏi ngay trước đó của họ.
-            -> NẾU TRONG BỐI CẢNH TRÊN ĐÃ XUẤT HIỆN ĐỦ TÊN PHIM VÀ TÊN RẠP: BẮT BUỘC GỌI HÀM "check_seat_details" NGAY LẬP TỨC! 
-            -> TUYỆT ĐỐI KHÔNG ĐƯỢC CHAT HỎI LẠI LÀ "Bạn muốn xem phim gì/ở rạp nào?" NỮA!!!
+            🚨 LỆNH KHẨN CẤP DÀNH CHO BẠN:
+            1. Dựa vào đoạn chat trên, Khách đang muốn hỏi ghế cho phim nào và rạp nào?
+            2. Nếu đã gom đủ Tên Phim và Tên Rạp -> BẮT BUỘC GỌI HÀM "check_seat_details" NGAY. 
+            3. QUAN TRỌNG: Phải truyền ĐÚNG tên phim khách gõ vào hàm. Tuyệt đối không được tự ý đổi tên phim của khách thành "Super Mario", "Thoát Khỏi Tận Thế" hay bất kỳ phim nào khác!!!
+
+            QUY TẮC TRẢ JSON (Nếu không gọi hàm):
+            1. GIỚI THIỆU PHIM: "type": "movie_list", "data": { "movieIds": ["id_phim"] }
+            2. ĐẶT PHIM: "type": "action_booking", "data": { "movieId": "id_phim" }
+            3. TRÒ CHUYỆN: "type": "text", "data": []
             
-            QUY TẮC TRẢ JSON (Chỉ áp dụng nếu không gọi hàm):
-            1. NẾU GIỚI THIỆU PHIM: "type" là "movie_list", "data.movieIds" chứa mảng ID.
-            2. NẾU ĐẶT 1 PHIM: "type" là "action_booking", "data.movieId" là ID.
-            3. TRÒ CHUYỆN BÌNH THƯỜNG: "type" là "text", "data": [].
-            
-            Format JSON TRẢ VỀ:
+            Format JSON:
             {
                 "text": "Câu trả lời của bạn",
                 "type": "text", 
