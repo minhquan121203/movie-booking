@@ -124,42 +124,48 @@ export const handleChat = async (req, res) => {
         }).join('\n');
 
         const prompt = `
-            Nhiệm vụ của bạn là Trích xuất thông tin Tên Phim và Tên Rạp từ câu nói của khách.
+            Bạn là máy trích xuất dữ liệu NLU. Nhiệm vụ của bạn là đọc LỊCH SỬ và CÂU HIỆN TẠI để tìm Tên Phim và Tên Rạp.
             
-            LỊCH SỬ CHAT:
-            ${recentChats}
+            [LỊCH SỬ CHAT]
+            ${recentChats || "Không có lịch sử"}
             
-            CÂU HIỆN TẠI: "${userMessage}"
+            [CÂU HIỆN TẠI CỦA KHÁCH]
+            "${userMessage}"
             
-            🚨 QUY TẮC "BẮT" ĐẠI TỪ (QUAN TRỌNG NHẤT):
-            Nếu khách nói "phim đó", "phim này", hoặc "thế rạp Lotte thì sao"... BẮT BUỘC bạn phải lấy Tên Phim hoặc Tên Rạp đã được nhắc đến ở câu ngay phía trên trong Lịch Sử để điền vào. KHÔNG ĐƯỢC ĐỂ NULL nếu lịch sử đã có!
-
-            👇 HÃY TRẢ VỀ CHUẨN JSON, BẮT CHƯỚC Y HỆT THEO VÍ DỤ NÀY:
+            🚨 QUY TẮC SINH TỬ VỀ ĐẠI TỪ:
+            - Nếu câu hiện tại khách dùng từ "phim đó", "phim này", "nó"... BẠN PHẢI nhìn lên [LỊCH SỬ CHAT] xem câu trước đang nhắc đến phim gì (VD: Cô Dâu), và điền tên thật vào. 
+            - TUYỆT ĐỐI KHÔNG điền chữ "phim đó", "phim này" vào JSON. 
+            - Trả về DUY NHẤT 1 khối JSON chuẩn, KHÔNG bọc trong markdown (\`\`\`json).
+            
             {
-                "suy_luan": "Câu trước đang nói phim Cô Dâu, câu này khách hỏi rạp Lotte. Vậy tên phim là Cô Dâu, tên rạp là Lotte.",
-                "nhan_dien_phim": "Cô Dâu",
-                "nhan_dien_rap": "Lotte",
+                "nhan_dien_phim": "Tên phim thật (tự dịch từ chữ 'phim đó' nếu có). Ghi null nếu không tìm thấy.",
+                "nhan_dien_rap": "Tên rạp thật. Ghi null nếu không tìm thấy.",
                 "phan_loai_hanh_dong": "tim_lich_chieu",
-                "danh_sach_id_phim": [], 
                 "cau_tra_loi": ""
             }
         `;
 
         let result = await chatSession.sendMessage(prompt);
         let responseText = result.response.text();
+
+        responseText = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
+
         let botResponse = { text: "", type: "text", data: [] };
 
         try {
             const aiData = JSON.parse(responseText);
-            console.log("🧠 [AI TRÍCH XUẤT]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap, "|", aiData.phan_loai_hanh_dong);
 
-            // 🔥 CHIÊU TRẤN PHÁI: NODE.JS BẮT BÀI VÀ ÉP LẠI HÀNH ĐỘNG CỦA AI
+            // Ép AI không được lưu chữ "phim đó" vào biến
+            if (aiData.nhan_dien_phim && aiData.nhan_dien_phim.toLowerCase().includes("phim đó")) {
+                aiData.nhan_dien_phim = null;
+            }
+
+            console.log("🧠 [AI TRÍCH XUẤT SAU KHI LỘT VỎ]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap);
+
+            // 🔥 ĐÁNH CHẶN: NODE.JS ÉP LẠI HÀNH ĐỘNG
             let hanhDong = aiData.phan_loai_hanh_dong;
-
-            // Nếu AI bắt được Tên Phim hoặc Tên Rạp, nhưng lại lanh chanh chọn "goi_y_phim" -> Ép nó về "tim_lich_chieu"
             if ((aiData.nhan_dien_phim || aiData.nhan_dien_rap) && (hanhDong === "goi_y_phim" || hanhDong === "tro_chuyen")) {
                 hanhDong = "tim_lich_chieu";
-                console.log("⚡ [NODE.JS] Đã phát hiện AI phân loại sai, tự động ép về: tim_lich_chieu");
             }
 
             // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN
