@@ -117,84 +117,91 @@ export const handleChat = async (req, res) => {
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        // ÉP TRÍ NHỚ: TRÍCH XUẤT 10 CÂU GẦN NHẤT DÁN THẲNG VÀO PROMPT
-        const recentChats = safeHistory.slice(-10).map(msg => {
+        // 🚀 ÉP TRÍ NHỚ: LẤY 4 CÂU GẦN NHẤT
+        const recentChats = safeHistory.slice(-4).map(msg => {
             let text = typeof msg.content === 'string' ? msg.content : (msg.content?.text || "");
             return `${msg.role === 'user' ? 'Khách' : 'Bot'}: ${text}`;
         }).join('\n');
 
+        // 🔥 CHIẾN THUẬT MỚI: BẮT AI ĐIỀN VÀO FORM TRÍCH XUẤT (NLU)
         const prompt = `
-            🚨 LỊCH SỬ 10 CÂU CHAT GẦN NHẤT:
+            Bạn là bộ não phân tích ngôn ngữ (NLU). Nhiệm vụ của bạn là đọc LỊCH SỬ và CÂU HIỆN TẠI để bóc tách thông tin.
+            
+            LỊCH SỬ 4 CÂU GẦN NHẤT:
             ${recentChats}
             
-            🗣️ CÂU NÓI HIỆN TẠI CỦA KHÁCH: "${userMessage}"
+            CÂU HIỆN TẠI CỦA KHÁCH: "${userMessage}"
             
-            🚨 LỆNH TỐI CAO TỪ HỆ THỐNG:
-            - Nhìn vào "LỊCH SỬ 4 CÂU CHAT GẦN NHẤT" ở trên! Nếu câu trước khách vừa hỏi ghế cho một bộ phim (VD: Cô Dâu), và câu này khách nói tên rạp (VD: rạp royal) -> BẠN ĐÃ CÓ ĐỦ 2 THÔNG TIN.
-            - NẾU ĐÃ CÓ ĐỦ TÊN PHIM VÀ RẠP: BẮT BUỘC chọn type là "call_check_seat" và trích xuất đúng tên phim, tên rạp nhét vào data. TUYỆT ĐỐI KHÔNG HỎI LẠI!
+            🚨 LƯU Ý CỰC KỲ QUAN TRỌNG: Khách thường nói ngắt quãng (VD: Câu trước nói phim "Cô Dâu", câu sau nói rạp "Royal"). Bạn PHẢI tìm lại trong LỊCH SỬ để nhặt thông tin ghép vào.
             
-            QUY TẮC TRẢ JSON BẮT BUỘC CHỌN 1 TRONG 4 LOẠI SAU:
-            1. CẦN TÌM GHẾ (Có đủ phim + rạp): { "type": "call_check_seat", "data": { "tenPhim": "tên phim", "tenRap": "tên rạp" } }
-            2. GIỚI THIỆU PHIM: { "type": "movie_list", "text": "Câu tư vấn", "data": { "movieIds": ["id_phim"] } }
-            3. ĐẶT PHIM: { "type": "action_booking", "text": "Câu chốt", "data": { "movieId": "id_phim" } }
-            4. TRÒ CHUYỆN BÌNH THƯỜNG / HỎI THÊM (Chỉ dùng khi THỰC SỰ THIẾU thông tin): { "type": "text", "text": "Câu trả lời của bạn", "data": [] }
+            BẮT BUỘC TRẢ VỀ CHUẨN JSON NÀY VÀ KHÔNG THÊM GÌ KHÁC:
+            {
+                "nhan_dien_phim": "Tên phim khách muốn xem (Nhặt từ câu hiện tại HOẶC câu trước đó). Nếu hoàn toàn không có ghi null",
+                "nhan_dien_rap": "Tên rạp khách muốn xem (Nhặt từ câu hiện tại HOẶC câu trước đó). Nếu hoàn toàn không có ghi null",
+                "phan_loai_hanh_dong": "Chọn 1 trong 4: 'tim_ghe' (nếu khách hỏi suất chiếu/ghế), 'goi_y_phim', 'dat_ve', 'tro_chuyen'",
+                "danh_sach_id_phim": [], 
+                "cau_tra_loi": "Câu trò chuyện của bạn. (Nếu hành động là 'tim_ghe' mà bạn thấy Tên Phim hoặc Tên Rạp là null, hãy dùng câu này để hỏi xin thông tin còn thiếu từ khách)"
+            }
         `;
 
         let result = await chatSession.sendMessage(prompt);
         let responseText = result.response.text();
-        let botResponse;
+        let botResponse = { text: "", type: "text", data: [] }; // Khởi tạo form chuẩn cho Frontend
 
         try {
-            botResponse = JSON.parse(responseText);
+            const aiData = JSON.parse(responseText);
+            console.log("🧠 [AI TRÍCH XUẤT ĐƯỢC]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap);
 
-            if (botResponse.type === "call_check_seat") {
-                const { tenPhim, tenRap } = botResponse.data;
-                console.log(`\n==============================================`);
-                console.log(`🤖 [CUSTOM AGENT] Đang tự động quét Database...`);
-                console.log(`🔎 Mục tiêu: Phim [${tenPhim}] tại Rạp [${tenRap}]`);
+            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN (AI HẾT QUYỀN LÚ)
+            if (aiData.phan_loai_hanh_dong === "tim_ghe") {
 
-                const matchedSchedule = rawSchedules.find(s =>
-                    s.movie?.title?.toLowerCase().includes(tenPhim?.toLowerCase() || "") &&
-                    s.theater?.name?.toLowerCase().includes(tenRap?.toLowerCase() || "")
-                );
+                // NẾU AI ĐÃ TÌM ĐỦ 2 THÔNG TIN (Từ câu này hoặc câu trước)
+                if (aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
+                    console.log(`\n==============================================`);
+                    console.log(`🤖 [NODE.JS AGENT] Đủ thông tin, đang tự động quét Database...`);
 
-                let kqGhe = "Không tìm thấy suất chiếu nào phù hợp.";
-                if (matchedSchedule) {
-                    const gheTrong = matchedSchedule.availableSeats;
-                    kqGhe = `Hệ thống vừa check Database: Phim ${matchedSchedule.movie.title} tại ${matchedSchedule.theater.name} hiện đang còn ${gheTrong} ghế trống.`;
-                    console.log(`✅ [ĐÃ TÌM THẤY]: Còn ${gheTrong} ghế!`);
-                } else {
-                    console.log(`❌ [KHÔNG TÌM THẤY SUẤT CHIẾU]`);
+                    const matchedSchedule = rawSchedules.find(s =>
+                        s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()) &&
+                        s.theater?.name?.toLowerCase().includes(aiData.nhan_dien_rap.toLowerCase())
+                    );
+
+                    if (matchedSchedule) {
+                        const gheTrong = matchedSchedule.availableSeats;
+                        botResponse.text = `Tuyệt vời fen ơi! Tớ vừa check hệ thống, phim **${matchedSchedule.movie.title}** tại rạp **${matchedSchedule.theater.name}** hiện đang còn **${gheTrong} ghế trống**. Fen chốt luôn không tớ đặt cho!`;
+                    } else {
+                        botResponse.text = `Fen ơi tớ check kỹ rồi, hiện tại phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen có muốn đổi rạp khác không?`;
+                    }
+                    console.log(`==============================================\n`);
                 }
-                console.log(`==============================================\n`);
-
-                // Gửi kết quả DB lại cho AI để nó "diễn" với khách
-                result = await chatSession.sendMessage(`
-                    Hệ thống Database vừa trả về kết quả check ghế: "${kqGhe}".
-                    Hãy dựa vào thông tin đó để trả lời báo kết quả cho khách thật tự nhiên.
-                    BẮT BUỘC TRẢ VỀ JSON: { "type": "text", "text": "câu trả lời của bạn", "data": [] }
-                `);
-
-                // Cập nhật lại responseText và parse lại
-                responseText = result.response.text();
-                botResponse = JSON.parse(responseText);
+                // NẾU CÒN THIẾU THÔNG TIN -> NHẢ CÂU HỎI CỦA AI RA
+                else {
+                    botResponse.text = aiData.cau_tra_loi;
+                }
+                botResponse.type = "text";
             }
 
-            if (botResponse.type === 'movie_list' && botResponse.data && Array.isArray(botResponse.data.movieIds)) {
-                const listIds = botResponse.data.movieIds;
-                const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
+            // XỬ LÝ CÁC HÀNH ĐỘNG KHÁC (GỢI Ý PHIM, ĐẶT VÉ...)
+            else if (aiData.phan_loai_hanh_dong === "goi_y_phim" || aiData.phan_loai_hanh_dong === "dat_ve") {
+                botResponse.text = aiData.cau_tra_loi;
+                botResponse.type = aiData.phan_loai_hanh_dong === "goi_y_phim" ? "movie_list" : "action_booking";
 
-                botResponse.data = foundMovies.map(m => ({
-                    _id: m._id,
-                    title: m.title,
-                    genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
-                    poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
-                }));
-            } else if (botResponse.type === 'text' || botResponse.type === 'action_booking') {
-                if (!botResponse.data) botResponse.data = [];
+                if (aiData.danh_sach_id_phim && Array.isArray(aiData.danh_sach_id_phim)) {
+                    const foundMovies = movies.filter(m => aiData.danh_sach_id_phim.includes(m._id.toString()));
+                    botResponse.data = foundMovies.map(m => ({
+                        _id: m._id,
+                        title: m.title,
+                        genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
+                        poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
+                    }));
+                }
+            }
+            else {
+                // Tán gẫu bình thường
+                botResponse.text = aiData.cau_tra_loi;
+                botResponse.type = "text";
             }
 
-            // Trả kết quả cuối cùng cho Frontend
+            // TRẢ KẾT QUẢ CUỐI CÙNG CHO FRONTEND
             res.json({ botMessage: botResponse });
 
         } catch (error) {
