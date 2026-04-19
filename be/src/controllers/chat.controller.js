@@ -155,12 +155,38 @@ export const handleChat = async (req, res) => {
         try {
             const aiData = JSON.parse(responseText);
 
-            // Ép AI không được lưu chữ "phim đó" vào biến
-            if (aiData.nhan_dien_phim && aiData.nhan_dien_phim.toLowerCase().includes("phim đó")) {
-                aiData.nhan_dien_phim = null;
-            }
+            // 🔥 CHIÊU CUỐI CÙNG: NODE.JS TỰ ĐỘNG LỤC LỊCH SỬ THAY CHO AI
+            let phimDaNhanDien = aiData.nhan_dien_phim;
 
-            console.log("🧠 [AI TRÍCH XUẤT SAU KHI LỘT VỎ]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap);
+            // Nếu AI trả về null, hoặc mấy chữ đại từ lôm côm -> Node.js tự ra tay!
+            if (!phimDaNhanDien || phimDaNhanDien.toLowerCase().includes("phim") || phimDaNhanDien.toLowerCase().includes("nó")) {
+                const doanChat = recentChats.toLowerCase();
+                // Lấy danh sách phim trong DB dò xem có tên nào lọt vào lịch sử không
+                const phimCu = movies.find(m => doanChat.includes(m.title.toLowerCase()));
+                if (phimCu) {
+                    phimDaNhanDien = phimCu.title;
+                    console.log(`⚡ [NODE.JS CỨU BÀN] Tự động mò ra phim cũ: [${phimDaNhanDien}]`);
+                } else {
+                    phimDaNhanDien = null;
+                }
+            }
+            aiData.nhan_dien_phim = phimDaNhanDien;
+
+            // Bọc lót luôn cho Tên Rạp (đề phòng khách bảo "rạp kia")
+            let rapDaNhanDien = aiData.nhan_dien_rap;
+            if (!rapDaNhanDien || rapDaNhanDien.toLowerCase().includes("rạp") || rapDaNhanDien.toLowerCase().includes("ở đó")) {
+                const doanChat = recentChats.toLowerCase();
+                const rapCu = theaters.find(t => doanChat.includes(t.name.toLowerCase()));
+                if (rapCu) {
+                    rapDaNhanDien = rapCu.name;
+                    console.log(`⚡ [NODE.JS CỨU BÀN] Tự động mò ra rạp cũ: [${rapDaNhanDien}]`);
+                } else {
+                    rapDaNhanDien = null;
+                }
+            }
+            aiData.nhan_dien_rap = rapDaNhanDien;
+
+            console.log("🧠 [CHỐT SỔ ĐỂ QUÉT DB]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap);
 
             // 🔥 ĐÁNH CHẶN: NODE.JS ÉP LẠI HÀNH ĐỘNG
             let hanhDong = aiData.phan_loai_hanh_dong;
@@ -168,12 +194,12 @@ export const handleChat = async (req, res) => {
                 hanhDong = "tim_lich_chieu";
             }
 
-            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN
+            // 🚀 BƯỚC 2: LOGIC QUÉT DATABASE
             if (hanhDong === "tim_lich_chieu" || hanhDong === "tim_ghe") {
 
-                // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP -> Báo số ghế
+                // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP
                 if (aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
-                    console.log(`🤖 [NODE.JS] Check ghế: Phim [${aiData.nhan_dien_phim}] tại Rạp [${aiData.nhan_dien_rap}]`);
+                    console.log(`🤖 [NODE.JS] Quét: Phim [${aiData.nhan_dien_phim}] tại Rạp [${aiData.nhan_dien_rap}]`);
                     const matchedSchedule = rawSchedules.find(s =>
                         s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()) &&
                         s.theater?.name?.toLowerCase().includes(aiData.nhan_dien_rap.toLowerCase())
@@ -185,23 +211,22 @@ export const handleChat = async (req, res) => {
                         botResponse.text = `Fen ơi tớ check kỹ rồi, phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen đổi rạp khác nha?`;
                     }
                 }
-                // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP -> Tìm rạp chiếu
+                // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP
                 else if (aiData.nhan_dien_phim && !aiData.nhan_dien_rap) {
-                    console.log(`🤖 [NODE.JS] Tìm danh sách rạp đang chiếu phim: [${aiData.nhan_dien_phim}]`);
                     const cacRapDangChieu = rawSchedules
                         .filter(s => s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()))
                         .map(s => s.theater?.name);
                     const danhSachRap = [...new Set(cacRapDangChieu)];
 
                     if (danhSachRap.length > 0) {
-                        botResponse.text = `Tớ check hệ thống thấy phim **${aiData.nhan_dien_phim}** đang được chiếu tại các rạp: **${danhSachRap.join(", ")}**. Fen tiện đi xem ở rạp nào nhất để tớ check ghế trống cho?`;
+                        botResponse.text = `Tớ thấy phim **${aiData.nhan_dien_phim}** đang chiếu tại: **${danhSachRap.join(", ")}**. Fen tiện đi rạp nào nhất?`;
                     } else {
-                        botResponse.text = `Buồn quá fen ơi, hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào có lịch chiếu cả. Fen xem phim khác được không?`;
+                        botResponse.text = `Hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào chiếu cả fen ạ.`;
                     }
                 }
-                // TRƯỜNG HỢP 3: CÓ RẠP NHƯNG KHÔNG CÓ PHIM -> Hỏi lại tên phim
+                // TRƯỜNG HỢP 3: CÓ RẠP NHƯNG KHÔNG CÓ PHIM
                 else if (!aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
-                    botResponse.text = `Tớ đã ghi nhận rạp **${aiData.nhan_dien_rap}** rồi. Nhưng fen muốn check ghế cho bộ phim nào ở rạp này nhỉ?`;
+                    botResponse.text = `Tớ ghi nhận rạp **${aiData.nhan_dien_rap}** rồi. Nhưng fen muốn check ghế phim nào ở rạp này nhỉ?`;
                 }
                 // TRƯỜNG HỢP 4: THIẾU CẢ 2
                 else {
