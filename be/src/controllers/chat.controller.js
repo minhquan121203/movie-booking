@@ -123,42 +123,42 @@ export const handleChat = async (req, res) => {
             return `${msg.role === 'user' ? 'Khách' : 'Bot'}: ${text}`;
         }).join('\n');
 
-        // 🔥 CHIẾN THUẬT MỚI: BẮT AI ĐIỀN VÀO FORM TRÍCH XUẤT (NLU)
+        // 🔥 CHIẾN THUẬT MỚI: DẰN MẶT CẤM ĐỔI HÀNH ĐỘNG LUNG TUNG
         const prompt = `
-            Bạn là bộ não phân tích ngôn ngữ (NLU). Nhiệm vụ của bạn là đọc LỊCH SỬ và CÂU HIỆN TẠI để bóc tách thông tin.
+            Bạn là bộ não NLU. Nhiệm vụ của bạn là đọc LỊCH SỬ và CÂU HIỆN TẠI để bóc tách thông tin.
             
             LỊCH SỬ 4 CÂU GẦN NHẤT:
             ${recentChats}
             
             CÂU HIỆN TẠI CỦA KHÁCH: "${userMessage}"
             
-            🚨 LƯU Ý CỰC KỲ QUAN TRỌNG: Khách thường nói ngắt quãng (VD: Câu trước nói phim "Cô Dâu", câu sau nói rạp "Royal"). Bạn PHẢI tìm lại trong LỊCH SỬ để nhặt thông tin ghép vào.
+            🚨 LƯU Ý CỰC KỲ QUAN TRỌNG: 
+            - Nếu câu hiện tại khách chỉ gõ tên phim (VD: "phim cô dâu ý"), hãy xem câu trước đó khách có đang hỏi về rạp chiếu hay suất chiếu không! Nếu có, hành động PHẢI LÀ 'tim_lich_chieu', TUYỆT ĐỐI KHÔNG TỰ Ý CHUYỂN SANG 'goi_y_phim'.
             
-            BẮT BUỘC TRẢ VỀ CHUẨN JSON NÀY VÀ KHÔNG THÊM GÌ KHÁC:
+            BẮT BUỘC TRẢ VỀ CHUẨN JSON NÀY:
             {
-                "nhan_dien_phim": "Tên phim khách muốn xem (Nhặt từ câu hiện tại HOẶC câu trước đó). Nếu hoàn toàn không có ghi null",
-                "nhan_dien_rap": "Tên rạp khách muốn xem (Nhặt từ câu hiện tại HOẶC câu trước đó). Nếu hoàn toàn không có ghi null",
-                "phan_loai_hanh_dong": "Chọn 1 trong 4: 'tim_ghe' (nếu khách hỏi suất chiếu/ghế), 'goi_y_phim', 'dat_ve', 'tro_chuyen'",
+                "nhan_dien_phim": "Tên phim. Nếu không có ghi null",
+                "nhan_dien_rap": "Tên rạp. Nếu không có ghi null",
+                "phan_loai_hanh_dong": "Chọn 1: 'tim_lich_chieu' (khi hỏi suất chiếu/rạp/ghế), 'goi_y_phim', 'dat_ve', 'tro_chuyen'",
                 "danh_sach_id_phim": [], 
-                "cau_tra_loi": "Câu trò chuyện của bạn. (Nếu hành động là 'tim_ghe' mà bạn thấy Tên Phim hoặc Tên Rạp là null, hãy dùng câu này để hỏi xin thông tin còn thiếu từ khách)"
+                "cau_tra_loi": "Câu trò chuyện của bạn."
             }
         `;
 
         let result = await chatSession.sendMessage(prompt);
         let responseText = result.response.text();
-        let botResponse = { text: "", type: "text", data: [] }; // Khởi tạo form chuẩn cho Frontend
+        let botResponse = { text: "", type: "text", data: [] };
 
         try {
             const aiData = JSON.parse(responseText);
-            console.log("🧠 [AI TRÍCH XUẤT ĐƯỢC]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap);
+            console.log("🧠 [AI TRÍCH XUẤT]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap, "|", aiData.phan_loai_hanh_dong);
 
-            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN (AI HẾT QUYỀN LÚ)
-            if (aiData.phan_loai_hanh_dong === "tim_ghe") {
+            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN
+            if (aiData.phan_loai_hanh_dong === "tim_lich_chieu" || aiData.phan_loai_hanh_dong === "tim_ghe") {
 
-                // NẾU AI ĐÃ TÌM ĐỦ 2 THÔNG TIN (Từ câu này hoặc câu trước)
+                // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP -> Báo số ghế trống
                 if (aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
-                    console.log(`\n==============================================`);
-                    console.log(`🤖 [NODE.JS AGENT] Đủ thông tin, đang tự động quét Database...`);
+                    console.log(`🤖 [NODE.JS] Check ghế: Phim [${aiData.nhan_dien_phim}] tại Rạp [${aiData.nhan_dien_rap}]`);
 
                     const matchedSchedule = rawSchedules.find(s =>
                         s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()) &&
@@ -166,42 +166,36 @@ export const handleChat = async (req, res) => {
                     );
 
                     if (matchedSchedule) {
-                        const gheTrong = matchedSchedule.availableSeats;
-                        botResponse.text = `Tuyệt vời fen ơi! Tớ vừa check hệ thống, phim **${matchedSchedule.movie.title}** tại rạp **${matchedSchedule.theater.name}** hiện đang còn **${gheTrong} ghế trống**. Fen chốt luôn không tớ đặt cho!`;
+                        botResponse.text = `Tuyệt vời! Phim **${matchedSchedule.movie.title}** tại rạp **${matchedSchedule.theater.name}** đang còn **${matchedSchedule.availableSeats} ghế trống**. Fen chốt luôn không tớ đặt cho!`;
                     } else {
-                        botResponse.text = `Fen ơi tớ check kỹ rồi, hiện tại phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen có muốn đổi rạp khác không?`;
+                        botResponse.text = `Fen ơi tớ check kỹ rồi, phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen đổi rạp khác nha?`;
                     }
-                    console.log(`==============================================\n`);
                 }
-                // NẾU CÒN THIẾU THÔNG TIN -> NHẢ CÂU HỎI CỦA AI RA
+                // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP -> Liệt kê các rạp đang chiếu phim đó! (TÍNH NĂNG VIP)
+                else if (aiData.nhan_dien_phim && !aiData.nhan_dien_rap) {
+                    console.log(`🤖 [NODE.JS] Tìm danh sách rạp đang chiếu phim: [${aiData.nhan_dien_phim}]`);
+
+                    // Quét Database tìm tất cả rạp có lịch chiếu phim này
+                    const cacRapDangChieu = rawSchedules
+                        .filter(s => s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()))
+                        .map(s => s.theater?.name);
+
+                    // Lọc trùng lặp tên rạp
+                    const danhSachRap = [...new Set(cacRapDangChieu)];
+
+                    if (danhSachRap.length > 0) {
+                        botResponse.text = `Tớ check hệ thống thấy phim **${aiData.nhan_dien_phim}** đang được chiếu tại các rạp: **${danhSachRap.join(", ")}**. Fen tiện đi xem ở rạp nào nhất để tớ check ghế trống cho?`;
+                    } else {
+                        botResponse.text = `Buồn quá fen ơi, hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào có lịch chiếu cả. Fen xem phim khác được không?`;
+                    }
+                }
+                // TRƯỜNG HỢP 3: THIẾU CẢ 2 -> Báo AI tự hỏi lại
                 else {
                     botResponse.text = aiData.cau_tra_loi;
                 }
                 botResponse.type = "text";
             }
 
-            // XỬ LÝ CÁC HÀNH ĐỘNG KHÁC (GỢI Ý PHIM, ĐẶT VÉ...)
-            else if (aiData.phan_loai_hanh_dong === "goi_y_phim" || aiData.phan_loai_hanh_dong === "dat_ve") {
-                botResponse.text = aiData.cau_tra_loi;
-                botResponse.type = aiData.phan_loai_hanh_dong === "goi_y_phim" ? "movie_list" : "action_booking";
-
-                if (aiData.danh_sach_id_phim && Array.isArray(aiData.danh_sach_id_phim)) {
-                    const foundMovies = movies.filter(m => aiData.danh_sach_id_phim.includes(m._id.toString()));
-                    botResponse.data = foundMovies.map(m => ({
-                        _id: m._id,
-                        title: m.title,
-                        genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
-                        poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
-                    }));
-                }
-            }
-            else {
-                // Tán gẫu bình thường
-                botResponse.text = aiData.cau_tra_loi;
-                botResponse.type = "text";
-            }
-
-            // TRẢ KẾT QUẢ CUỐI CÙNG CHO FRONTEND
             res.json({ botMessage: botResponse });
 
         } catch (error) {
