@@ -111,25 +111,10 @@ export const handleChat = async (req, res) => {
             }
         });
 
-        const agentTools = [{
-            functionDeclarations: [{
-                name: "check_seat_details",
-                description: "Kiểm tra số lượng ghế trống. BẮT BUỘC gọi hàm này khi bạn đã thu thập đủ Tên Phim và Tên Rạp từ cuộc trò chuyện.",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        tenPhim: { type: "STRING", description: "Tên phim. Phải tự động tìm trong lịch sử chat nếu câu hiện tại không có." },
-                        tenRap: { type: "STRING", description: "Tên rạp. Phải tự động tìm trong lịch sử chat nếu câu hiện tại không có." }
-                    },
-                    required: ["tenPhim", "tenRap"]
-                }
-            }]
-        }];
-
         // Ép AI luôn luôn trả về chuẩn JSON Schema
         const chatSession = model.startChat({
             history: validHistory,
-            tools: agentTools,
+            generationConfig: { responseMimeType: "application/json" }
         });
 
         const recentChats = safeHistory.slice(-4).map(msg => {
@@ -141,64 +126,56 @@ export const handleChat = async (req, res) => {
             Câu nói HIỆN TẠI của khách: "${userMessage}"
             
             🚨 LỆNH TỐI CAO TỪ HỆ THỐNG:
-            - Chú ý: Khách hàng thường chat ngắt quãng! (Ví dụ: Câu trước hỏi phim, câu này mới nhập tên rạp).
-            - NHIỆM VỤ CỦA BẠN: Khám xét ngay lịch sử chat. Nếu câu trước khách vừa nhắc đến một bộ phim, và câu này khách nhập tên rạp -> BẠN ĐÃ CÓ ĐỦ 2 THAM SỐ.
-            - NGHIÊM CẤM BẠN CHAT BẰNG CHỮ ĐỂ HỎI LẠI TÊN PHIM/TÊN RẠP NỮA! 
-            - BẮT BUỘC PHẢI GỌI HÀM "check_seat_details" NGAY LẬP TỨC!
-
-            QUY TẮC JSON (Chỉ dùng khi trò chuyện bình thường, KHÔNG dùng khi gọi hàm):
-            1. GIỚI THIỆU PHIM: "type": "movie_list"
-            2. ĐẶT PHIM: "type": "action_booking"
-            3. TRÒ CHUYỆN: "type": "text"
+            - Hãy đọc kỹ LỊCH SỬ trò chuyện. Nếu khách đang muốn tìm ghế trống, bạn PHẢI TỰ GHÉP tên phim (từ câu trước) và tên rạp (từ câu này).
+            - NẾU ĐÃ CÓ ĐỦ TÊN PHIM VÀ RẠP: BẮT BUỘC chọn type là "call_check_seat" để hệ thống đi tìm ghế. TUYỆT ĐỐI KHÔNG HỎI LẠI!
             
-            Format JSON TRẢ VỀ:
-            {
-                "text": "Câu trả lời của bạn",
-                "type": "text", 
-                "data": []
-            }
+            QUY TẮC TRẢ JSON BẮT BUỘC CHỌN 1 TRONG 4 LOẠI SAU:
+            1. CẦN TÌM GHẾ (Có đủ phim + rạp): { "type": "call_check_seat", "data": { "tenPhim": "tên phim", "tenRap": "tên rạp" } }
+            2. GIỚI THIỆU PHIM: { "type": "movie_list", "text": "Câu tư vấn", "data": { "movieIds": ["id_phim"] } }
+            3. ĐẶT PHIM: { "type": "action_booking", "text": "Câu chốt", "data": { "movieId": "id_phim" } }
+            4. TRÒ CHUYỆN BÌNH THƯỜNG / HỎI THÊM: { "type": "text", "text": "Câu trả lời của bạn", "data": [] }
         `;
 
         let result = await chatSession.sendMessage(prompt);
-        const functionCall = result.response.functionCalls()?.[0];
-
-        if (functionCall && functionCall.name === "check_seat_details") {
-            const { tenPhim, tenRap } = functionCall.args;
-            console.log(`\n==============================================`);
-            console.log(`🤖 [AI AGENT KÍCH HOẠT] Đang tự động quét Database...`);
-            console.log(`🔎 Mục tiêu: Phim [${tenPhim}] tại Rạp [${tenRap}]`);
-
-            // AI tự động chọc vào mảng lịch chiếu để tìm dữ liệu Real-time
-            const matchedSchedule = rawSchedules.find(s =>
-                s.movie?.title?.toLowerCase().includes(tenPhim.toLowerCase()) &&
-                s.theater?.name?.toLowerCase().includes(tenRap.toLowerCase())
-            );
-
-            let kqGhe = "Không tìm thấy suất chiếu nào phù hợp.";
-            if (matchedSchedule) {
-                const gheTrong = matchedSchedule.availableSeats;
-                kqGhe = `Hệ thống vừa check Database: Phim ${matchedSchedule.movie.title} tại ${matchedSchedule.theater.name} hiện đang còn chính xác ${gheTrong} ghế trống. Hãy giục khách chốt vé ngay!`;
-                console.log(`✅ [ĐÃ TÌM THẤY]: Còn ${gheTrong} ghế!`);
-            } else {
-                console.log(`❌ [KHÔNG TÌM THẤY SUẤT CHIẾU]`);
-            }
-            console.log(`==============================================\n`);
-
-            result = await chatSession.sendMessage([{
-                functionResponse: {
-                    name: "check_seat_details",
-                    response: { result: kqGhe }
-                }
-            }]);
-        }
-
         let responseText = result.response.text();
-        responseText = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
+        let botResponse;
 
         try {
-            const botResponse = JSON.parse(responseText);
+            botResponse = JSON.parse(responseText);
 
-            // Xử lý móc ảnh Poster...
+            if (botResponse.type === "call_check_seat") {
+                const { tenPhim, tenRap } = botResponse.data;
+                console.log(`\n==============================================`);
+                console.log(`🤖 [CUSTOM AGENT] Đang tự động quét Database...`);
+                console.log(`🔎 Mục tiêu: Phim [${tenPhim}] tại Rạp [${tenRap}]`);
+
+                const matchedSchedule = rawSchedules.find(s =>
+                    s.movie?.title?.toLowerCase().includes(tenPhim?.toLowerCase() || "") &&
+                    s.theater?.name?.toLowerCase().includes(tenRap?.toLowerCase() || "")
+                );
+
+                let kqGhe = "Không tìm thấy suất chiếu nào phù hợp.";
+                if (matchedSchedule) {
+                    const gheTrong = matchedSchedule.availableSeats;
+                    kqGhe = `Hệ thống vừa check Database: Phim ${matchedSchedule.movie.title} tại ${matchedSchedule.theater.name} hiện đang còn ${gheTrong} ghế trống.`;
+                    console.log(`✅ [ĐÃ TÌM THẤY]: Còn ${gheTrong} ghế!`);
+                } else {
+                    console.log(`❌ [KHÔNG TÌM THẤY SUẤT CHIẾU]`);
+                }
+                console.log(`==============================================\n`);
+
+                // Gửi kết quả DB lại cho AI để nó "diễn" với khách
+                result = await chatSession.sendMessage(`
+                    Hệ thống Database vừa trả về kết quả check ghế: "${kqGhe}".
+                    Hãy dựa vào thông tin đó để trả lời báo kết quả cho khách thật tự nhiên.
+                    BẮT BUỘC TRẢ VỀ JSON: { "type": "text", "text": "câu trả lời của bạn", "data": [] }
+                `);
+
+                // Cập nhật lại responseText và parse lại
+                responseText = result.response.text();
+                botResponse = JSON.parse(responseText);
+            }
+
             if (botResponse.type === 'movie_list' && botResponse.data && Array.isArray(botResponse.data.movieIds)) {
                 const listIds = botResponse.data.movieIds;
                 const foundMovies = movies.filter(m => listIds.includes(m._id.toString()));
@@ -209,36 +186,32 @@ export const handleChat = async (req, res) => {
                     genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
                     poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
                 }));
-            } else if (botResponse.type === 'text' || !botResponse.data) {
-                botResponse.data = [];
+            } else if (botResponse.type === 'text' || botResponse.type === 'action_booking') {
+                if (!botResponse.data) botResponse.data = [];
             }
 
+            // Trả kết quả cuối cùng cho Frontend
             res.json({ botMessage: botResponse });
 
         } catch (error) {
-            // 🔥 NẾU LỖI PARSE JSON (TỨC LÀ AI NÓI CHỮ BÌNH THƯỜNG)
+            // 🔥 NẾU LỖI PARSE JSON
             console.log("⚠️ AI lười không trả JSON, tự động bọc lại text:", responseText);
-
-            // Tự tạo object chuẩn gửi về cho Frontend
             res.json({
                 botMessage: {
-                    text: responseText, // Lấy nguyên câu nói của AI nhét vào đây
+                    text: responseText,
                     type: "text",
                     data: []
                 }
             });
         }
 
-    } catch (error) {
+    } catch (error) { // 🔥 CÁI CATCH NÀY DÀNH CHO LỖI TỔNG (Như mạng mẽo, 429...)
         console.error("Lỗi Server hoặc AI:", error);
 
-        // LỖI 429: NẾU GOOGLE BÁO HẾT LƯỢT THÌ TỰ ĐỘNG ĐỔI KEY
+        // LỖI 429: ĐỔI KEY
         if (error.message && error.message.includes("429")) {
             console.log(`❌ Cảnh báo: Key số ${currentKeyIndex + 1} đã cạn kiệt!`);
-
-            // Sang số: Tăng index lên 1. Nếu hết key thì quay vòng lại số 0.
             currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
-
             console.log(`✅ Đã tự động sang số, chuyển sang Key số ${currentKeyIndex + 1}.`);
 
             return res.json({
@@ -250,9 +223,6 @@ export const handleChat = async (req, res) => {
             });
         }
 
-        // Các lỗi khác không phải 429 (mất mạng, code sai...)
         res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
     }
 };
-
-export default { handleChat };
