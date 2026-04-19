@@ -117,23 +117,27 @@ export const handleChat = async (req, res) => {
             generationConfig: { responseMimeType: "application/json" }
         });
 
-        const recentChats = safeHistory.slice(-4).map(msg => {
+        // ÉP TRÍ NHỚ: TRÍCH XUẤT 10 CÂU GẦN NHẤT DÁN THẲNG VÀO PROMPT
+        const recentChats = safeHistory.slice(-10).map(msg => {
             let text = typeof msg.content === 'string' ? msg.content : (msg.content?.text || "");
             return `${msg.role === 'user' ? 'Khách' : 'Bot'}: ${text}`;
         }).join('\n');
 
         const prompt = `
-            Câu nói HIỆN TẠI của khách: "${userMessage}"
+            🚨 LỊCH SỬ 10 CÂU CHAT GẦN NHẤT:
+            ${recentChats}
+            
+            🗣️ CÂU NÓI HIỆN TẠI CỦA KHÁCH: "${userMessage}"
             
             🚨 LỆNH TỐI CAO TỪ HỆ THỐNG:
-            - Hãy đọc kỹ LỊCH SỬ trò chuyện. Nếu khách đang muốn tìm ghế trống, bạn PHẢI TỰ GHÉP tên phim (từ câu trước) và tên rạp (từ câu này).
-            - NẾU ĐÃ CÓ ĐỦ TÊN PHIM VÀ RẠP: BẮT BUỘC chọn type là "call_check_seat" để hệ thống đi tìm ghế. TUYỆT ĐỐI KHÔNG HỎI LẠI!
+            - Nhìn vào "LỊCH SỬ 4 CÂU CHAT GẦN NHẤT" ở trên! Nếu câu trước khách vừa hỏi ghế cho một bộ phim (VD: Cô Dâu), và câu này khách nói tên rạp (VD: rạp royal) -> BẠN ĐÃ CÓ ĐỦ 2 THÔNG TIN.
+            - NẾU ĐÃ CÓ ĐỦ TÊN PHIM VÀ RẠP: BẮT BUỘC chọn type là "call_check_seat" và trích xuất đúng tên phim, tên rạp nhét vào data. TUYỆT ĐỐI KHÔNG HỎI LẠI!
             
             QUY TẮC TRẢ JSON BẮT BUỘC CHỌN 1 TRONG 4 LOẠI SAU:
             1. CẦN TÌM GHẾ (Có đủ phim + rạp): { "type": "call_check_seat", "data": { "tenPhim": "tên phim", "tenRap": "tên rạp" } }
             2. GIỚI THIỆU PHIM: { "type": "movie_list", "text": "Câu tư vấn", "data": { "movieIds": ["id_phim"] } }
             3. ĐẶT PHIM: { "type": "action_booking", "text": "Câu chốt", "data": { "movieId": "id_phim" } }
-            4. TRÒ CHUYỆN BÌNH THƯỜNG / HỎI THÊM: { "type": "text", "text": "Câu trả lời của bạn", "data": [] }
+            4. TRÒ CHUYỆN BÌNH THƯỜNG / HỎI THÊM (Chỉ dùng khi THỰC SỰ THIẾU thông tin): { "type": "text", "text": "Câu trả lời của bạn", "data": [] }
         `;
 
         let result = await chatSession.sendMessage(prompt);
@@ -194,7 +198,7 @@ export const handleChat = async (req, res) => {
             res.json({ botMessage: botResponse });
 
         } catch (error) {
-            // 🔥 NẾU LỖI PARSE JSON
+            // NẾU LỖI PARSE JSON
             console.log("⚠️ AI lười không trả JSON, tự động bọc lại text:", responseText);
             res.json({
                 botMessage: {
@@ -205,7 +209,7 @@ export const handleChat = async (req, res) => {
             });
         }
 
-    } catch (error) { // 🔥 CÁI CATCH NÀY DÀNH CHO LỖI TỔNG (Như mạng mẽo, 429...)
+    } catch (error) { // CÁI CATCH NÀY DÀNH CHO LỖI TỔNG (Như mạng mẽo, 429...)
         console.error("Lỗi Server hoặc AI:", error);
 
         // LỖI 429: ĐỔI KEY
