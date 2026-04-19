@@ -133,12 +133,14 @@ export const handleChat = async (req, res) => {
             CÂU HIỆN TẠI CỦA KHÁCH: "${userMessage}"
             
             🚨 LƯU Ý CỰC KỲ QUAN TRỌNG: 
-            - Nếu câu hiện tại khách chỉ gõ tên phim (VD: "phim cô dâu ý"), hãy xem câu trước đó khách có đang hỏi về rạp chiếu hay suất chiếu không! Nếu có, hành động PHẢI LÀ 'tim_lich_chieu', TUYỆT ĐỐI KHÔNG TỰ Ý CHUYỂN SANG 'goi_y_phim'.
+            1. KHÁCH HAY DÙNG TỪ THAY THẾ: Nếu khách nói "phim đó", "phim này", "nó"... Bạn BẮT BUỘC phải đọc câu trước đó trong Lịch sử để xem "phim đó" là phim gì, rồi điền đúng tên phim vào kết quả. TUYỆT ĐỐI KHÔNG ĐƯỢC để null!
+            2. Tương tự, nếu khách nói "rạp đó", "ở đó"... hãy lấy tên rạp từ câu trước.
+            3. Nếu câu hiện tại khách chỉ đổi tên rạp (VD: "thế rạp lotte thì sao"), hành động vẫn PHẢI LÀ 'tim_lich_chieu'.
             
             BẮT BUỘC TRẢ VỀ CHUẨN JSON NÀY:
             {
-                "nhan_dien_phim": "Tên phim. Nếu không có ghi null",
-                "nhan_dien_rap": "Tên rạp. Nếu không có ghi null",
+                "nhan_dien_phim": "Tên phim cụ thể (VD: Cô Dâu). Bắt buộc tự dịch từ chữ 'phim đó' thành tên phim thật. Chỉ ghi null nếu chưa từng nhắc đến.",
+                "nhan_dien_rap": "Tên rạp cụ thể. Tự dịch từ 'rạp đó'. Chỉ ghi null nếu hoàn toàn không có thông tin.",
                 "phan_loai_hanh_dong": "Chọn 1: 'tim_lich_chieu' (khi hỏi suất chiếu/rạp/ghế), 'goi_y_phim', 'dat_ve', 'tro_chuyen'",
                 "danh_sach_id_phim": [], 
                 "cau_tra_loi": "Câu trò chuyện của bạn."
