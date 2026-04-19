@@ -113,34 +113,30 @@ export const handleChat = async (req, res) => {
 
         // Ép AI luôn luôn trả về chuẩn JSON Schema
         const chatSession = model.startChat({
-            history: validHistory,
-            generationConfig: { responseMimeType: "application/json" }
+            history: validHistory
         });
 
-        // 🚀 ÉP TRÍ NHỚ: LẤY 4 CÂU GẦN NHẤT
         const recentChats = safeHistory.slice(-4).map(msg => {
             let text = typeof msg.content === 'string' ? msg.content : (msg.content?.text || "");
             return `${msg.role === 'user' ? 'Khách' : 'Bot'}: ${text}`;
         }).join('\n');
 
-        // 🔥 TỐI HẬU THƯ: ÉP SUY LUẬN + LỘT VỎ + NODE.JS ĐÁNH CHẶN
         const prompt = `
-            Bạn là máy trích xuất dữ liệu NLU. Nhiệm vụ của bạn là bóc tách thông tin Tên Phim và Tên Rạp.
-            
+            Bạn là NLU phân tích ngôn ngữ.
             [LỊCH SỬ CHAT]
             ${recentChats || "Không có lịch sử"}
             
-            [CÂU HIỆN TẠI CỦA KHÁCH]
+            [CÂU HIỆN TẠI]
             "${userMessage}"
             
-            🚨 QUY TẮC BẮT ĐẠI TỪ (SINH TỬ):
-            Nếu khách dùng từ "phim đó", "phim này", "rạp đó", "ở đó"... BẠN BẮT BUỘC phải đọc lại [LỊCH SỬ CHAT] xem câu ngay trước đó đang nhắc đến Phim gì, Rạp gì và điền TÊN THẬT vào.
+            🚨 QUY TẮC SINH TỬ:
+            Nếu câu hiện tại khách nói "phim đó", "phim này", "rạp đó"... BẠN PHẢI nhìn lên [LỊCH SỬ CHAT] xem câu trước đó bot hoặc khách vừa nhắc đến tên phim/rạp là gì, và điền tên thật đó vào JSON.
             
-            👇 TRẢ VỀ DUY NHẤT 1 KHỐI JSON, KHÔNG BỌC TRONG MARKDOWN, BẮT CHƯỚC Y HỆT VÍ DỤ MẪU NÀY:
+            👇 TRẢ VỀ DUY NHẤT 1 KHỐI JSON, KHÔNG BỌC MARKDOWN, BẮT CHƯỚC Y HỆT VÍ DỤ NÀY:
             {
-                "suy_luan": "Khách nói 'phim đó' và hỏi rạp Lotte. Ở câu trên khách đang nhắc đến phim Cô Dâu. Vậy Tên phim là Cô Dâu, rạp là Lotte.",
-                "nhan_dien_phim": "Tên phim thật (VD: Cô Dâu). KHÔNG ĐƯỢC ghi 'phim đó'",
-                "nhan_dien_rap": "Tên rạp thật (VD: Lotte).",
+                "suy_luan": "Khách nói 'phim đó', câu trước nhắc phim Cô Dâu. Vậy Tên phim là Cô Dâu.",
+                "nhan_dien_phim": "Tên phim thật (VD: Cô Dâu). KHÔNG ĐƯỢC ghi chữ 'phim đó'",
+                "nhan_dien_rap": "Tên rạp thật (VD: Lotte). KHÔNG ĐƯỢC ghi chữ 'rạp đó'",
                 "phan_loai_hanh_dong": "tim_lich_chieu",
                 "cau_tra_loi": ""
             }
@@ -158,29 +154,28 @@ export const handleChat = async (req, res) => {
             const aiData = JSON.parse(responseText);
             console.log("🗣️ [AI SUY LUẬN]:", aiData.suy_luan);
 
-            // 🔥 NODE.JS GÁNH TẠ CỨU BÀN LẦN CUỐI
             let phimDaNhanDien = aiData.nhan_dien_phim;
-            // Nếu AI vẫn cứng đầu trả về "phim đó" hoặc null -> Node.js tự nhảy vào lịch sử móc ra!
-            if (!phimDaNhanDien || phimDaNhanDien.toLowerCase().includes("phim đó") || phimDaNhanDien.toLowerCase().includes("phim này") || phimDaNhanDien.toLowerCase() === "null") {
-                const doanChat = recentChats.toLowerCase();
-                // Tìm xem có tên phim nào trong DB lọt vào đoạn chat cũ không (Bỏ qua mấy phim tên quá ngắn như "Mai" để tránh lỗi trùng chữ thường)
-                const phimCu = movies.find(m => m.title.length > 3 && doanChat.includes(m.title.toLowerCase()));
-                if (phimCu) {
-                    phimDaNhanDien = phimCu.title;
-                    console.log(`⚡ [NODE.JS] AI ngu, tự mò ra phim cũ: [${phimDaNhanDien}]`);
+            let rapDaNhanDien = aiData.nhan_dien_rap;
+
+            // 🔥 BƯỚC 2: CỨU BÀN BẰNG REGEX (Không thèm dùng DB nữa)
+            if (!phimDaNhanDien || phimDaNhanDien.toLowerCase().includes("phim") || phimDaNhanDien === "null") {
+                // Quét thẳng vào lịch sử chat xem có chữ nào nằm trong ngoặc kép sau chữ "phim" không
+                const matchPhim = recentChats.match(/phim ["']?([^"']+)["']?/i);
+                if (matchPhim && matchPhim[1] && !matchPhim[1].includes("đó") && !matchPhim[1].includes("này")) {
+                    phimDaNhanDien = matchPhim[1].trim();
+                    console.log(`⚡ [REGEX NODE.JS] Móc họng lịch sử lấy được phim: [${phimDaNhanDien}]`);
                 } else {
                     phimDaNhanDien = null;
                 }
             }
             aiData.nhan_dien_phim = phimDaNhanDien;
 
-            let rapDaNhanDien = aiData.nhan_dien_rap;
-            if (!rapDaNhanDien || rapDaNhanDien.toLowerCase().includes("rạp đó") || rapDaNhanDien.toLowerCase().includes("rạp kia") || rapDaNhanDien.toLowerCase() === "null") {
-                const doanChat = recentChats.toLowerCase();
-                const rapCu = theaters.find(t => doanChat.includes(t.name.toLowerCase()));
-                if (rapCu) {
-                    rapDaNhanDien = rapCu.name;
-                    console.log(`⚡ [NODE.JS] AI ngu, tự mò ra rạp cũ: [${rapDaNhanDien}]`);
+            // Làm tương tự với rạp
+            if (!rapDaNhanDien || rapDaNhanDien.toLowerCase().includes("rạp") || rapDaNhanDien === "null") {
+                const matchRap = recentChats.match(/rạp ([a-zA-Z0-9\s]+)(?:\.|,|\?|$)/i);
+                if (matchRap && matchRap[1] && !matchRap[1].includes("đó") && !matchRap[1].includes("nào")) {
+                    rapDaNhanDien = matchRap[1].replace(/không|có/gi, "").trim();
+                    console.log(`⚡ [REGEX NODE.JS] Móc họng lịch sử lấy được rạp: [${rapDaNhanDien}]`);
                 } else {
                     rapDaNhanDien = null;
                 }
