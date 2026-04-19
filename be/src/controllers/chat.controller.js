@@ -124,25 +124,24 @@ export const handleChat = async (req, res) => {
         }).join('\n');
 
         const prompt = `
-            Bạn là bộ não NLU. Nhiệm vụ của bạn là đọc LỊCH SỬ và CÂU HIỆN TẠI để bóc tách thông tin.
+            Nhiệm vụ của bạn là Trích xuất thông tin Tên Phim và Tên Rạp từ câu nói của khách.
             
-            LỊCH SỬ 4 CÂU GẦN NHẤT:
+            LỊCH SỬ CHAT:
             ${recentChats}
             
-            CÂU HIỆN TẠI CỦA KHÁCH: "${userMessage}"
+            CÂU HIỆN TẠI: "${userMessage}"
             
-            🚨 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐẠI TỪ: 
-            - Khách rất hay dùng từ "phim đó", "phim này", "rạp đó".
-            - BẠN KHÔNG ĐƯỢC LƯỜI BIẾNG để null! Hãy đọc ngược lên LỊCH SỬ xem khách vừa nhắc đến phim gì, rạp gì ở ngay câu trên để điền vào.
-            
-            BẮT BUỘC TRẢ VỀ CHUẨN JSON NÀY (Phải điền 'suy_luan' đầu tiên để phân tích):
+            🚨 QUY TẮC "BẮT" ĐẠI TỪ (QUAN TRỌNG NHẤT):
+            Nếu khách nói "phim đó", "phim này", hoặc "thế rạp Lotte thì sao"... BẮT BUỘC bạn phải lấy Tên Phim hoặc Tên Rạp đã được nhắc đến ở câu ngay phía trên trong Lịch Sử để điền vào. KHÔNG ĐƯỢC ĐỂ NULL nếu lịch sử đã có!
+
+            👇 HÃY TRẢ VỀ CHUẨN JSON, BẮT CHƯỚC Y HỆT THEO VÍ DỤ NÀY:
             {
-                "suy_luan": "Viết nháp phân tích của bạn ra đây (VD: Khách nói 'phim đó', ở câu trên khách đang hỏi phim 'Cô Dâu', vậy tên phim là 'Cô Dâu').",
-                "nhan_dien_phim": "Tên phim cụ thể sau khi đã dịch từ 'phim đó'.",
-                "nhan_dien_rap": "Tên rạp cụ thể sau khi đã dịch từ 'rạp đó'.",
-                "phan_loai_hanh_dong": "Chọn 1: 'tim_lich_chieu' (khi hỏi suất chiếu/rạp/ghế), 'goi_y_phim', 'dat_ve', 'tro_chuyen'",
+                "suy_luan": "Câu trước đang nói phim Cô Dâu, câu này khách hỏi rạp Lotte. Vậy tên phim là Cô Dâu, tên rạp là Lotte.",
+                "nhan_dien_phim": "Cô Dâu",
+                "nhan_dien_rap": "Lotte",
+                "phan_loai_hanh_dong": "tim_lich_chieu",
                 "danh_sach_id_phim": [], 
-                "cau_tra_loi": "Câu trò chuyện của bạn."
+                "cau_tra_loi": ""
             }
         `;
 
