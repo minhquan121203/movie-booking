@@ -153,13 +153,21 @@ export const handleChat = async (req, res) => {
             const aiData = JSON.parse(responseText);
             console.log("🧠 [AI TRÍCH XUẤT]:", aiData.nhan_dien_phim, "|", aiData.nhan_dien_rap, "|", aiData.phan_loai_hanh_dong);
 
-            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN
-            if (aiData.phan_loai_hanh_dong === "tim_lich_chieu" || aiData.phan_loai_hanh_dong === "tim_ghe") {
+            // 🔥 CHIÊU TRẤN PHÁI: NODE.JS BẮT BÀI VÀ ÉP LẠI HÀNH ĐỘNG CỦA AI
+            let hanhDong = aiData.phan_loai_hanh_dong;
 
-                // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP -> Báo số ghế trống
+            // Nếu AI bắt được Tên Phim hoặc Tên Rạp, nhưng lại lanh chanh chọn "goi_y_phim" -> Ép nó về "tim_lich_chieu"
+            if ((aiData.nhan_dien_phim || aiData.nhan_dien_rap) && (hanhDong === "goi_y_phim" || hanhDong === "tro_chuyen")) {
+                hanhDong = "tim_lich_chieu";
+                console.log("⚡ [NODE.JS] Đã phát hiện AI phân loại sai, tự động ép về: tim_lich_chieu");
+            }
+
+            // 🚀 BƯỚC 2: LOGIC NODE.JS TIẾP QUẢN
+            if (hanhDong === "tim_lich_chieu" || hanhDong === "tim_ghe") {
+
+                // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP -> Báo số ghế
                 if (aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
                     console.log(`🤖 [NODE.JS] Check ghế: Phim [${aiData.nhan_dien_phim}] tại Rạp [${aiData.nhan_dien_rap}]`);
-
                     const matchedSchedule = rawSchedules.find(s =>
                         s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()) &&
                         s.theater?.name?.toLowerCase().includes(aiData.nhan_dien_rap.toLowerCase())
@@ -171,16 +179,12 @@ export const handleChat = async (req, res) => {
                         botResponse.text = `Fen ơi tớ check kỹ rồi, phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen đổi rạp khác nha?`;
                     }
                 }
-                // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP -> Liệt kê các rạp đang chiếu phim đó! (TÍNH NĂNG VIP)
+                // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP -> Tìm rạp chiếu
                 else if (aiData.nhan_dien_phim && !aiData.nhan_dien_rap) {
                     console.log(`🤖 [NODE.JS] Tìm danh sách rạp đang chiếu phim: [${aiData.nhan_dien_phim}]`);
-
-                    // Quét Database tìm tất cả rạp có lịch chiếu phim này
                     const cacRapDangChieu = rawSchedules
                         .filter(s => s.movie?.title?.toLowerCase().includes(aiData.nhan_dien_phim.toLowerCase()))
                         .map(s => s.theater?.name);
-
-                    // Lọc trùng lặp tên rạp
                     const danhSachRap = [...new Set(cacRapDangChieu)];
 
                     if (danhSachRap.length > 0) {
@@ -189,10 +193,40 @@ export const handleChat = async (req, res) => {
                         botResponse.text = `Buồn quá fen ơi, hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào có lịch chiếu cả. Fen xem phim khác được không?`;
                     }
                 }
-                // TRƯỜNG HỢP 3: THIẾU CẢ 2 -> Báo AI tự hỏi lại
+                // TRƯỜNG HỢP 3: CÓ RẠP NHƯNG KHÔNG CÓ PHIM -> Hỏi lại tên phim
+                else if (!aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
+                    botResponse.text = `Tớ đã ghi nhận rạp **${aiData.nhan_dien_rap}** rồi. Nhưng fen muốn check ghế cho bộ phim nào ở rạp này nhỉ?`;
+                }
+                // TRƯỜNG HỢP 4: THIẾU CẢ 2
                 else {
                     botResponse.text = aiData.cau_tra_loi;
                 }
+                botResponse.type = "text";
+            }
+
+            // XỬ LÝ CÁC HÀNH ĐỘNG KHÁC (GỢI Ý PHIM, ĐẶT VÉ...)
+            else if (hanhDong === "goi_y_phim" || hanhDong === "dat_ve") {
+                botResponse.text = aiData.cau_tra_loi;
+                botResponse.type = hanhDong === "goi_y_phim" ? "movie_list" : "action_booking";
+
+                if (aiData.danh_sach_id_phim && Array.isArray(aiData.danh_sach_id_phim)) {
+                    const foundMovies = movies.filter(m => aiData.danh_sach_id_phim.includes(m._id.toString()));
+                    botResponse.data = foundMovies.map(m => ({
+                        _id: m._id,
+                        title: m.title,
+                        genre: m.genres && m.genres.length > 0 ? m.genres.map(g => g.name).join(", ") : "Đang chiếu",
+                        poster: m.posterUrl || m.image || m.hinhAnh || m.thumbnail || "https://placehold.co/150x200?text=No+Poster"
+                    }));
+                }
+            }
+            else {
+                botResponse.text = aiData.cau_tra_loi;
+                botResponse.type = "text";
+            }
+
+            // 🔥 BỨC TƯỜNG CHỐNG MÓM (NẾU AI TRẢ VỀ TEXT RỖNG)
+            if (!botResponse.text || botResponse.text.trim() === "") {
+                botResponse.text = "Hệ thống đang tải dữ liệu hơi chậm xíu, fen nói lại giúp tớ nha!";
                 botResponse.type = "text";
             }
 
