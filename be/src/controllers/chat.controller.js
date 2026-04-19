@@ -226,3 +226,5 @@ export const handleChat = async (req, res) => {
         res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
     }
 };
+
+export default { handleChat };
