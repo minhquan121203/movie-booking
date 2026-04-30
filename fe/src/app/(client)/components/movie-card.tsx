@@ -50,7 +50,7 @@ export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
         <div className="mt-3 sm:mt-4">
           {showBookButton ? (
             <Button asChild className="w-full bg-violet-600 hover:bg-violet-700 text-white border-0 font-bold rounded h-9 sm:h-10 text-xs sm:text-sm px-2 shadow-md">
-              <Link href={`/booking/${movie._id}`}>
+              <Link href={`/movies/${movie._id}`}>
                 <Ticket className="w-4 h-4 mr-1 sm:mr-2" />
                 MUA VÉ
               </Link>
