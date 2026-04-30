@@ -25,11 +25,13 @@ export default function HomePage() {
 
   // Fetch Phim Đang Chiếu 
   const { data: nowShowingData, isLoading: loadingNow } = useMovies({
+    limit: 100,
     status: 'Đang chiếu', 
   })
 
   // Fetch Phim Sắp Chiếu 
   const { data: comingSoonData, isLoading: loadingSoon } = useMovies({
+    limit: 100,
     status: 'Sắp chiếu', 
   })
 
