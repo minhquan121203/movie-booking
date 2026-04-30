@@ -19,7 +19,7 @@ export default function ChatBot() {
     { 
       role: 'bot', 
       content: { 
-        text: 'Chào fen! Tớ là CineBot, nay fen muốn xem phim thể loại gì hay tìm rạp nào gần đây?', 
+        text: 'Chào bạn! Tớ là CineBot, nay bạn muốn xem phim thể loại gì hay tìm rạp nào gần đây?', 
         type: 'text', 
         data: [] 
       } 
