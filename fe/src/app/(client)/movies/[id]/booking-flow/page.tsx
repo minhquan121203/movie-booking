@@ -63,6 +63,15 @@ export default function BookingPage() {
           />
         )
       case 2:
+        if (preSelectedScheduleId && !selectedSchedule) {
+          return (
+            <div className="flex flex-col items-center justify-center py-32 text-violet-600">
+              <Loader2 className="w-12 h-12 animate-spin mb-4" />
+              <p className="font-bold text-lg animate-pulse">Đang chuẩn bị phòng chiếu...</p>
+            </div>
+          )
+        }
+
         return (
           <StepSeatSelection
             selectedSeats={selectedSeats}
