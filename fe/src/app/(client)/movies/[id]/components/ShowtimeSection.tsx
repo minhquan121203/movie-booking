@@ -2,49 +2,54 @@
 import { Button } from '@/components/ui/button'
 import { MapPin } from 'lucide-react'
 import { useSchedules } from '@/lib/api/schedules'
-import { useParams } from 'next/navigation'
 import { DEFAULT_SCHEDULE_LIST } from '@/constants'
 import Link from 'next/link'
-export function ShowtimeSection() {
-  const { id } = useParams()
-  const movieId = Array.isArray(id) ? id[0] : id
 
-  const { data = DEFAULT_SCHEDULE_LIST } = useSchedules({ movieId })
-  const showtimes = data.schedules
+interface ShowtimeSectionProps {
+  movieId?: string; 
+}
+
+export function ShowtimeSection({ movieId }: ShowtimeSectionProps) {
+  const { data = DEFAULT_SCHEDULE_LIST } = useSchedules({ movieId: movieId ?? '' })
+  const showtimes = data.schedules || []
   if (showtimes.length === 0) {
     return (
       <section className="py-6">
-        <h2 className="text-lg font-semibold mb-4">Lịch chiếu</h2>
-        <p className="text-text-secondary">Hiện chưa có lịch chiếu cho phim này.</p>
+        <h2 className="text-lg font-semibold mb-4 uppercase tracking-wider text-text-primary">Lịch chiếu</h2>
+        <p className="text-text-secondary italic">Hiện chưa có lịch chiếu cho phim này.</p>
       </section>
     )
   }
+
   return (
     <section className="py-6">
-      <h2 className="text-lg font-semibold mb-4">Lịch chiếu</h2>
+      <h2 className="text-lg font-semibold mb-6 uppercase tracking-wider text-text-primary border-l-4 border-violet-600 pl-4">
+        Lịch chiếu
+      </h2>
 
       <div className="flex flex-wrap gap-4">
         {showtimes.map((show, i) => (
           <div
-            key={i}
-            className="flex items-center justify-between w-full md:w-[48%] border border-border rounded-2xl bg-surface px-6 py-4 hover:border-primary/60 transition-all"
+            key={show._id || i}
+            className="flex items-center justify-between w-full md:w-[48%] border border-border rounded-2xl bg-card p-5 hover:border-violet-600/50 hover:shadow-md transition-all group"
           >
             <div>
-              <p className="text-xl font-semibold text-primary">
+              <p className="text-xl font-bold text-violet-600">
                 {new Date(show.showDate).toLocaleDateString('vi-VN')}
               </p>
-              <p className="text-sm text-text-primary mt-1">{show.theater.name}</p>
+              <p className="text-sm font-semibold text-text-primary mt-1">{show.theater.name}</p>
               <div className="flex items-center gap-1 text-xs text-text-secondary mt-1">
-                <MapPin className="w-3 h-3 text-primary" />
-                {show.roomName}
+                <MapPin className="w-3 h-3 text-violet-600" />
+                Phòng chiếu: {show.roomName}
               </div>
             </div>
 
             <Button
+              asChild
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-white rounded-lg text-sm px-5 py-2"
+              className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-6 py-5"
             >
-              <Link href={`/movies/${movieId}/booking-flow?scheduleId=${show._id}`} className="">
+              <Link href={`/movies/${movieId}/booking-flow?scheduleId=${show._id}`}>
                 Đặt vé
               </Link>
             </Button>
