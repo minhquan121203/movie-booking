@@ -67,10 +67,11 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     fetchScheduleDetail()
   }, [preSelectedScheduleId])
 
-  // --- WEBSOCKET SEAT MANAGEMENT ---
+  const activeScheduleId = preSelectedScheduleId || selectedSchedule?._id || null;
+
   const { realTimeSeats, viewerCount, isInRoom, holdSeats, releaseSeats } = useSeatSocket({
     socket,
-    scheduleId: selectedSchedule?._id || null,
+    scheduleId: activeScheduleId, 
     isConnected,
   })
 

@@ -11,7 +11,7 @@ import { StepSeatSelection } from './components/steps/StepSeatSelection'
 import { StepCombo } from './components/steps/StepCombo'
 import { StepPaymentMethod } from './components/steps/StepPaymentMethod'
 import { StepPayment } from './components/steps/StepPayment'
-import { WebSocketDebug } from './WebSocketDebug' // Import debug component
+import { WebSocketDebug } from './WebSocketDebug' 
 import { useParams, useSearchParams } from 'next/navigation'
 
 export default function BookingPage() {
