@@ -18,6 +18,7 @@ export default function HomePage() {
 
   // Fetch Top Movies
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
+    limit: 12,
     sortBy: 'averageRating',
     order: 'desc',
   })
