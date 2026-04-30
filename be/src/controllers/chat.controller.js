@@ -158,7 +158,6 @@ export const handleChat = async (req, res) => {
             let phimDaNhanDien = aiData.nhan_dien_phim;
             let rapDaNhanDien = aiData.nhan_dien_rap;
 
-            // 🔥 BƯỚC 2: CỨU BÀN BẰNG REGEX (Không thèm dùng DB nữa)
             if (!phimDaNhanDien || phimDaNhanDien.toLowerCase().includes("phim") || phimDaNhanDien === "null") {
                 // Quét thẳng vào lịch sử chat xem có chữ nào nằm trong ngoặc kép sau chữ "phim" không
                 const matchPhim = recentChats.match(/phim ["']?([^"']+)["']?/i);
@@ -190,7 +189,7 @@ export const handleChat = async (req, res) => {
                 hanhDong = "tim_lich_chieu";
             }
 
-            // 🚀 BƯỚC 2: LOGIC QUÉT DATABASE
+            // BƯỚC 2: LOGIC QUÉT DATABASE
             if (hanhDong === "tim_lich_chieu" || hanhDong === "tim_ghe") {
 
                 // TRƯỜNG HỢP 1: CÓ CẢ PHIM VÀ RẠP
@@ -202,9 +201,9 @@ export const handleChat = async (req, res) => {
                     );
 
                     if (matchedSchedule) {
-                        botResponse.text = `Tuyệt vời! Phim **${matchedSchedule.movie.title}** tại rạp **${matchedSchedule.theater.name}** đang còn **${matchedSchedule.availableSeats} ghế trống**. Fen chốt luôn không tớ đặt cho!`;
+                        botResponse.text = `Tuyệt vời! Phim **${matchedSchedule.movie.title}** tại rạp **${matchedSchedule.theater.name}** đang còn **${matchedSchedule.availableSeats} ghế trống**. ${userName} chốt luôn không để tớ đặt cho!`;
                     } else {
-                        botResponse.text = `Fen ơi tớ check kỹ rồi, phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Fen đổi rạp khác nha?`;
+                        botResponse.text = `Tớ check kỹ rồi, phim "${aiData.nhan_dien_phim}" không có suất chiếu nào ở rạp "${aiData.nhan_dien_rap}" cả. Bạn đổi rạp khác nha?`;
                     }
                 }
                 // TRƯỜNG HỢP 2: CÓ PHIM NHƯNG KHÔNG CÓ RẠP
@@ -215,14 +214,14 @@ export const handleChat = async (req, res) => {
                     const danhSachRap = [...new Set(cacRapDangChieu)];
 
                     if (danhSachRap.length > 0) {
-                        botResponse.text = `Tớ thấy phim **${aiData.nhan_dien_phim}** đang chiếu tại: **${danhSachRap.join(", ")}**. Fen tiện đi rạp nào nhất?`;
+                        botResponse.text = `Tớ thấy phim **${aiData.nhan_dien_phim}** đang chiếu tại: **${danhSachRap.join(", ")}**. Bạn tiện đi rạp nào nhất?`;
                     } else {
-                        botResponse.text = `Hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào chiếu cả fen ạ.`;
+                        botResponse.text = `Hiện tại phim "${aiData.nhan_dien_phim}" tớ không thấy rạp nào chiếu cả bạn ạ.`;
                     }
                 }
                 // TRƯỜNG HỢP 3: CÓ RẠP NHƯNG KHÔNG CÓ PHIM
                 else if (!aiData.nhan_dien_phim && aiData.nhan_dien_rap) {
-                    botResponse.text = `Tớ ghi nhận rạp **${aiData.nhan_dien_rap}** rồi. Nhưng fen muốn check ghế phim nào ở rạp này nhỉ?`;
+                    botResponse.text = `Tớ ghi nhận rạp **${aiData.nhan_dien_rap}** rồi. Nhưng ${userName} muốn check ghế phim nào ở rạp này nhỉ?`;
                 }
                 // TRƯỜNG HỢP 4: THIẾU CẢ 2
                 else {
@@ -251,9 +250,8 @@ export const handleChat = async (req, res) => {
                 botResponse.type = "text";
             }
 
-            // 🔥 BỨC TƯỜNG CHỐNG MÓM (NẾU AI TRẢ VỀ TEXT RỖNG)
             if (!botResponse.text || botResponse.text.trim() === "") {
-                botResponse.text = "Hệ thống đang tải dữ liệu hơi chậm xíu, fen nói lại giúp tớ nha!";
+                botResponse.text = "Hệ thống đang tải dữ liệu hơi chậm xíu, bạn nói lại giúp tớ nha!";
                 botResponse.type = "text";
             }
 
@@ -282,14 +280,14 @@ export const handleChat = async (req, res) => {
 
             return res.json({
                 botMessage: {
-                    text: "Hệ thống vừa đổi cụm máy chủ để tăng tốc độ. Fen vui lòng gửi lại tin nhắn vừa rồi giúp tớ nhé!",
+                    text: "Hệ thống vừa đổi cụm máy chủ để tăng tốc độ. Bạn vui lòng gửi lại tin nhắn vừa rồi giúp tớ nhé!",
                     type: "text",
                     data: []
                 }
             });
         }
 
-        res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, fen đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
+        res.status(500).json({ botMessage: { text: "Tớ đang đi mua bắp, bạn đợi tí hỏi lại tớ nha!", type: "text", data: [] } });
     }
 };
 
