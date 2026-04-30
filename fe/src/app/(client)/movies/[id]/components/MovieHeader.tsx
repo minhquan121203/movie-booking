@@ -166,7 +166,10 @@ export function MovieHeader({ showtimes = [], isLoadingSchedules = false }: Movi
               </Button>
             ) : hasSchedules ? (
               <Button asChild className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl h-14 shadow-lg">
-                <Link href={`/booking/${movie._id}`} className="flex items-center justify-center w-full text-lg font-bold uppercase">
+                <Link
+                  href={`/movies/${movie._id}/booking-flow`} 
+                  className="flex items-center justify-center w-full py-5 text-base font-medium"
+                >
                   Đặt vé ngay
                 </Link>
               </Button>
