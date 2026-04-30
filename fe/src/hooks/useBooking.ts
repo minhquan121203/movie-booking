@@ -51,9 +51,13 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       if (!preSelectedScheduleId) return
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'}/api/schedules/${preSelectedScheduleId}` 
-        )
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com';
+        
+        const fetchUrl = baseUrl.endsWith('/api') 
+          ? `${baseUrl}/schedules/${preSelectedScheduleId}` 
+          : `${baseUrl}/api/schedules/${preSelectedScheduleId}`;
+
+        const res = await fetch(fetchUrl)
         const json = await res.json()
 
         if (json?.data) {
