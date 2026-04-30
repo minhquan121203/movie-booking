@@ -18,20 +18,17 @@ export default function HomePage() {
 
   // Fetch Top Movies
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
-    limit: 10,
     sortBy: 'averageRating',
     order: 'desc',
   })
 
   // Fetch Phim Đang Chiếu 
   const { data: nowShowingData, isLoading: loadingNow } = useMovies({
-    limit: 8,
     status: 'Đang chiếu', 
   })
 
   // Fetch Phim Sắp Chiếu 
   const { data: comingSoonData, isLoading: loadingSoon } = useMovies({
-    limit: 8,
     status: 'Sắp chiếu', 
   })
 
@@ -72,6 +69,16 @@ export default function HomePage() {
             <div className="flex bg-muted/50 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto shadow-inner">
               
               <button
+                onClick={() => setActiveTab('top')}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                  activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Flame className="w-4 h-4" />
+                TOP MOVIES
+              </button>
+
+              <button
                 onClick={() => setActiveTab('now')}
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
                   activeTab === 'now' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -89,16 +96,6 @@ export default function HomePage() {
               >
                 <CalendarClock className="w-4 h-4" />
                 SẮP CHIẾU
-              </button>
-
-              <button
-                onClick={() => setActiveTab('top')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
-                  activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Flame className="w-4 h-4" />
-                TOP MOVIES
               </button>
 
             </div>
