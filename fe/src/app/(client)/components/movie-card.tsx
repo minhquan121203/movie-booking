@@ -6,7 +6,7 @@ import type { Movie } from '@/types/movie'
 interface MovieCardProps {
   movie: Movie
   index?: number
-  showBookButton?: boolean // Thêm biến này để quyết định có hiện nút Mua vé hay không
+  showBookButton?: boolean
 }
 
 export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
@@ -35,7 +35,7 @@ export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
       <div className="p-3 sm:p-4 flex flex-col flex-grow justify-between">
         <div>
           <Link href={`/movies/${movie._id}`}>
-            <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 sm:truncate uppercase hover:text-[hsl(var(--primary))] transition-colors" title={movie.title}>
+            <h3 className="text-base sm:text-lg font-bold text-foreground line-clamp-2 sm:truncate uppercase hover:text-violet-600 transition-colors" title={movie.title}>
               {movie.title}
             </h3>
           </Link>
@@ -46,19 +46,17 @@ export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
           </div>
         </div>
 
-        {/* LOGIC NÚT BẤM DƯỚI ĐÁY */}
+        {/* LOGIC NÚT MUA VÉ (Chốt cứng màu Tím violet-600 để không bao giờ bị tàng hình) */}
         <div className="mt-3 sm:mt-4">
           {showBookButton ? (
-            // Nếu phim Đang chiếu -> Hiện nút Mua Vé
-            <Button asChild className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/90] text-primary-foreground font-bold rounded h-9 sm:h-10 text-xs sm:text-sm px-2">
+            <Button asChild className="w-full bg-violet-600 hover:bg-violet-700 text-white border-0 font-bold rounded h-9 sm:h-10 text-xs sm:text-sm px-2 shadow-md">
               <Link href={`/booking/${movie._id}`}>
                 <Ticket className="w-4 h-4 mr-1 sm:mr-2" />
                 MUA VÉ
               </Link>
             </Button>
           ) : (
-            // Nếu phim Sắp chiếu -> Hiện nút Xem chi tiết (để layout không bị lùn đi)
-            <Button asChild variant="outline" className="w-full border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/10] font-bold rounded h-9 sm:h-10 text-xs sm:text-sm px-2">
+            <Button asChild variant="outline" className="w-full border-violet-600 text-violet-600 hover:bg-violet-50 font-bold rounded h-9 sm:h-10 text-xs sm:text-sm px-2">
               <Link href={`/movies/${movie._id}`}>
                 <Info className="w-4 h-4 mr-1 sm:mr-2" />
                 CHI TIẾT

@@ -11,7 +11,6 @@ interface MovieSectionProps {
   isLoading?: boolean
 }
 
-// Skeleton cũng phải nhỏ bằng 6 cột cho đồng bộ
 function MovieCardSkeleton() {
   return (
     <div className="flex flex-row sm:flex-col bg-background rounded-xl border border-border shadow-sm overflow-hidden h-full">
@@ -35,10 +34,12 @@ function MovieSectionSkeleton({ title, viewAllHref }: { title: string; viewAllHr
           {title}
         </h2>
       </div>
-      {/* CHIA 6 CỘT ĐỂ THẺ NHỎ LẠI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+      <div className="flex overflow-hidden gap-4 sm:gap-6 pb-4">
         {[...Array(6)].map((_, index) => (
-          <MovieCardSkeleton key={index} />
+          // Khung xương skeleton cũng phải rộng tương đương thẻ phim
+          <div key={index} className="w-[65%] sm:w-[45%] md:w-[32%] lg:w-[22%] xl:w-[16%] shrink-0">
+            <MovieCardSkeleton />
+          </div>
         ))}
       </div>
     </section>
@@ -47,7 +48,6 @@ function MovieSectionSkeleton({ title, viewAllHref }: { title: string; viewAllHr
 
 export function MovieSection({ title, movies, viewAllHref, isLoading = false }: MovieSectionProps) {
   
-  // LOGIC CHECK: Nếu title có chữ "Sắp chiếu" (hoặc "coming soon") thì tắt nút Mua vé đi
   const isComingSoon = title.toLowerCase().includes('sắp chiếu') || title.toLowerCase().includes('sắp tới');
   const showBookBtn = !isComingSoon;
 
@@ -74,7 +74,7 @@ export function MovieSection({ title, movies, viewAllHref, isLoading = false }: 
         <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
           {title}
         </h2>
-        <Button variant="ghost" asChild className="text-sm hover:text-[hsl(var(--primary))]">
+        <Button variant="ghost" asChild className="text-sm hover:text-violet-600">
           <Link href={viewAllHref}>
             Xem tất cả
             <ChevronRight className="ml-2 h-4 w-4" />
@@ -82,15 +82,20 @@ export function MovieSection({ title, movies, viewAllHref, isLoading = false }: 
         </Button>
       </div>
 
-      {/* ÉP KÍCH THƯỚC: xl:grid-cols-6 sẽ làm thẻ phim nhỏ bằng với Top Movies */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+      {/* CHIẾN THUẬT MỚI: Thanh trượt vuốt ngang (ẩn thanh cuộn) */}
+      <div className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         {movies.map((movie, index) => (
-          <MovieCard 
+          /* ĐỊNH CỠ THẺ: Điện thoại chiếu 1.5 thẻ, Máy tính chiếu 6 thẻ (nhỏ bằng Top Movies) */
+          <div 
             key={movie._id} 
-            movie={movie} 
-            index={index} 
-            showBookButton={showBookBtn} // Truyền cờ ẩn/hiện nút Mua vé vào đây
-          />
+            className="w-[65%] sm:w-[45%] md:w-[32%] lg:w-[22%] xl:w-[16%] shrink-0 snap-start"
+          >
+            <MovieCard 
+              movie={movie} 
+              index={index} 
+              showBookButton={showBookBtn} 
+            />
+          </div>
         ))}
       </div>
     </section>
