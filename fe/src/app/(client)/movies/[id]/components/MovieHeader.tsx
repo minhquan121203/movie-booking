@@ -147,17 +147,28 @@ export function MovieHeader() {
           </div>
 
           {/* Booking Button */}
-          <Button
-            asChild
-            className="w-full bg-primary hover:bg-primary/90 text-white rounded-lg p-0"
-          >
-            <Link
-              href={`/movies/${movie._id}/booking-flow`}
-              className="flex items-center justify-center w-full py-5 text-base font-medium"
+          {movie.status === 'Sắp chiếu' ? (
+             // NẾU LÀ PHIM SẮP CHIẾU: Hiện nút xám, vô hiệu hóa (disabled)
+            <Button
+              disabled
+              className="w-full bg-gray-200 hover:bg-gray-200 text-gray-500 rounded-lg h-[64px] text-base font-bold cursor-not-allowed"
             >
-              Đặt vé ngay
-            </Link>
-          </Button>
+              Chưa có lịch chiếu
+            </Button>
+          ) : (
+             // NẾU LÀ PHIM ĐANG CHIẾU: Hiện nút màu Tím xịn sò như cũ
+            <Button
+              asChild
+              className="w-full bg-primary hover:bg-primary/90 text-white rounded-lg p-0"
+            >
+              <Link
+                href={`/movies/${movie._id}/booking-flow`}
+                className="flex items-center justify-center w-full py-5 text-base font-medium"
+              >
+                Đặt vé ngay
+              </Link>
+            </Button>
+          )}
         </div>
 
         {/* Trailer Modal */}

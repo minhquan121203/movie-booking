@@ -204,7 +204,6 @@ function MoviesContent() {
   )
 }
 
-// Bọc cái khiên Suspense ở ngoài cùng này
 export default function PhimLoc() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white">Đang tải trang phim...</div>}>
