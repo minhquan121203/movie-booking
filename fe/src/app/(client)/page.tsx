@@ -108,14 +108,21 @@ export default function HomePage() {
             <div className="text-center py-20 text-muted-foreground animate-pulse">Đang tải dữ liệu phim...</div>
           ) : displayMovies.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
-              {displayMovies.map((movie, index) => (
-                <MovieCard 
-                  key={movie._id} 
-                  movie={movie} 
-                  index={index} 
-                  showBookButton={activeTab !== 'coming'} 
-                />
-              ))}
+              {displayMovies.map((movie, index) => {
+                
+                const hasActiveSchedules = movie.hasSchedules === true || (movie.schedules && movie.schedules.length > 0)
+                
+                const canBook = activeTab !== 'coming' && hasActiveSchedules
+
+                return (
+                  <MovieCard 
+                    key={movie._id} 
+                    movie={movie} 
+                    index={index} 
+                    showBookButton={canBook} 
+                  />
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-20 bg-muted/10 rounded-2xl border-2 border-dashed border-muted animate-in fade-in duration-500">
