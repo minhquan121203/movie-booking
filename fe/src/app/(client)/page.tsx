@@ -36,15 +36,12 @@ export default function HomePage() {
     status: 'Sắp chiếu', 
   })
 
-  // --- BƯỚC 1: LẤY TẤT CẢ LỊCH CHIẾU VÀ LỌC ID PHIM ---
   const { data: allSchedulesData } = useSchedules({ limit: 1000 })
   const allActiveSchedules = allSchedulesData?.schedules || []
 
-  // Tạo một Set chứa ID của các phim ĐANG CÓ LỊCH 
   const moviesWithSchedules = new Set(
     allActiveSchedules.map((schedule: any) => schedule.movie?._id || schedule.movieId)
   )
-  // ----------------------------------------------------
 
   const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
@@ -122,8 +119,7 @@ export default function HomePage() {
               {displayMovies.map((movie, index) => {
                 
                 // --- BƯỚC 2: SO SÁNH ID ---
-                // Chỉ hiện nút mua vé nếu không phải tab sắp chiếu VÀ ID phim nằm trong tập hợp có lịch chiếu
-                const canBook = activeTab !== 'coming' && moviesWithSchedules.has(movie._id)
+                const canBook = moviesWithSchedules.has(movie._id)
 
                 return (
                   <MovieCard 
