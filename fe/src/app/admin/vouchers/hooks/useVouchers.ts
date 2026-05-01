@@ -80,9 +80,11 @@ export const useVouchers = () => {
     try {
       const token = localStorage.getItem('accessToken') || ''
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
-      const fetchUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
       
-      const url = mode === 'create' ? `${fetchUrl}/admin/vouchers` : `${fetchUrl}/admin/vouchers/${editingId}`
+      const url = mode === 'create' 
+        ? `${baseUrl}/admin/vouchers` 
+        : `${baseUrl}/admin/vouchers/${editingId}`
+
       const method = mode === 'create' ? 'POST' : 'PUT'
 
       const res = await fetch(url, {
@@ -94,17 +96,20 @@ export const useVouchers = () => {
         body: JSON.stringify({ ...formData, code: formData.code.toUpperCase() })
       })
 
+      const responseData = await res.json().catch(() => null)
+
       if (res.ok) {
         toast.success(mode === 'create' ? 'Tạo mã thành công!' : 'Cập nhật thành công!')
         fetchVouchers()
         return true
       }
       
-      const errorData = await res.json()
-      toast.error(errorData.message || 'Có lỗi xảy ra!')
+      toast.error(responseData?.message || 'Có lỗi xảy ra từ máy chủ!')
+      console.log("Lỗi chi tiết:", responseData)
       return false
-    } catch (error) {
-      toast.error('Lỗi kết nối server!')
+    } catch (error: any) {
+      toast.error(`Lỗi kết nối: ${error.message}`)
+      console.error(error)
       return false
     }
   }
