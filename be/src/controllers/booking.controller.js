@@ -627,14 +627,17 @@ const bookingController = {
 
             await customer.save({ session });
 
-            Promise.all([
-              emailService.sendBookingConfirmation(booking, customer).catch((err) => console.error("Email error:", err)),
-              customer.phoneNumber ? smsService.sendBookingConfirmation(customer.phoneNumber, booking).catch((err) => console.error("SMS error:", err)) : null,
-              Notification.createNotification({ user: customer._id, ...Notification.templates.bookingSuccess(booking) }).catch((err) => console.error("Notification error:", err)),
-            ]).catch((err) => console.error("Notification error:", err));
+            try {
+              await emailService.sendBookingConfirmation(booking, customer);
 
-            if (oldLevel !== customer.membershipLevel) {
-              Notification.createNotification({ user: customer._id, ...Notification.templates.membershipUpgrade(customer.membershipLevel) }).catch((err) => console.error("Membership upgrade notification error:", err));
+              if (oldLevel !== customer.membershipLevel) {
+                await Notification.createNotification({
+                  user: customer._id,
+                  ...Notification.templates.membershipUpgrade(customer.membershipLevel)
+                });
+              }
+            } catch (err) {
+              console.error("Lỗi gửi Email hoặc Notification:", err);
             }
           }
 
