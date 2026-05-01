@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 
+// Hàm hỗ trợ lấy token từ Cookies
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || ''
+  return ''
+}
+
 export interface Voucher {
   _id: string
   code: string
@@ -26,7 +34,7 @@ export const useVouchers = () => {
   const fetchVouchers = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('accessToken') || ''
+      const token = getCookie('authToken')
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
       const fetchUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
       
@@ -54,7 +62,7 @@ export const useVouchers = () => {
     if (!confirm('Bạn có chắc chắn muốn xóa mã giảm giá này không?')) return false
     
     try {
-      const token = localStorage.getItem('accessToken') || ''
+      const token = getCookie('authToken')
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
       const fetchUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
       
@@ -78,7 +86,7 @@ export const useVouchers = () => {
 
   const saveVoucher = async (mode: 'create' | 'edit', editingId: string | null, formData: any) => {
     try {
-      const token = localStorage.getItem('accessToken') || ''
+      const token = getCookie('authToken')
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
       
       const url = mode === 'create' 
