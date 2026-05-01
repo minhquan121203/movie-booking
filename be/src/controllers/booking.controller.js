@@ -847,10 +847,16 @@ const bookingController = {
 
       const customer = await User.findById(booking.customer);
 
-      try { await emailService.sendCancellationEmail(booking, customer, refundAmount); } catch (emailError) { console.error("Send cancellation email error:", emailError); }
-      if (customer.phoneNumber) { try { await smsService.sendCancellationNotification(customer.phoneNumber, booking, refundAmount); } catch (smsError) { console.error("Send cancellation SMS error:", smsError); } }
+      try {
+        await emailService.sendCancellationEmail(booking, customer, refundAmount);
+      } catch (emailError) {
+        console.error("Send cancellation email error:", emailError);
+      }
 
-      await Notification.createNotification({ user: customer._id, ...Notification.templates.bookingCancelled(booking) });
+      await Notification.createNotification({
+        user: customer._id,
+        ...Notification.templates.bookingCancelled(booking)
+      });
       await redisService.invalidateScheduleCache(booking.schedule.toString());
       await redisService.delPattern(`bookings:user:${booking.customer}:*`);
 
