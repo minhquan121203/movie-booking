@@ -10,6 +10,7 @@ import { useGenres } from '@/lib/api/genres'
 import { DEFAULT_THEATER_LIST, DEFAULT_GENRE_LIST } from '@/constants'
 import { MovieCard } from '@/app/(client)/components/movie-card'
 import { Flame, Popcorn, CalendarClock } from 'lucide-react'
+import { useSchedules } from '@/lib/api/schedules'
 
 export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
@@ -34,6 +35,16 @@ export default function HomePage() {
     limit: 100,
     status: 'Sắp chiếu', 
   })
+
+  // --- BƯỚC 1: LẤY TẤT CẢ LỊCH CHIẾU VÀ LỌC ID PHIM ---
+  const { data: allSchedulesData } = useSchedules({ limit: 1000 })
+  const allActiveSchedules = allSchedulesData?.schedules || []
+
+  // Tạo một Set chứa ID của các phim ĐANG CÓ LỊCH 
+  const moviesWithSchedules = new Set(
+    allActiveSchedules.map((schedule: any) => schedule.movie?._id || schedule.movieId)
+  )
+  // ----------------------------------------------------
 
   const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
@@ -110,9 +121,9 @@ export default function HomePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
               {displayMovies.map((movie, index) => {
                 
-                const hasActiveSchedules = movie.hasSchedules === true || (movie.schedules && movie.schedules.length > 0)
-                
-                const canBook = activeTab !== 'coming' && hasActiveSchedules
+                // --- BƯỚC 2: SO SÁNH ID ---
+                // Chỉ hiện nút mua vé nếu không phải tab sắp chiếu VÀ ID phim nằm trong tập hợp có lịch chiếu
+                const canBook = activeTab !== 'coming' && moviesWithSchedules.has(movie._id)
 
                 return (
                   <MovieCard 
