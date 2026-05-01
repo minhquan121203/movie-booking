@@ -68,37 +68,37 @@ export default function HomePage() {
         "
       >
         <section className="w-full">
-          <div className="flex justify-center mb-8">
-            <div className="flex bg-muted/50 p-1.5 rounded-2xl w-full sm:w-auto overflow-x-auto shadow-inner">
+          <div className="flex justify-center mb-8 w-full px-2">
+            <div className="flex items-center bg-muted/50 p-1.5 rounded-2xl w-full max-w-md mx-auto shadow-inner">
               
               <button
                 onClick={() => setActiveTab('top')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Flame className="w-4 h-4" />
-                TOP MOVIES
+                <Flame className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap uppercase">Top Movies</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('now')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'now' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Popcorn className="w-4 h-4" />
-                ĐANG CHIẾU
+                <Popcorn className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap uppercase">Đang chiếu</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('coming')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'coming' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <CalendarClock className="w-4 h-4" />
-                SẮP CHIẾU
+                <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap uppercase">Sắp chiếu</span>
               </button>
 
             </div>
