@@ -36,7 +36,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   const { data: scheduleData, isLoading: isLoadingSchedules } = useSchedules({ movieId })
   const schedules = scheduleData?.schedules || []
 
-  // --- STATE ---
+  // --- STATE CƠ BẢN ---
   const [currentStep, setCurrentStep] = useState(preSelectedScheduleId ? 2 : 1)
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [selectedSeats, setSelectedSeats] = useState<BookedSeat[]>([])
@@ -44,6 +44,12 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   const [paymentMethod, setPaymentMethod] = useState<'vnpay' | 'momo' | 'bank_transfer' | null>(null)
   const [createdBookingData, setCreatedBookingData] = useState<BookingResponseData | null>(null)
   const [paymentUrl, setPaymentUrl] = useState<string>('')
+
+  // --- VOUCHER STATE ---
+  const [voucherInput, setVoucherInput] = useState('')
+  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string, discountAmount: number } | null>(null)
+  const [voucherError, setVoucherError] = useState('')
+  const [isCheckingVoucher, setIsCheckingVoucher] = useState(false)
 
   // --- AUTO-SELECT SCHEDULE FROM preSelectedScheduleId ---
   useEffect(() => {
@@ -84,8 +90,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   const { mutate: createVNPayPayment, isPending: isCreatingVNPay } = useCreateVNPayUrl()
   const { mutate: createMoMoPayment, isPending: isCreatingMoMo } = useCreateMoMoUrl()
 
-  // --- LOGIC TÍNH TOÁN ---
-  const totalAmount = useMemo(() => {
+  // --- LOGIC TÍNH TOÁN TIỀN ---
+  const subtotalAmount = useMemo(() => {
     const seatsTotal = selectedSeats.reduce((acc, seat) => {
       const isCouple = seat.seatType?.toLowerCase().includes('đôi') || seat.seatType?.toLowerCase().includes('couple');
       return acc + (isCouple ? seat.price / 2 : seat.price);
@@ -98,6 +104,11 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     
     return seatsTotal + combosTotal;
   }, [selectedSeats, cartItems]);
+
+  const totalAmount = useMemo(() => {
+    const discount = appliedVoucher?.discountAmount || 0;
+    return Math.max(0, subtotalAmount - discount); // Tránh trường hợp giảm giá làm âm tiền
+  }, [subtotalAmount, appliedVoucher]);
 
   const totalProductQuantity = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0)
@@ -187,6 +198,57 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     })
   }
 
+  // --- VOUCHER HANDLERS ---
+  const handleApplyVoucher = async () => {
+    if (!voucherInput) return
+    setIsCheckingVoucher(true)
+    setVoucherError('')
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com';
+      const fetchUrl = baseUrl.endsWith('/api') 
+        ? `${baseUrl}/vouchers/validate` 
+        : `${baseUrl}/api/vouchers/validate`;
+
+      // Cần lấy token từ localStorage (nếu có dùng authentication middleware ở backend)
+      const token = localStorage.getItem('accessToken') || '';
+
+      const res = await fetch(fetchUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          code: voucherInput, 
+          orderValue: subtotalAmount // Check minOrderValue ở backend
+        })
+      })
+      
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Mã giảm giá không hợp lệ')
+      }
+
+      setAppliedVoucher({
+        code: data.data.code || data.data.voucherCode || voucherInput,
+        discountAmount: data.data.discountValue || data.data.discountAmount
+      })
+      toast.success('Áp dụng mã giảm giá thành công!')
+    } catch (error: any) {
+      setVoucherError(error.message)
+    } finally {
+      setIsCheckingVoucher(false)
+    }
+  }
+
+  const handleClearVoucher = () => {
+    setAppliedVoucher(null)
+    setVoucherInput('')
+    setVoucherError('')
+  }
+
   // --- CORE LOGIC: TẠO ĐƠN ---
   const handleCreateBooking = async () => {
     const scheduleId = preSelectedScheduleId || selectedSchedule?._id
@@ -205,7 +267,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         quantity: item.quantity,
         size: item.product.size || 'L',
       })),
-      voucherCode: '',
+      voucherCode: appliedVoucher?.code || undefined, 
       paymentMethod: paymentMethod
     }
 
@@ -327,8 +389,21 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     setPaymentMethod,
     schedules,
     isLoadingSchedules,
+    
+    // Xuất các giá trị để UI tính toán Bill
+    subtotalAmount, 
     totalAmount,
     totalProductQuantity,
+    
+    // Xuất các state và hàm xử lý Voucher ra ngoài UI
+    voucherInput,
+    setVoucherInput,
+    appliedVoucher,
+    voucherError,
+    isCheckingVoucher,
+    handleApplyVoucher,
+    handleClearVoucher,
+
     paymentUrl,
     createdBookingData,
     isProcessing: isCreatingBooking || isCreatingVNPay || isCreatingMoMo,
