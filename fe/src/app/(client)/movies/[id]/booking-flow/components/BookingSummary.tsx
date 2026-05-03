@@ -9,7 +9,16 @@ interface BookingSummaryProps {
   selectedSchedule: Schedule | null
   selectedSeats: BookedSeat[]
   cartItems: CartItem[]
-  total: number
+  total?: number 
+  voucherInput: string
+  setVoucherInput: (val: string) => void
+  appliedVoucher: { code: string; discountAmount: number } | null
+  voucherError: string
+  isCheckingVoucher: boolean
+  handleApplyVoucher: () => void
+  handleClearVoucher: () => void
+  subtotalAmount: number
+  totalAmount: number
 }
 
 export function BookingSummary({
@@ -17,7 +26,15 @@ export function BookingSummary({
   selectedSchedule,
   selectedSeats,
   cartItems,
-  total,
+  voucherInput,
+  setVoucherInput,
+  appliedVoucher,
+  voucherError,
+  isCheckingVoucher,
+  handleApplyVoucher,
+  handleClearVoucher,
+  subtotalAmount,
+  totalAmount
 }: BookingSummaryProps) {
   const formatPrice = (price: number) => price.toLocaleString('vi-VN') + ' đ'
 
@@ -27,7 +44,6 @@ export function BookingSummary({
   }, 0);
 
   const combosTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const displayTotal = seatsTotal + combosTotal;
 
   const renderBadges = () => {
     const badges: string[] = [];
@@ -104,7 +120,7 @@ export function BookingSummary({
           )}
         </div>
 
-        {/*Bắp nước */}
+        {/* Bắp nước */}
         {cartItems.length > 0 && (
           <div className="space-y-3 mb-4 border-t border-border border-dashed pt-4">
             <div className="flex justify-between items-center">
@@ -122,11 +138,67 @@ export function BookingSummary({
           </div>
         )}
 
-        {/* Tổng tiền */}
-        <div className="pt-4 border-t-2 border-border flex justify-between items-end">
-          <span className="text-text-secondary font-medium">Tổng cộng</span>
-          <span className="text-2xl font-bold text-primary">{formatPrice(displayTotal)}</span>
+        {/* VOUCHER */}
+        <div className="mt-4 pt-4 border-t border-dashed border-border">
+          <p className="text-sm font-semibold text-text-primary mb-2">Mã Khuyến Mãi</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Nhập mã voucher..."
+              value={voucherInput}
+              onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+              disabled={appliedVoucher !== null}
+              className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary uppercase disabled:bg-bg-secondary disabled:text-text-secondary"
+            />
+            
+            {appliedVoucher ? (
+              <button 
+                onClick={handleClearVoucher}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors whitespace-nowrap"
+              >
+                Hủy
+              </button>
+            ) : (
+              <button 
+                onClick={handleApplyVoucher}
+                disabled={!voucherInput || isCheckingVoucher}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {isCheckingVoucher ? 'Đang check...' : 'Áp dụng'}
+              </button>
+            )}
+          </div>
+
+          {voucherError && (
+            <p className="text-xs text-red-500 mt-2">{voucherError}</p>
+          )}
+
+          {appliedVoucher && (
+            <div className="flex justify-between items-center mt-3 text-sm text-green-700 font-medium bg-green-50 p-2.5 rounded-lg border border-green-100">
+              <span className="flex items-center gap-1.5">
+                <Ticket className="w-4 h-4" /> 
+                Đã áp mã: {appliedVoucher.code}
+              </span>
+              <span>- {formatPrice(appliedVoucher.discountAmount)}</span>
+            </div>
+          )}
         </div>
+
+        {/* TỔNG TIỀN (Hiển thị gạch ngang nếu có mã) */}
+        <div className="pt-4 mt-4 border-t-2 border-border flex justify-between items-end">
+          <span className="text-text-secondary font-medium">Tổng cộng</span>
+          <div className="flex flex-col items-end">
+            {appliedVoucher && (
+              <span className="text-sm text-text-secondary line-through mb-0.5">
+                {formatPrice(subtotalAmount)}
+              </span>
+            )}
+            <span className="text-2xl font-bold text-primary">
+              {formatPrice(totalAmount)}
+            </span>
+          </div>
+        </div>
+
       </div>
     </div>
   )

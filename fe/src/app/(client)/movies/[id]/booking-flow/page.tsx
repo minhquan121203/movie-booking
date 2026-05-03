@@ -35,6 +35,14 @@ export default function BookingPage() {
     setPaymentMethod,
     schedules,
     isLoadingSchedules,
+    voucherInput,
+    setVoucherInput,
+    appliedVoucher,
+    voucherError,
+    isCheckingVoucher,
+    handleApplyVoucher,
+    handleClearVoucher, 
+    subtotalAmount,
     totalAmount,
     nextStep,
     prevStep,
@@ -174,6 +182,15 @@ export default function BookingPage() {
                 selectedSeats={selectedSeats}
                 cartItems={cartItems}
                 total={totalAmount}
+                voucherInput={voucherInput}
+                setVoucherInput={setVoucherInput}
+                appliedVoucher={appliedVoucher}
+                voucherError={voucherError}
+                isCheckingVoucher={isCheckingVoucher}
+                handleApplyVoucher={handleApplyVoucher}
+                handleClearVoucher={handleClearVoucher}
+                subtotalAmount={subtotalAmount}
+                totalAmount={totalAmount}
               />
             </div>
           )}
