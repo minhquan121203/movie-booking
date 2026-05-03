@@ -214,8 +214,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com';
       const fetchUrl = baseUrl.endsWith('/api') 
-        ? `${baseUrl}/vouchers/validate` 
-        : `${baseUrl}/api/vouchers/validate`;
+        ? `${baseUrl}/vouchers/verify` 
+        : `${baseUrl}/api/vouchers/verify`;
 
       const token = getCookie('authToken');
 
