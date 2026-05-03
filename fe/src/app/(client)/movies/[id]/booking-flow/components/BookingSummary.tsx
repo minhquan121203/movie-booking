@@ -138,62 +138,69 @@ export function BookingSummary({
           </div>
         )}
 
-        {/* VOUCHER */}
-        <div className="mt-4 pt-4 border-t border-dashed border-border">
-          <p className="text-sm font-semibold text-text-primary mb-2">Mã Khuyến Mãi</p>
-          <div className="flex gap-2">
+        {/* ============ KHU VỰC NHẬP VOUCHER (ĐÃ FIX UI) ============ */}
+        <div className="mt-5 pt-5 border-t border-dashed border-border">
+          <label className="text-sm font-bold text-text-primary mb-3 block">Mã Khuyến Mãi</label>
+          <div className="flex items-stretch gap-2.5">
             <input
               type="text"
-              placeholder="Nhập mã voucher..."
+              placeholder="NHẬP MÃ VOUCHER..."
               value={voucherInput}
               onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
               disabled={appliedVoucher !== null}
-              className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary uppercase disabled:bg-bg-secondary disabled:text-text-secondary"
+              className="flex-1 w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary uppercase transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
             />
             
             {appliedVoucher ? (
               <button 
                 onClick={handleClearVoucher}
-                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors whitespace-nowrap"
+                className="shrink-0 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100"
               >
-                Hủy
+                Hủy mã
               </button>
             ) : (
               <button 
                 onClick={handleApplyVoucher}
                 disabled={!voucherInput || isCheckingVoucher}
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-colors whitespace-nowrap"
+                className="shrink-0 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[100px]"
               >
-                {isCheckingVoucher ? 'Đang check...' : 'Áp dụng'}
+                {isCheckingVoucher ? 'Đang...' : 'Áp dụng'}
               </button>
             )}
           </div>
 
+          {/* Báo lỗi UI mới */}
           {voucherError && (
-            <p className="text-xs text-red-500 mt-2">{voucherError}</p>
+            <p className="text-xs text-red-500 font-medium mt-2.5 flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-red-500"></span> {voucherError}
+            </p>
           )}
 
+          {/* Báo thành công UI mới (Màu xanh ngọc xịn xò) */}
           {appliedVoucher && (
-            <div className="flex justify-between items-center mt-3 text-sm text-green-700 font-medium bg-green-50 p-2.5 rounded-lg border border-green-100">
-              <span className="flex items-center gap-1.5">
+            <div className="flex justify-between items-center mt-3.5 text-sm text-emerald-700 font-bold bg-emerald-50 px-4 py-3 rounded-xl border border-emerald-200 shadow-sm">
+              <span className="flex items-center gap-2">
                 <Ticket className="w-4 h-4" /> 
-                Đã áp mã: {appliedVoucher.code}
+                {appliedVoucher.code}
               </span>
               <span>- {formatPrice(appliedVoucher.discountAmount)}</span>
             </div>
           )}
         </div>
 
-        {/* TỔNG TIỀN (Hiển thị gạch ngang nếu có mã) */}
-        <div className="pt-4 mt-4 border-t-2 border-border flex justify-between items-end">
-          <span className="text-text-secondary font-medium">Tổng cộng</span>
+        {/* ============ DÒNG TỔNG CỘNG TÍNH TIỀN ============ */}
+        <div className="pt-5 mt-5 border-t-2 border-border flex justify-between items-end">
+          <span className="text-base text-text-secondary font-bold mb-1">Tổng cộng</span>
           <div className="flex flex-col items-end">
+            {/* Hiển thị giá gốc bị gạch ngang (gạch màu đỏ mờ cho nổi bật) */}
             {appliedVoucher && (
-              <span className="text-sm text-text-secondary line-through mb-0.5">
+              <span className="text-sm text-text-secondary line-through mb-1 decoration-red-400 decoration-2">
                 {formatPrice(subtotalAmount)}
               </span>
             )}
-            <span className="text-2xl font-bold text-primary">
+            
+            {/* Giá cuối cùng siêu to khổng lồ */}
+            <span className="text-3xl font-black text-primary leading-none">
               {formatPrice(totalAmount)}
             </span>
           </div>
