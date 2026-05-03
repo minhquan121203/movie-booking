@@ -12,6 +12,13 @@ import type { Seat } from '@/types/theater'
 import useSocket from '@/hooks/useSocket'
 import { useSeatSocket } from '@/app/(client)/movies/[id]/booking-flow/components/useSeatSocket'
 
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || ''
+  return ''
+}
+
 export const STEPS = [
   { number: 1, label: 'Chọn suất' },
   { number: 2, label: 'Chọn ghế' },
@@ -210,9 +217,8 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         ? `${baseUrl}/vouchers/validate` 
         : `${baseUrl}/api/vouchers/validate`;
 
-      // Cần lấy token từ localStorage (nếu có dùng authentication middleware ở backend)
-      const token = localStorage.getItem('accessToken') || '';
-
+      const token = getCookie('authToken');
+      
       const res = await fetch(fetchUrl, {
         method: 'POST',
         headers: { 
