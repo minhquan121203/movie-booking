@@ -218,7 +218,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
         : `${baseUrl}/api/vouchers/validate`;
 
       const token = getCookie('authToken');
-      
+
       const res = await fetch(fetchUrl, {
         method: 'POST',
         headers: { 
@@ -234,6 +234,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const data = await res.json()
 
       if (!res.ok) {
+        console.error("Lỗi báo về từ Server:", data)
         throw new Error(data.message || 'Mã giảm giá không hợp lệ')
       }
 
