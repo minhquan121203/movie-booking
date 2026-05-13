@@ -37,8 +37,8 @@ function MoviesContent() {
   const [selectedSort, setSelectedSort] = useState('Mới nhất')
 
   // ✅ Fetch genres từ API
-  const { data: genresData = DEFAULT_GENRE_LIST } = useGenres({})
-  const genres: Genre[] = genresData.items || []
+  const { data: genresData } = useGenres({})
+  const genres: Genre[] = genresData?.data || genresData?.items || [] // Tùy cấu trúc BE trả về
 
   const [queryParams, setQueryParams] = useState<GetMoviesParams>({
     page: pageFromUrl,
