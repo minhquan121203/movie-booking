@@ -178,28 +178,30 @@ ${recentChats || "Chưa có"}
 
         // 🔟 RESPONSE
         res.json({ botMessage: botResponse, sessionId });
-    } catch (error) {
-        console.error("❌ Chat Error:", error);
+  } catch (error) {
+    console.error("❌ Chat Error:", error.message);
+    console.error("❌ Error Details:", error.stack);
 
-        if (error.message && error.message.includes("429")) {
-            chatService.rotateKeyOnError();
-            return res.json({
-                botMessage: {
-                    text: "Hệ thống tự động nâng cấp. Bạn gửi lại nhé!",
-                    type: "text",
-                    data: [],
-                },
-            });
-        }
-
-        res.status(500).json({
-            botMessage: {
-                text: "Tớ gặp chút sự cố, bạn thử lại nhé!",
-                type: "text",
-                data: [],
-            },
-        });
+    if (error.message && error.message.includes("429")) {
+      chatService.rotateKeyOnError();
+      return res.json({
+        botMessage: {
+          text: "Hệ thống tự động nâng cấp. Bạn gửi lại nhé!",
+          type: "text",
+          data: [],
+        },
+      });
     }
+
+    res.status(500).json({
+      botMessage: {
+        text: "Tớ gặp chút sự cố, bạn thử lại nhé!",
+        type: "text",
+        data: [],
+      },
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
 };
 
 export default { handleChat };
