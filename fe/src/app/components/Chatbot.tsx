@@ -46,14 +46,14 @@ export default function ChatBot() {
       const endpoint = `${apiUrl}/chat`;
 
       console.log('📤 Sending to:', endpoint);
-      console.log('📨 Payload:', { userMessage: input, userName: 'Fen' });
+      console.log('📨 Payload:', { userMessage: input, userName: 'bạn' });
 
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: input,
-          userName: "Fen",
+          userName: "bạn",
           sessionId: `session_${Date.now()}`,
         }),
       });
