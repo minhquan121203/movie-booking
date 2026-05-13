@@ -5,7 +5,6 @@ const ChatHistorySchema = new mongoose.Schema(
         sessionId: {
             type: String,
             required: true,
-            unique: true,
             index: true,
         },
         userId: {

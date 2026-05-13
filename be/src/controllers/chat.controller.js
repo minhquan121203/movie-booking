@@ -37,9 +37,26 @@ export const handleChat = async (req, res) => {
         }
 
         // 3️⃣ FETCH DATA
-        const contextData = await chatService.fetchContextData();
-        const formattedText = chatService.formatContextText(contextData);
-        const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
+        console.log(`📊 Fetching context data...`);
+        let contextData;
+        try {
+            contextData = await chatService.fetchContextData();
+            console.log(`✅ Context data fetched - Movies: ${contextData.movies?.length || 0}, Theaters: ${contextData.theaters?.length || 0}`);
+        } catch (fetchError) {
+            console.error("❌ Error in fetchContextData:", fetchError.message);
+            throw new Error(`Data fetch failed: ${fetchError.message}`);
+        }
+
+        console.log(`🎯 Formatting text...`);
+        let formattedText, systemPrompt;
+        try {
+            formattedText = chatService.formatContextText(contextData);
+            systemPrompt = chatService.createSystemPrompt(userName, formattedText);
+            console.log(`✅ System prompt created`);
+        } catch (formatError) {
+            console.error("❌ Error formatting text:", formatError.message);
+            throw new Error(`Prompt creation failed: ${formatError.message}`);
+        }
 
         // 4️⃣ GET HISTORY
         const previousMessages = await chatService.getChatHistory(sessionId, 5);
@@ -156,32 +173,46 @@ ${recentChats || "Chưa có"}
         }
 
         // 9️⃣ LƯU DB
-        await chatService.saveChatMessage(
-            sessionId,
-            userId,
-            userName,
-            "user",
-            userMessage,
-            "text",
-            null
-        );
+        console.log(`💾 Saving to database...`);
+        try {
+            await chatService.saveChatMessage(
+                sessionId,
+                userId,
+                userName,
+                "user",
+                userMessage,
+                "text",
+                null
+            );
 
-        await chatService.saveChatMessage(
-            sessionId,
-            userId,
-            userName,
-            "bot",
-            botResponse.text,
-            botResponse.type,
-            botResponse.data
-        );
+            await chatService.saveChatMessage(
+                sessionId,
+                userId,
+                userName,
+                "bot",
+                botResponse.text,
+                botResponse.type,
+                botResponse.data
+            );
+            console.log(`✅ Messages saved to DB`);
+        } catch (saveError) {
+            console.warn("⚠️ Warning: Could not save to DB:", saveError.message);
+            // Don't throw - still return response even if DB save fails
+        }
 
         // 🔟 RESPONSE
         res.json({ botMessage: botResponse, sessionId });
   } catch (error) {
-    console.error("❌ Chat Error:", error.message);
-    console.error("❌ Error Details:", error.stack);
+    console.error("❌ ============ CHAT ERROR ============");
+    console.error(`❌ Error Type: ${error.constructor.name}`);
+    console.error(`❌ Error Message: ${error.message}`);
+    console.error(`❌ Error Stack:`, error.stack);
 
+    if (error.response?.status) {
+      console.error(`❌ Status Code: ${error.response.status}`);
+    }
+
+    // Check if it's 429 (rate limit)
     if (error.message && error.message.includes("429")) {
       chatService.rotateKeyOnError();
       return res.json({
@@ -193,13 +224,21 @@ ${recentChats || "Chưa có"}
       });
     }
 
+    // Return 500 with error details in dev mode
     res.status(500).json({
       botMessage: {
         text: "Tớ gặp chút sự cố, bạn thử lại nhé!",
         type: "text",
         data: [],
       },
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      error: process.env.NODE_ENV === "development" ? {
+        message: error.message,
+        type: error.constructor.name,
+        step: error.message.includes("Data fetch") ? "data_fetch" :
+              error.message.includes("Prompt") ? "prompt_creation" :
+              error.message.includes("Gemini") ? "gemini_api" :
+              "unknown"
+      } : undefined,
     });
   }
 };
