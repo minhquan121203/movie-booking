@@ -5,7 +5,7 @@ import { useUserStore } from '@/store/userStore';
 
 export default function ChatBot() {
   const router = useRouter();
-  
+
   const pathname = usePathname();
   const role = useUserStore((state: any) => state.role);
   const _hasHydrated = useUserStore((state: any) => state._hasHydrated);
@@ -16,13 +16,13 @@ export default function ChatBot() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState([
-    { 
-      role: 'bot', 
-      content: { 
-        text: 'Chào bạn! Tớ là CineBot, nay bạn muốn xem phim thể loại gì hay tìm rạp nào gần đây?', 
-        type: 'text', 
-        data: [] 
-      } 
+    {
+      role: 'bot',
+      content: {
+        text: 'Chào bạn! Tớ là CineBot, nay bạn muốn xem phim thể loại gì hay tìm rạp nào gần đây?',
+        type: 'text',
+        data: []
+      }
     }
   ]);
 
@@ -36,25 +36,37 @@ export default function ChatBot() {
     if (!input.trim() || isLoading) return;
 
     const userMsg = { role: 'user', content: { text: input, type: 'text', data: [] } };
-    const currentHistory = [...messages]; 
-    
+
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const endpoint = `${apiUrl}/chat`;
+
+      console.log('📤 Sending to:', endpoint);
+      console.log('📨 Payload:', { userMessage: input, userName: 'Fen' });
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           userMessage: input,
-          history: currentHistory,
-          userName: "Fen"
+          userName: "Fen",
+          sessionId: `session_${Date.now()}`,
         }),
       });
+
       const data = await res.json();
+
+      if (!res.ok) {
+        console.error('❌ API Error:', data);
+        throw new Error(data.botMessage?.text || 'API error');
+      }
+
       const botResponse = data.botMessage;
-      
+
       setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
 
       if (botResponse.type === 'action_booking' && botResponse.data?.movieId) {
@@ -63,10 +75,11 @@ export default function ChatBot() {
           router.push(`/movies/${botResponse.data.movieId}`);
         }, 1500);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Chat Error:', error);
       setMessages(prev => [
-        ...prev, 
-        { role: 'bot', content: { text: 'Lỗi mạng rồi fen ơi, thử lại tí nhé!', type: 'text', data: [] } }
+        ...prev,
+        { role: 'bot', content: { text: `Lỗi: ${error?.message || 'Mạng không ổn, thử lại tí nhé!'}`, type: 'text', data: [] } }
       ]);
     } finally {
       setIsLoading(false);
@@ -87,20 +100,20 @@ export default function ChatBot() {
   if (!_hasHydrated) return null;
 
   if (
-    role === 'admin' || 
-    role === 'super-admin' || 
-    role === 'staff' || 
-    pathname.startsWith('/admin') || 
+    role === 'admin' ||
+    role === 'super-admin' ||
+    role === 'staff' ||
+    pathname.startsWith('/admin') ||
     pathname.startsWith('/staff') ||
-    pathname.startsWith('/login') ||    
+    pathname.startsWith('/login') ||
     pathname.startsWith('/register')
   ) {
-    return null; 
+    return null;
   }
 
   return (
     <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 z-[9999]">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="bg-blue-600 hover:bg-blue-700 text-white p-3.5 sm:p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 flex items-center justify-center"
       >
@@ -111,7 +124,7 @@ export default function ChatBot() {
         <div className="absolute bottom-[70px] right-0 w-[90vw] max-w-[380px] h-[75vh] max-h-[600px] bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
           <div className="bg-blue-600 p-3 sm:p-4 text-white font-bold flex justify-between items-center shadow-md z-10">
             <span className="flex items-center gap-2">
-              <span className="text-xl sm:text-2xl">🤖</span> 
+              <span className="text-xl sm:text-2xl">🤖</span>
               Trợ lý CineBooking
             </span>
           </div>
@@ -119,7 +132,7 @@ export default function ChatBot() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/50">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
-                
+
                 {m.role === 'bot' && (
                   <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0 mb-1">
                     🤖
@@ -134,7 +147,7 @@ export default function ChatBot() {
 
                 {m.role === 'bot' && (
                   <div className="max-w-[85%] sm:max-w-[90%] bg-white border rounded-2xl rounded-tl-none shadow-sm overflow-hidden flex flex-col">
-                    
+
                     {m.content?.text && (
                       <div className="p-3 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                         {formatText(m.content.text)}
@@ -151,9 +164,9 @@ export default function ChatBot() {
 
                           return (
                             <div key={idx} className="flex-none w-[130px] border rounded-xl overflow-hidden snap-center flex flex-col bg-gray-50 shadow-sm shrink-0">
-                              <img 
-                                src={imageUrl} 
-                                alt={title} 
+                              <img
+                                src={imageUrl}
+                                alt={title}
                                 className="w-full h-[180px] object-cover"
                               />
                               <div className="p-2 flex flex-col flex-1 justify-between">
@@ -161,7 +174,7 @@ export default function ChatBot() {
                                   <h4 className="font-bold text-xs line-clamp-2" title={title}>{title}</h4>
                                   <p className="text-[10px] text-gray-500 truncate mt-1">{genre}</p>
                                 </div>
-                                <button 
+                                <button
                                   onClick={() => {
                                     setIsOpen(false);
                                     router.push(`/movies/${movieId}`);
@@ -180,7 +193,7 @@ export default function ChatBot() {
                 )}
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start items-end gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mb-1">🤖</div>
@@ -194,15 +207,15 @@ export default function ChatBot() {
           </div>
 
           <div className="p-2 sm:p-3 border-t bg-white flex items-center gap-2">
-            <input 
+            <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Nhập tin nhắn..."
               className="flex-[4] min-w-0 border rounded-full px-4 py-2 sm:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
             />
-            <button 
-              onClick={handleSend} 
+            <button
+              onClick={handleSend}
               className="flex-1 bg-blue-600 text-white py-2 sm:py-2.5 rounded-full text-sm font-bold whitespace-nowrap px-3 sm:px-4 hover:bg-blue-700 shadow-sm"
             >
               Gửi
