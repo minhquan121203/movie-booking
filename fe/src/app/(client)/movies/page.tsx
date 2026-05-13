@@ -67,21 +67,25 @@ function MoviesContent() {
       limit: itemsPerPage,
       sortBy: selectedSort === 'Mới nhất' ? 'releaseDate' : 'view_count',
       order: 'desc',
-      rating: selectedRating === 'P' ? undefined : selectedRating,
+
+      ageRating: selectedRating === 'P' ? undefined : selectedRating,
+
       status:
         selectedType === 'Tất cả'
           ? undefined
           : selectedType === 'Đang chiếu'
             ? 'showing'
             : 'coming_soon',
+
       country: selectedCountry === 'Tất cả' ? undefined : selectedCountry,
+
       genres: selectedGenreIds.length === 0 ? undefined : selectedGenreIds.join(','),
     }
 
     if (customYear) {
-      params.year = parseInt(customYear, 10)
+      params.releaseYear = parseInt(customYear, 10)
     } else if (selectedYear !== 'Tất cả') {
-      params.year = parseInt(selectedYear, 10)
+      params.releaseYear = parseInt(selectedYear, 10)
     }
 
     switch (selectedSort) {

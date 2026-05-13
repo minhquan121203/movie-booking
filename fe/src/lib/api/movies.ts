@@ -14,6 +14,9 @@ import axios from 'axios' // Import axios để check isCancel
 export interface GetMoviesParams {
   page?: number
   limit?: number
+
+  ageRating?: string;
+  releaseYear?: number;
   status?: string // Trạng thái phim (Movie.status)
   genres?: string // Danh sách ID thể loại, cách nhau dấu phẩy
   country?: string // Quốc gia sản xuất
