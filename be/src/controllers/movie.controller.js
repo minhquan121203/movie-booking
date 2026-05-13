@@ -89,12 +89,12 @@ const movieController = {
       }
 
       if (genreTokens.length > 0) {
-        const idTokens = [];
+        const objectIdTokens = [];
         const nameTokens = [];
 
         genreTokens.forEach((g) => {
           if (mongoose.Types.ObjectId.isValid(g)) {
-            idTokens.push(g);
+            objectIdTokens.push(new mongoose.Types.ObjectId(g));
           } else {
             nameTokens.push(g);
           }
@@ -104,12 +104,12 @@ const movieController = {
         if (nameTokens.length > 0) {
           const genreDocs = await Genre.find({ name: { $in: nameTokens } }, "_id").lean();
 
-          genreDocs.forEach((g) => idTokens.push(g._id.toString()));
+          genreDocs.forEach((g) => objectIdTokens.push(g._id));
         }
 
         // Nếu sau khi xử lý có id hợp lệ thì mới set query.genres
-        if (idTokens.length > 0) {
-          query.genres = { $in: idTokens };
+        if (objectIdTokens.length > 0) {
+          query.genres = { $in: objectIdTokens };
         } else {
           // Không tìm được thể loại nào khớp -> trả về rỗng luôn
           return successResponse(res, {
@@ -119,7 +119,7 @@ const movieController = {
               totalPages: 0,
               totalItems: 0,
               itemsPerPage: limitNumber,
-            },
+            }
           });
         }
       }
