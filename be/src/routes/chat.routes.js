@@ -1,7 +1,9 @@
-const express = require('express');
+import express from "express";
+import { handleChat } from "../controllers/chat.controller.js";
+
 const router = express.Router();
-const chatController = require('../controllers/chat.controller');
 
-router.post('/', chatController.handleChat);
+// POST /api/chat
+router.post("/", handleChat);
 
-module.exports = router;
+export default router;

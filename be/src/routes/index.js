@@ -28,6 +28,8 @@ import voucherController from "../controllers/voucher.controller.js";
 import workScheduleController from "../controllers/workSchedule.controller.js";
 import chatController from "../controllers/chat.controller.js";
 
+import chatRoutes from "./chat.routes.js";
+
 // Import middleware
 import { checkAge } from "../middlewares/age-check.middleware.js";
 import { authenticateToken, authorize, requireActiveShift } from "../middlewares/auth.middleware.js";
@@ -64,8 +66,6 @@ router.post("/auth/reset-password", passwordResetRateLimiter, authController.res
 router.post("/auth/set-password", authenticateToken, authController.setPassword);
 router.post("/auth/verify-otp", authController.verifyAdminOTP);
 
-
-
 router.get("/movies", movieController.getAllMovies);
 router.get("/movies/now-showing", movieController.getNowShowingMovies);
 router.get("/movies/upcoming", movieController.getUpcomingMovies);
@@ -99,6 +99,7 @@ router.post("/vouchers/verify", voucherController.verifyVoucher);
 
 // AI & CHATBOT ROUTES
 router.post("/chat", chatController.handleChat);
+router.use("/chat", chatRoutes);
 
 // ============================================
 // PROTECTED ROUTES (Cần authentication)
