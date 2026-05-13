@@ -98,7 +98,6 @@ router.get("/products/:id", productController.getProductById);
 router.post("/vouchers/verify", voucherController.verifyVoucher);
 
 // AI & CHATBOT ROUTES
-router.post("/chat", chatController.handleChat);
 router.use("/chat", chatRoutes);
 
 // ============================================

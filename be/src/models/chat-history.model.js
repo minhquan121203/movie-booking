@@ -2,15 +2,16 @@ import mongoose from "mongoose";
 
 const ChatHistorySchema = new mongoose.Schema(
     {
-        userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            default: null, // Anonymous user
-        },
         sessionId: {
             type: String,
             required: true,
+            unique: true,
             index: true,
+        },
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
         },
         userName: {
             type: String,
@@ -44,17 +45,9 @@ const ChatHistorySchema = new mongoose.Schema(
             default: Date.now,
             index: true,
         },
-        isActive: {
-            type: Boolean,
-            default: true,
-        },
     },
     {
         timestamps: true,
-        indexes: [
-            { sessionId: 1, lastActivity: -1 },
-            { userId: 1, createdAt: -1 },
-        ],
     }
 );
 
