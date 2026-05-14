@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { COUNTRIES } from "../constants/location.js";
+import { COUNTRIES, LANGUAGES } from "../constants/location.js";
 import { generateSlug } from "../utils/slug.js";
 const { Schema } = mongoose;
 
@@ -105,6 +105,10 @@ const movieSchema = new Schema(
       type: String,
       default: "Tiếng Anh",
       trim: true,
+      enum: {
+        values: LANGUAGES,
+        message: "{VALUE} không phải là ngôn ngữ hợp lệ",
+      },
     },
     subtitles: {
       type: [String],

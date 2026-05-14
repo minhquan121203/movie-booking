@@ -75,21 +75,21 @@ export const handleChat = async (req, res) => {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
-${systemPrompt}
-
-[LỊCH SỬ]
-${recentChats || "Chưa có"}
-
-[CÂU HIỆN TẠI]
-"${userMessage}"
-
-👇 TRẢ VỀ JSON (chỉ JSON, không markdown):
-{
-  "response": "Trả lời tiếng Việt",
-  "action": "chat|movie_list|schedule",
-  "phim": "${movieName || "null"}",
-  "rap": "${theaterName || "null"}"
-}`;
+        ${systemPrompt}
+        
+        [LỊCH SỬ]
+        ${recentChats || "Chưa có"}
+        
+        [CÂU HIỆN TẠI]
+        "${userMessage}"
+        
+        👇 TRẢ VỀ JSON (chỉ JSON, không markdown):
+        {
+          "response": "Trả lời tiếng Việt",
+          "action": "chat|movie_list|schedule",
+          "phim": "${movieName || "null"}",
+          "rap": "${theaterName || "null"}"
+        }`;
 
         let result = await model.generateContent(prompt);
         let responseText = result.response.text().trim();
