@@ -33,7 +33,12 @@ class ChatService {
                 await Promise.all([
                     Movie.find({ status: "Đang chiếu" }).populate("genres", "name").lean(),
                     Theater.find({ isActive: true }).lean(),
-                    Schedule.find()
+
+                    // Chỉ query các lịch chiếu trong vòng 7 ngày tới
+                    Schedule.find({
+                        startTime: { $gte: now, $lte: next7Days },
+                        status: { $ne: "Đã hủy" }
+                    })
                         .populate("movie", "title")
                         .populate("theater", "name")
                         .sort({ startTime: 1 })
