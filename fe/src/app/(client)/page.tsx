@@ -9,8 +9,9 @@ import { useTheaters } from '@/lib/api/theaters'
 import { useGenres } from '@/lib/api/genres'
 import { DEFAULT_THEATER_LIST, DEFAULT_GENRE_LIST } from '@/constants'
 import { MovieCard } from '@/app/(client)/components/movie-card'
-import { Flame, Popcorn, CalendarClock } from 'lucide-react'
+import { Flame, Popcorn, CalendarClock, ArrowRight } from 'lucide-react'
 import { useSchedules } from '@/lib/api/schedules'
+import Link from 'next/link'
 
 export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
@@ -68,10 +69,20 @@ export default function HomePage() {
   
   const heroMovies = topMovieData?.movies || []
 
-  let displayMovies: any[] = []
-  if (activeTab === 'now') displayMovies = nowShowingData?.movies || []
-  else if (activeTab === 'coming') displayMovies = comingSoonData?.movies || []
-  else if (activeTab === 'top') displayMovies = topMovieData?.movies || []
+  const TOP_MOVIE_LIMIT = 12
+
+  const allMoviesForTab: any[] =
+    activeTab === 'now' ? (nowShowingData?.movies || []) :
+    activeTab === 'coming' ? (comingSoonData?.movies || []) :
+    (topMovieData?.movies || [])
+
+  // Đang chiếu & Sắp chiếu: hiện hết. Top Movies: giới hạn 12
+  const displayMovies = activeTab === 'top' ? allMoviesForTab.slice(0, TOP_MOVIE_LIMIT) : allMoviesForTab
+  const hasMore = activeTab === 'top' && allMoviesForTab.length > TOP_MOVIE_LIMIT
+
+  const nowCount = nowShowingData?.pagination?.totalItems || nowShowingData?.movies?.length || 0
+  const comingCount = comingSoonData?.pagination?.totalItems || comingSoonData?.movies?.length || 0
+  const topCount = topMovieData?.pagination?.totalItems || topMovieData?.movies?.length || 0
 
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
@@ -96,6 +107,7 @@ export default function HomePage() {
               >
                 <Flame className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Top Movies</span>
+                {topCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{topCount}</span>}
               </button>
 
               <button
@@ -106,6 +118,7 @@ export default function HomePage() {
               >
                 <Popcorn className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Đang chiếu</span>
+                {nowCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{nowCount}</span>}
               </button>
 
               <button
@@ -116,6 +129,7 @@ export default function HomePage() {
               >
                 <CalendarClock className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Sắp chiếu</span>
+                {comingCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{comingCount}</span>}
               </button>
 
             </div>
@@ -124,22 +138,34 @@ export default function HomePage() {
           {(loadingTop || loadingNow || loadingSoon) ? (
             <div className="text-center py-20 text-muted-foreground animate-pulse">Đang tải dữ liệu phim...</div>
           ) : displayMovies.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
-              {displayMovies.map((movie, index) => {
-                
-                // --- BƯỚC 2: SO SÁNH ID ---
-                const canBook = moviesWithSchedules.has(movie._id)
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
+                {displayMovies.map((movie, index) => {
+                  const canBook = moviesWithSchedules.has(movie._id)
+                  return (
+                    <MovieCard
+                      key={movie._id}
+                      movie={movie}
+                      index={index}
+                      showBookButton={canBook}
+                    />
+                  )
+                })}
+              </div>
 
-                return (
-                  <MovieCard 
-                    key={movie._id} 
-                    movie={movie} 
-                    index={index} 
-                    showBookButton={canBook} 
-                  />
-                )
-              })}
-            </div>
+              {/* Xem tất cả button */}
+              {hasMore && (
+                <div className="flex justify-center mt-8">
+                  <Link
+                    href="/movies"
+                    className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-violet-500/25 hover:scale-105"
+                  >
+                    Xem tất cả {allMoviesForTab.length} phim
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-20 bg-muted/10 rounded-2xl border-2 border-dashed border-muted animate-in fade-in duration-500">
               <p className="text-muted-foreground font-medium">Hiện tại chưa có phim nào trong mục này.</p>

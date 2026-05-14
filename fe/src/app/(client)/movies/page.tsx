@@ -86,7 +86,7 @@ function MoviesContent() {
       sortBy: selectedSort === 'Mới nhất' ? 'releaseDate' : 'view_count',
       order: 'desc',
 
-      ageRating: selectedRating === 'P' ? undefined : selectedRating,
+      rating: selectedRating === 'P' ? undefined : selectedRating,
 
       status: selectedType,
 
