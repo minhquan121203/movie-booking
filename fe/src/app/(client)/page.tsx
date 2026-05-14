@@ -1,7 +1,7 @@
 'use client'
 import { HeroSection } from '@/app/(client)/components/hero-section'
 import { GenreGrid } from '@/app/(client)/components/genre-grid'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { ShowtimeSection } from '@/app/(client)/components/showtimeSection'
 import { ShowtimeSectionSkeleton } from '@/app/(client)/components/ShowtimeSectionSkeleton'
 import { useMovies } from '@/lib/api/movies'
@@ -16,6 +16,15 @@ export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
   
   const [activeTab, setActiveTab] = useState<'now' | 'coming' | 'top'>('now')
+  const movieSectionRef = useRef<HTMLElement>(null)
+
+  const scrollToMovies = (tab: 'now' | 'coming' | 'top') => {
+    setActiveTab(tab)
+    // Scroll to the movie section after a small delay so the tab switch renders
+    setTimeout(() => {
+      movieSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
 
   // Fetch Top Movies
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
@@ -75,12 +84,12 @@ export default function HomePage() {
           py-12 space-y-16
         "
       >
-        <section className="w-full">
+        <section ref={movieSectionRef} className="w-full scroll-mt-20">
           <div className="flex justify-center mb-8 w-full px-2">
             <div className="flex items-center bg-muted/50 p-1.5 rounded-2xl w-full max-w-md mx-auto shadow-inner">
               
               <button
-                onClick={() => setActiveTab('top')}
+                onClick={() => scrollToMovies('top')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
@@ -90,7 +99,7 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => setActiveTab('now')}
+                onClick={() => scrollToMovies('now')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'now' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
@@ -100,7 +109,7 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => setActiveTab('coming')}
+                onClick={() => scrollToMovies('coming')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
                   activeTab === 'coming' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
