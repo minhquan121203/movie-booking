@@ -6,6 +6,65 @@ import { COUNTRY_MAP, LANGUAGE_MAP } from "../constants/location.js";
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
+// 🎭 Map TMDB certification codes sang rating của hệ thống
+const certificationMap = {
+    // Mỹ
+    "G": "P",
+    "PG": "C13",
+    "PG-13": "C13",
+    "R": "C16",
+    "NC-17": "C18",
+    // UK
+    "U": "P",
+    "12A": "C13",
+    "15": "C16",
+    "18": "C18",
+    // Việt Nam (nếu có)
+    "P": "P",
+    "C13": "C13",
+    "C16": "C16",
+    "C18": "C18",
+    // Châu Á khác
+    "TV-Y": "P",
+    "TV-Y7": "P",
+    "TV-G": "P",
+    "TV-PG": "C13",
+    "TV-14": "C16",
+    "TV-MA": "C18",
+};
+
+// 🎯 Lấy rating từ TMDB release dates
+const getMovieRating = async (movieId) => {
+    try {
+        const releaseDatesRes = await axios.get(
+            `${BASE_URL}/movie/${movieId}/release_dates?api_key=${TMDB_API_KEY}`
+        );
+
+        const results = releaseDatesRes.data.results || [];
+
+        // Ưu tiên Việt Nam, sau đó Mỹ
+        const vietnamResult = results.find(r => r.iso_3166_1 === "VN");
+        const usResult = results.find(r => r.iso_3166_1 === "US");
+        const firstResult = results[0];
+
+        const targetResult = vietnamResult || usResult || firstResult;
+
+        if (targetResult?.release_dates?.[0]?.certification) {
+            const cert = targetResult.release_dates[0].certification;
+            const mappedRating = certificationMap[cert];
+            if (mappedRating) {
+                console.log(`📊 Phim ${movieId}: Cert="${cert}" → Rating="${mappedRating}"`);
+                return mappedRating;
+            }
+        }
+
+        return "C13"; // Default fallback
+    } catch (err) {
+        console.warn(`⚠️ Lỗi lấy certification phim ${movieId}: ${err.message}`);
+        return "C13"; // Default fallback
+    }
+};
+
 
 export const autoSyncTMDB = async () => {
     try {
@@ -101,9 +160,13 @@ export const autoSyncTMDB = async () => {
                     let directorName = "Đang cập nhật";
                     let actorsArray = [];
                     let genreIdsArray = [];
+                    let movieRating = "C13"; // Default
 
                     // 🎬 Lấy duration, trailer, director, actors
                     if (m.runtime && m.runtime > 0) realDuration = m.runtime;
+
+                    // 📊 Lấy rating/certification từ TMDB
+                    movieRating = await getMovieRating(movieId);
 
                     if (m.videos?.results && m.videos.results.length > 0) {
                         const selectedVideo =
@@ -149,17 +212,17 @@ export const autoSyncTMDB = async () => {
                             country: country,
                             duration: realDuration,
                             language: language,
-                            rating: "C13",
+                            rating: movieRating,
                             director: directorName,
                             actors: actorsArray,
                             genres: genreIdsArray,
                         });
-                        console.log(`✅ Thêm phim: "${m.title}" | ${country} | ${language}`);
+                        console.log(`✅ Thêm phim: "${m.title}" | ${country} | ${language} | ${movieRating}`);
                         newCount++;
                     } catch (err) {
                         console.error(
                             `❌ Lỗi tạo phim "${m.title}": ${err.message}`,
-                            `| Country: ${country} | Language: ${language}`
+                            `| Country: ${country} | Language: ${language} | Rating: ${movieRating}`
                         );
                     }
 
@@ -209,6 +272,13 @@ export const autoSyncTMDB = async () => {
                     }
                     if (!exists.language || exists.language === "Chưa cập nhật") {
                         exists.language = language;
+                        needsUpdate = true;
+                    }
+
+                    // 📊 Cập nhật rating nếu cũ là default "C13"
+                    let newRating = await getMovieRating(movieId);
+                    if (!exists.rating || exists.rating === "C13") {
+                        exists.rating = newRating;
                         needsUpdate = true;
                     }
 
