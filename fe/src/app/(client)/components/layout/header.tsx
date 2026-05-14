@@ -88,21 +88,20 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
 
   const debouncedSearch = useDebounce(query, 500)
 
-  // Chỉ fetch khi có ít nhất 2 ký tự để tối ưu API call
   const { data: movieData, isFetching: isSearching } = useMovies({
-    search: debouncedSearch ? debouncedSearch : '',
+    search: debouncedSearch || '',
     limit: 5,
-    status: '',
   })
 
   const movies = movieData?.movies || []
+
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         if (isOpen) {
           onToggle(false)
-          setQuery('') // Optional: clear query on close
+          setQuery('')
         }
       }
     }
@@ -199,7 +198,7 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
 
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                           <span className="flex items-center gap-0.5">
-                            <Clock className="h-3 w-3" /> {movie.duration}
+                            <Clock className="h-3 w-3" /> {movie.duration} phút
                           </span>
 
                           <span>•</span>
@@ -245,6 +244,8 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
     </div>
   )
 }
+
+
 
 // 3. User Navigation Component
 const UserNav = () => {

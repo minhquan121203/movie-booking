@@ -1,21 +1,18 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react' // Import thêm Suspense ở đây
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import PageHeader from '@/app/(client)/movies/components/PageHeader'
 import FilterCard from '@/app/(client)/movies/components/FilterCard'
 import { TopMovieCarousel } from '@/app/(client)/components/topMovieCarousel'
 import { MovieList } from './components/MovieList'
 import { useMovies, GetMoviesParams } from '@/lib/api/movies'
 import { DEFAULT_MOVIE_LIST } from '@/constants'
-import { COUNTRIES } from '@/constants/location'
-import { useGenres } from '@/lib/api/genres'
-import { DEFAULT_GENRE_LIST } from '@/constants'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import type { Genre } from '@/types/genre'
 
 // --- CONSTANTS UI ---
-const movieTypes = ['Tất cả', 'Đang chiếu', 'Sắp chiếu']
+const movieTypes = ['Đang chiếu', 'Sắp chiếu']
 const ratings = ['P', 'C13', 'C16', 'C18']
 const sortOptions = ['Mới nhất', 'Mới cập nhật', 'Điểm IMDb', 'Lượt xem']
 
@@ -29,22 +26,43 @@ function MoviesContent() {
   // --- 1. DRAFT STATE ---
   const [showFilters, setShowFilters] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')
-  const [selectedType, setSelectedType] = useState('Tất cả')
+  const [selectedType, setSelectedType] = useState('Đang chiếu')
   const [selectedRating, setSelectedRating] = useState('P')
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([])
+  const [selectedGenreNames, setSelectedGenreNames] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState('Tất cả')
   const [customYear, setCustomYear] = useState('')
   const [selectedSort, setSelectedSort] = useState('Mới nhất')
 
-  // ✅ Fetch genres từ API
-  const { data: genresData } = useGenres({})
-  const genres: Genre[] = genresData?.data || genresData?.items || [] // Tùy cấu trúc BE trả về
+  // ✅ Fetch all active movies to extract real genres & countries
+  const { data: allMoviesForGenres } = useMovies({ limit: 200, page: 1 })
+  const genres: Genre[] = useMemo(() => {
+    const genreMap = new Map<string, Genre>()
+    allMoviesForGenres?.movies?.forEach((movie: any) => {
+      movie.genres?.forEach((g: any) => {
+        if (g._id && g.name && !genreMap.has(g._id)) {
+          genreMap.set(g._id, { _id: g._id, name: g.name, slug: g.name.toLowerCase(), description: '', displayOrder: 0, isActive: true } as Genre)
+        }
+      })
+    })
+    return Array.from(genreMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [allMoviesForGenres])
+
+  // ✅ Extract countries from movies data
+  const countries: string[] = useMemo(() => {
+    const countrySet = new Set<string>()
+    allMoviesForGenres?.movies?.forEach((movie: any) => {
+      if (movie.country) countrySet.add(movie.country)
+    })
+    const sorted = Array.from(countrySet).sort((a, b) => a.localeCompare(b))
+    return ['Tất cả', ...sorted]
+  }, [allMoviesForGenres])
 
   const [queryParams, setQueryParams] = useState<GetMoviesParams>({
     page: pageFromUrl,
     limit: itemsPerPage,
     sortBy: 'releaseDate',
     order: 'desc',
+    status: 'Đang chiếu',
   })
 
   // --- 3. FETCH DATA ---
@@ -70,16 +88,11 @@ function MoviesContent() {
 
       ageRating: selectedRating === 'P' ? undefined : selectedRating,
 
-      status:
-        selectedType === 'Tất cả'
-          ? undefined
-          : selectedType === 'Đang chiếu'
-            ? 'showing'
-            : 'coming_soon',
+      status: selectedType,
 
       country: selectedCountry === 'Tất cả' ? undefined : selectedCountry,
 
-      genres: selectedGenreIds.length === 0 ? undefined : selectedGenreIds.join(','),
+      genres: selectedGenreNames.length === 0 ? undefined : selectedGenreNames.join(','),
     }
 
     if (customYear) {
@@ -114,11 +127,11 @@ function MoviesContent() {
   }
 
   // --- 5. HANDLERS ---
-  const toggleGenreId = (genreId: string) => {
-    if (selectedGenreIds.includes(genreId)) {
-      setSelectedGenreIds(selectedGenreIds.filter(id => id !== genreId))
+  const toggleGenreName = (genreName: string) => {
+    if (selectedGenreNames.includes(genreName)) {
+      setSelectedGenreNames(selectedGenreNames.filter(n => n !== genreName))
     } else {
-      setSelectedGenreIds([...selectedGenreIds, genreId])
+      setSelectedGenreNames([...selectedGenreNames, genreName])
     }
   }
 
@@ -148,7 +161,7 @@ function MoviesContent() {
 
         {showFilters && (
           <FilterCard
-            countries={COUNTRIES}
+            countries={countries}
             selectedCountry={selectedCountry}
             onSelectCountry={setSelectedCountry}
             movieTypes={movieTypes}
@@ -158,8 +171,8 @@ function MoviesContent() {
             selectedRating={selectedRating}
             onSelectRating={setSelectedRating}
             genres={genres}
-            selectedGenreIds={selectedGenreIds}
-            onToggleGenreId={toggleGenreId}
+            selectedGenreIds={selectedGenreNames}
+            onToggleGenreId={toggleGenreName}
             customYear={customYear}
             onSetCustomYear={setCustomYear}
             sortOptions={sortOptions}
