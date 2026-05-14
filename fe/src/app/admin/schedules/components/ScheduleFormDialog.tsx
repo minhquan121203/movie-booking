@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { Schedule } from '@/types/schedule'
 import { useScheduleMutations } from '../hooks/useScheduleMutations'
 import { Loader2 } from 'lucide-react'
 import { TheaterComboboxForm } from '@/app/admin/components/TheaterComboboxForm'
+import { MovieComboboxForm } from '@/app/admin/components/MovieComboboxForm'
 import type { Movie } from '@/types/movie'
 import type { Theater } from '@/types/theater'
 
@@ -42,6 +43,24 @@ export function ScheduleFormDialog({
   const { createMutation, updateMutation } = useScheduleMutations()
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
+
+  // --- Country filter state ---
+  const [selectedCountry, setSelectedCountry] = useState<string>('all')
+
+  // Extract unique countries from movies
+  const movieCountries = useMemo(() => {
+    const countrySet = new Set<string>()
+    movies.forEach(m => {
+      if (m.country) countrySet.add(m.country)
+    })
+    return Array.from(countrySet).sort((a, b) => a.localeCompare(b))
+  }, [movies])
+
+  // Filter movies by selected country
+  const filteredMovies = useMemo(() => {
+    if (selectedCountry === 'all') return movies
+    return movies.filter(m => m.country === selectedCountry)
+  }, [movies, selectedCountry])
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -72,29 +91,35 @@ export function ScheduleFormDialog({
     // và đã chọn đủ Phim + Giờ bắt đầu
     if (!scheduleToEdit && selectedMovieId && startTime) {
       const selectedMovie = movies.find(m => m._id === selectedMovieId)
-      
+
       if (selectedMovie && selectedMovie.duration) {
         // Tách giờ và phút từ input (VD: "18:30" -> hours=18, mins=30)
         const [hours, mins] = startTime.split(':').map(Number)
-        
+
         // Tạo một object Date tạm thời để cộng phút cho dễ
         const timeObj = new Date()
         timeObj.setHours(hours, mins, 0, 0)
 
         // Cộng thời lượng phim + 15 phút dọn rạp vào thời gian hiện tại
         timeObj.setMinutes(timeObj.getMinutes() + selectedMovie.duration + 15)
-        
+
         // Format lại thành chuỗi HH:mm để nhét vào input
         const endHours = String(timeObj.getHours()).padStart(2, '0')
         const endMins = String(timeObj.getMinutes()).padStart(2, '0')
         const calculatedEndTime = `${endHours}:${endMins}`
-        
+
         // Tự động điền vào ô Giờ Kết Thúc
         setValue('endTime', calculatedEndTime)
       }
     }
   }, [selectedMovieId, startTime, movies, setValue, scheduleToEdit])
 
+  // Reset country filter when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedCountry('all')
+    }
+  }, [open])
 
   useEffect(() => {
     if (scheduleToEdit) {
@@ -106,10 +131,16 @@ export function ScheduleFormDialog({
       setValue('endTime', scheduleToEdit.endTime)
       setValue('standardPrice', scheduleToEdit.ticketPrices.standard)
       setValue('vipPrice', scheduleToEdit.ticketPrices.vip || 0)
+
+      // Auto-set country filter to match the editing movie's country
+      const editMovie = movies.find(m => m._id === scheduleToEdit.movie._id)
+      if (editMovie?.country) {
+        setSelectedCountry(editMovie.country)
+      }
     } else {
       reset()
     }
-  }, [scheduleToEdit, open, reset, setValue])
+  }, [scheduleToEdit, open, reset, setValue, movies])
 
   const onSubmit = (data: any) => {
     const selectedMovie = movies.find(m => m._id === data.movieId)
@@ -167,15 +198,51 @@ export function ScheduleFormDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-            {/* Phim, Rạp, Phòng */}
+            {/* Quốc gia (lọc phim) */}
             <div className="space-y-2">
-              <Label>Phim</Label>
-              <Select onValueChange={val => setValue('movieId', val)} defaultValue={watch('movieId')}>
-                <SelectTrigger><SelectValue placeholder="Chọn phim..." /></SelectTrigger>
+              <Label className="flex items-center gap-2">
+                Quốc gia
+                <span className="text-xs text-blue-600 font-normal">(chọn trước để lọc danh sách phim)</span>
+              </Label>
+              <Select value={selectedCountry} onValueChange={(val) => {
+                setSelectedCountry(val)
+                // Reset movie selection khi đổi quốc gia
+                setValue('movieId', '')
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn quốc gia..." />
+                </SelectTrigger>
                 <SelectContent className="bg-gray-100 text-gray-900/90 max-h-[300px] overflow-y-auto">
-                  {movies.map(m => <SelectItem key={m._id} value={m._id}>{m.title}</SelectItem>)}
+                  <SelectItem value="all">🌍 Tất cả quốc gia ({movies.length} phim)</SelectItem>
+                  {movieCountries.map(country => {
+                    const count = movies.filter(m => m.country === country).length
+                    return (
+                      <SelectItem key={country} value={country}>
+                        {country} ({count} phim)
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Phim */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Phim
+                {selectedCountry !== 'all' && (
+                  <span className="text-xs text-blue-600 font-normal">
+                    ({filteredMovies.length} phim từ {selectedCountry})
+                  </span>
+                )}
+              </Label>
+              <MovieComboboxForm
+                movies={filteredMovies}
+                value={watch('movieId')}
+                onValueChange={val => setValue('movieId', val)}
+                placeholder="Chọn phim..."
+                searchPlaceholder="Nhập tên phim để tìm..."
+              />
             </div>
 
             <div className="space-y-2">
@@ -226,10 +293,10 @@ export function ScheduleFormDialog({
                   </span>
                 )}
               </div>
-              <Input 
-                type="time" 
-                {...register('endTime')} 
-                className="bg-gray-200 cursor-not-allowed" 
+              <Input
+                type="time"
+                {...register('endTime')}
+                className="bg-gray-200 cursor-not-allowed"
                 readOnly // Không cho nhân viên sửa tay
               />
             </div>

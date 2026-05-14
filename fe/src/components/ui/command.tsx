@@ -57,13 +57,30 @@ CommandInput.displayName = CommandPrimitive.Input.displayName
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.List
-    ref={ref}
-    className={cn('max-h-[300px] overflow-y-auto overflow-x-hidden', className)}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const innerRef = React.useRef<HTMLDivElement>(null)
+
+  // Fix: cmdk blocks wheel events for keyboard nav, so we manually handle scroll
+  const handleWheel = React.useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = innerRef.current
+    if (!el) return
+    el.scrollTop += e.deltaY
+  }, [])
+
+  return (
+    <CommandPrimitive.List
+      ref={(node) => {
+        // Merge refs
+        ; (innerRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+        if (typeof ref === 'function') ref(node)
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+      }}
+      onWheel={handleWheel}
+      className={cn('max-h-[300px] overflow-y-auto overflow-x-hidden', className)}
+      {...props}
+    />
+  )
+})
 
 CommandList.displayName = CommandPrimitive.List.displayName
 
