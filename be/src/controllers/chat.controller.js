@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Movie from "../models/movie.model.js";
 import Schedule from "../models/schedule.model.js";
+import Product from "../models/product.model.js";
 import chatService from "../services/chat.service.js";
 
 export const handleChat = async (req, res) => {
@@ -12,287 +13,219 @@ export const handleChat = async (req, res) => {
     } = req.body;
 
     try {
-        // 1️⃣ VALIDATE
+        // ─── 1. VALIDATE ────────────────────────────────────────────────────────
         if (!userMessage || userMessage.trim().length === 0) {
             return res.status(400).json({
-                botMessage: {
-                    text: "Bạn cần nói gì đó để tớ trả lời nhé!",
-                    type: "text",
-                    data: [],
-                },
+                botMessage: { text: "Bạn cần nói gì đó để tớ trả lời nhé!", type: "text", data: [] },
             });
         }
 
-        // 2️⃣ GET API KEY
+        // ─── 2. API KEY ──────────────────────────────────────────────────────────
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey) {
-            console.error("❌ Không có GEMINI_API_KEYS trong .env");
-            console.error("GEMINI_API_KEYS value:", process.env.GEMINI_API_KEYS);
+            console.error("❌ Thiếu GEMINI_API_KEYS trong .env");
             return res.status(500).json({
-                botMessage: {
-                    text: "⚠️ Hệ thống chatbot chưa được cấu hình. Vui lòng liên hệ admin!",
-                    type: "text",
-                    data: [],
-                },
-                error: {
-                    message: "Missing GEMINI_API_KEYS in environment",
-                    step: "api_key_validation"
-                }
+                botMessage: { text: "⚠️ Hệ thống chatbot chưa được cấu hình. Vui lòng liên hệ admin!", type: "text", data: [] },
             });
         }
-        console.log(`✅ Using API key index: ${chatService.currentKeyIndex}`);
 
-        // 3️⃣ FETCH DATA
-        console.log(`📊 Fetching context data...`);
+        // ─── 3. FETCH DATA ───────────────────────────────────────────────────────
         let contextData;
         try {
             contextData = await chatService.fetchContextData();
-            console.log(`✅ Context data fetched - Movies: ${contextData.movies?.length || 0}, Theaters: ${contextData.theaters?.length || 0}, Schedules: ${contextData.rawSchedules?.length || 0}`);
-
-            // Validate data
-            if (!contextData.movies || contextData.movies.length === 0) {
-                console.warn("⚠️ No movies found in database");
-            }
-            if (!contextData.theaters || contextData.theaters.length === 0) {
-                console.warn("⚠️ No theaters found in database");
-            }
-        } catch (fetchError) {
-            console.error("❌ Error in fetchContextData:", fetchError.message);
-            console.error("Stack:", fetchError.stack);
-            throw new Error(`Data fetch failed: ${fetchError.message}`);
+        } catch (e) {
+            console.error("❌ fetchContextData lỗi:", e.message);
+            contextData = { movies: [], theaters: [], rawSchedules: [], products: [], vouchers: [], now: new Date(), next7Days: new Date() };
         }
 
-        console.log(`🎯 Formatting text...`);
-        let formattedText, systemPrompt;
-        try {
-            formattedText = chatService.formatContextText(contextData);
+        // ─── 4. BUILD PROMPT ─────────────────────────────────────────────────────
+        const formattedText = chatService.formatContextText(contextData);
+        const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
 
-            // Validate formatted text
-            if (!formattedText.moviesText) formattedText.moviesText = "Không có phim";
-            if (!formattedText.theatersText) formattedText.theatersText = "Không có rạp";
-            if (!formattedText.schedulesText) formattedText.schedulesText = "Không có lịch chiếu";
-
-            systemPrompt = chatService.createSystemPrompt(userName, formattedText);
-            console.log(`✅ System prompt created (length: ${systemPrompt.length} chars)`);
-        } catch (formatError) {
-            console.error("❌ Error formatting text:", formatError.message);
-            console.error("Stack:", formatError.stack);
-            throw new Error(`Prompt creation failed: ${formatError.message}`);
-        }
-
-        // 4️⃣ GET HISTORY
+        // ─── 5. CHAT HISTORY ─────────────────────────────────────────────────────
         const previousMessages = await chatService.getChatHistory(sessionId, 15);
         const recentChats = previousMessages
             .map((msg) => `${msg.role === "user" ? "User" : "Bot"}: ${msg.content}`)
             .join("\n");
 
-        // 5️⃣ EXTRACT ENTITIES
-        const movieName = chatService.extractMovieName(userMessage);
-        const theaterName = chatService.extractTheaterName(userMessage);
-
+        // ─── 6. EXTRACT ENTITIES ─────────────────────────────────────────────────
+        const movieName    = chatService.extractMovieName(userMessage);
+        const theaterName  = chatService.extractTheaterName(userMessage);
         console.log(`🎯 Nhận diện: Phim=[${movieName}], Rạp=[${theaterName}]`);
 
-        // 6️⃣ CALL GEMINI
-        console.log(`🤖 Calling Gemini API...`);
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
+        // ─── 7. CALL GEMINI ──────────────────────────────────────────────────────
+        // ✅ FIX: dùng JSON.stringify để tránh null/"null" bug và special-char injection
         const prompt = `
-        ${systemPrompt}
-        
-        [LỊCH SỬ]
-        ${recentChats || "Chưa có"}
-        
-        [CÂU HIỆN TẠI]
-        "${userMessage}"
-        
-        👇 TRẢ VỀ JSON (chỉ JSON, không markdown):
-        {
-          "response": "Trả lời tiếng Việt",
-          "action": "chat|movie_list|schedule",
-          "phim": "${movieName || "null"}",
-          "rap": "${theaterName || "null"}"
-        }`;
+${systemPrompt}
+
+[LỊCH SỬ HỘI THOẠI]
+${recentChats || "Chưa có lịch sử"}
+
+[CÂU HỎI HIỆN TẠI]
+"${userMessage}"
+
+👇 CHỈ trả về JSON hợp lệ, KHÔNG markdown, KHÔNG giải thích:
+{
+  "response": "Câu trả lời tiếng Việt thân thiện",
+  "action": "chat | movie_list | schedule | product_list",
+  "phim": ${JSON.stringify(movieName)},
+  "rap": ${JSON.stringify(theaterName)}
+}`;
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        // ✅ FIX: tên model chính xác
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         let result;
         try {
             result = await model.generateContent(prompt);
-            console.log(`✅ Gemini response received`);
         } catch (geminiError) {
             console.error("❌ Gemini API Error:", geminiError.message);
-            console.error("Error status:", geminiError.status);
-            console.error("Error details:", geminiError);
-
-            if (geminiError.message?.includes("429")) {
+            if (geminiError.message?.includes("429") || geminiError.status === 429) {
                 chatService.rotateKeyOnError();
                 return res.json({
-                    botMessage: {
-                        text: "Hệ thống đang quá tải. Vui lòng thử lại sau 30 giây nhé!",
-                        type: "text",
-                        data: [],
-                    },
+                    botMessage: { text: "Hệ thống đang quá tải, bạn thử lại sau 30 giây nhé!", type: "text", data: [] },
                 });
             }
-            throw new Error(`Gemini API failed: ${geminiError.message}`);
+            throw geminiError;
         }
 
-        let responseText = result.response.text().trim();
-
-        // 7️⃣ PARSE JSON
-        responseText = responseText
+        // ─── 8. PARSE RESPONSE ───────────────────────────────────────────────────
+        let responseText = result.response.text().trim()
             .replace(/```json/gi, "")
             .replace(/```/g, "")
             .trim();
 
-        let botResponse = {
-            text: "Tớ đang tải dữ liệu, bạn thử lại nhé!",
-            type: "text",
-            data: [],
-        };
+        let botResponse = { text: "Tớ đang tải dữ liệu, bạn thử lại nhé!", type: "text", data: [] };
 
         try {
             const aiData = JSON.parse(responseText);
+            const actionType      = aiData.action  || "chat";
+            // ✅ FIX: phim/rap là null thật (không phải chuỗi "null")
+            const phimDaNhanDien  = aiData.phim  && aiData.phim  !== "null" ? aiData.phim  : null;
+            const rapDaNhanDien   = aiData.rap   && aiData.rap   !== "null" ? aiData.rap   : null;
 
-            let actionType = aiData.action || "chat";
-            let phimDaNhanDien = aiData.phim;
-            let rapDaNhanDien = aiData.rap;
-
-            // 8️⃣ XỬ LÝ THEO HÀNH ĐỘNG
-            if (
-                (actionType === "schedule" || actionType === "movie_list") &&
-                phimDaNhanDien
-            ) {
+            // ── HÀNH ĐỘNG: TÌM LỊCH CHIẾU ──────────────────────────────────────
+            if (actionType === "schedule" && phimDaNhanDien) {
                 const foundMovies = await Movie.find({
                     title: new RegExp(phimDaNhanDien, "i"),
                     status: "Đang chiếu",
                 }).lean();
 
-                if (foundMovies.length > 0 && rapDaNhanDien) {
-                    const schedule = await Schedule.findOne({
-                        movie: foundMovies[0]._id,
-                    })
-                        .populate("movie", "title")
-                        .populate("theater", "name")
+                if (foundMovies.length > 0) {
+                    const query = { movie: foundMovies[0]._id };
+                    if (rapDaNhanDien) {
+                        // Tìm rạp theo tên (populate rồi filter)
+                    }
+                    const schedules = await Schedule.find(query)
+                        .populate("movie", "title posterUrl image")
+                        .populate("theater", "name city")
+                        .sort({ startTime: 1 })
+                        .limit(5)
                         .lean();
 
-                    if (schedule) {
-                        botResponse.text = `🎬 **${schedule.movie.title}** @ **${schedule.theater.name}** - ${schedule.availableSeats} ghế trống`;
-                        botResponse.type = "text";
+                    if (schedules.length > 0) {
+                        const movie = foundMovies[0];
+                        botResponse.type = "schedule";
+                        botResponse.text = `🎬 Lịch chiếu phim **${foundMovies[0].title}**:`;
+                        botResponse.data = schedules.map((s) => ({
+                            _id: s._id,
+                            movieTitle: s.movie?.title || foundMovies[0].title,
+                            // ✅ Kèm ảnh phim
+                            poster: movie.posterUrl || movie.image || "https://placehold.co/150x220?text=No+Poster",
+                            theaterName: s.theater?.name || "?",
+                            theaterCity: s.theater?.city || "",
+                            startTime: s.startTime,
+                            availableSeats: s.availableSeats ?? "?",
+                        }));
                     } else {
-                        botResponse.text = `Không tìm thấy lịch chiếu phim "${phimDaNhanDien}". Bạn thử tên khác?`;
+                        botResponse.text = `Hiện chưa có lịch chiếu cho phim "${foundMovies[0].title}". Bạn thử kiểm tra lại sau nhé!`;
                     }
-                } else if (foundMovies.length > 0) {
-                    botResponse.text = `🎬 Phim **${foundMovies[0].title}** đang chiếu. Bạn muốn xem ở rạp nào?`;
                 } else {
-                    botResponse.text = aiData.response;
+                    botResponse.text = aiData.response || `Tớ không tìm thấy phim "${phimDaNhanDien}". Bạn thử tên khác nhé?`;
                 }
-            } else if (actionType === "movie_list") {
-                botResponse.text = aiData.response;
-                botResponse.type = "movie_list";
 
-                const randomMovies = await Movie.find({ status: "Đang chiếu" })
+                // ── HÀNH ĐỘNG: DANH SÁCH PHIM ───────────────────────────────────────
+            } else if (actionType === "movie_list") {
+                botResponse.type = "movie_list";
+                botResponse.text = aiData.response || "🎬 Đây là các phim đang chiếu:";
+
+                const movies = await Movie.find({ status: "Đang chiếu" })
                     .populate("genres", "name")
-                    .limit(3)
+                    .limit(6)
                     .lean();
 
-                botResponse.data = randomMovies.map((m) => ({
+                // ✅ Kèm đầy đủ thông tin + ảnh
+                botResponse.data = movies.map((m) => ({
                     _id: m._id,
                     title: m.title,
-                    genre:
-                        m.genres && m.genres.length > 0
-                            ? m.genres.map((g) => g.name).join(", ")
-                            : "Chưa cập nhật",
-                    poster:
-                        m.posterUrl ||
-                        m.image ||
-                        "https://placehold.co/150x200?text=No+Poster",
+                    genre: m.genres?.length > 0 ? m.genres.map((g) => g.name).join(", ") : "Chưa cập nhật",
+                    duration: m.duration ? `${m.duration} phút` : null,
+                    rating: m.rating || null,
+                    poster: m.posterUrl || m.image || "https://placehold.co/150x220?text=No+Poster",
                 }));
+
+                // ── HÀNH ĐỘNG: ĐỒ ĂN & NƯỚC ────────────────────────────────────────
+            } else if (actionType === "product_list") {
+                botResponse.type = "product_list";
+                botResponse.text = aiData.response || "🍿 Đây là các món bắp và nước đang có:";
+
+                const products = await Product.find().limit(8).lean();
+
+                // ✅ Kèm ảnh sản phẩm
+                botResponse.data = products.map((p) => ({
+                    _id: p._id,
+                    name: p.name,
+                    price: p.price,
+                    image: p.image || p.imageUrl || "https://placehold.co/150x150?text=🍿",
+                    description: p.description || null,
+                    category: p.category || null,
+                }));
+
+                // ── HÀNH ĐỘNG: CHAT THƯỜNG ──────────────────────────────────────────
             } else {
-                botResponse.text = aiData.response || "Tớ hiểu câu hỏi của bạn rồi!";
+                botResponse.text = aiData.response || "Tớ hiểu rồi! Bạn cần tớ giúp gì thêm không?";
                 botResponse.type = "text";
             }
+
         } catch (parseError) {
-            console.warn("⚠️ JSON Parse Error:", parseError.message);
-            botResponse.text = responseText || "Xin lỗi, tớ tạm hiểu không rõ!";
+            console.warn("⚠️ JSON parse lỗi:", parseError.message);
+            botResponse.text = responseText || "Xin lỗi, tớ chưa hiểu rõ câu hỏi. Bạn hỏi lại nhé!";
+            botResponse.type = "text";
         }
 
-        // 9️⃣ LƯU DB
-        console.log(`💾 Saving to database...`);
+        // ─── 9. LƯU DATABASE ─────────────────────────────────────────────────────
         try {
-            await chatService.saveChatMessage(
-                sessionId,
-                userId,
-                userName,
-                "user",
-                userMessage,
-                "text",
-                null
-            );
-
-            await chatService.saveChatMessage(
-                sessionId,
-                userId,
-                userName,
-                "bot",
-                botResponse.text,
-                botResponse.type,
-                botResponse.data
-            );
-            console.log(`✅ Messages saved to DB`);
+            await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+            await chatService.saveChatMessage(sessionId, userId, userName, "bot", botResponse.text, botResponse.type, botResponse.data);
         } catch (saveError) {
-            console.warn("⚠️ Warning: Could not save to DB:", saveError.message);
-            // Don't throw - still return response even if DB save fails
+            console.warn("⚠️ Không lưu được DB (vẫn trả response bình thường):", saveError.message);
         }
 
-        // 🔟 RESPONSE
-        res.json({ botMessage: botResponse, sessionId });
-  } catch (error) {
-    console.error("❌ ============ CHAT ERROR ============");
-    console.error(`❌ Error Type: ${error.constructor.name}`);
-    console.error(`❌ Error Message: ${error.message}`);
-    console.error(`❌ Error Stack:`, error.stack);
+        // ─── 10. RETURN ──────────────────────────────────────────────────────────
+        return res.json({ botMessage: botResponse, sessionId });
 
-    if (error.response?.status) {
-      console.error(`❌ Status Code: ${error.response.status}`);
-      console.error(`❌ Response Data:`, error.response.data);
+    } catch (error) {
+        console.error("❌ CHAT ERROR:", error.constructor.name, "-", error.message);
+        console.error(error.stack);
+
+        if (error.message?.includes("429") || error.status === 429) {
+            chatService.rotateKeyOnError();
+            return res.json({
+                botMessage: { text: "🔄 Hệ thống tự chuyển API. Bạn thử lại nhé!", type: "text", data: [] },
+            });
+        }
+
+        const isDev = process.env.NODE_ENV === "development";
+        return res.status(500).json({
+            botMessage: {
+                text: isDev ? `❌ Lỗi: ${error.message}` : "Tớ gặp chút sự cố, bạn thử lại nhé!",
+                type: "text",
+                data: [],
+            },
+            ...(isDev && { error: { message: error.message, type: error.constructor.name } }),
+        });
     }
-
-    let errorStep = "unknown";
-    if (error.message?.includes("Data fetch")) errorStep = "database_query";
-    if (error.message?.includes("Prompt")) errorStep = "prompt_creation";
-    if (error.message?.includes("Gemini")) errorStep = "gemini_api";
-    if (error.message?.includes("JSON")) errorStep = "json_parsing";
-
-    // Check if it's 429 (rate limit)
-    if (error.message?.includes("429")) {
-      chatService.rotateKeyOnError();
-      return res.json({
-        botMessage: {
-          text: "🔄 Hệ thống tự động chuyển sang API khác. Thử lại nhé!",
-          type: "text",
-          data: [],
-        },
-      });
-    }
-
-    // Return detailed error in dev mode
-    const isDev = process.env.NODE_ENV === "development";
-    res.status(500).json({
-      botMessage: {
-        text: isDev
-          ? `❌ Lỗi: ${error.message}`
-          : "Tớ gặp chút sự cố, bạn thử lại nhé!",
-        type: "text",
-        data: [],
-      },
-      error: isDev ? {
-        message: error.message,
-        type: error.constructor.name,
-        step: errorStep,
-        timestamp: new Date().toISOString(),
-      } : undefined,
-    });
-  }
 };
 
 export default { handleChat };
