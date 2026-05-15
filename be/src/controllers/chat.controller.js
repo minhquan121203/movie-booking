@@ -54,7 +54,6 @@ export const handleChat = async (req, res) => {
         console.log(`🎯 Nhận diện: Phim=[${movieName}], Rạp=[${theaterName}]`);
 
         // ─── 7. CALL GEMINI ──────────────────────────────────────────────────────
-        // ✅ FIX: dùng JSON.stringify để tránh null/"null" bug và special-char injection
         const prompt = `
         ${systemPrompt}
         
@@ -88,8 +87,7 @@ export const handleChat = async (req, res) => {
             } catch (geminiError) {
                 lastError = geminiError;
                 console.error(`❌ Gemini attempt ${attempt + 1} failed:`, geminiError.message || geminiError);
-                // if rate limit or server error, rotate key and retry
-                const shouldRotate = geminiError?.message?.includes("429") || geminiError?.status === 429 || (geminiError?.status >= 500 && geminiError?.status < 600);
+                const shouldRotate = true;
                 if (shouldRotate && chatService.apiKeys && chatService.apiKeys.length > 1) {
                     chatService.rotateKeyOnError();
                     console.log(`🔁 Đang thử API key tiếp theo...`);
@@ -239,11 +237,11 @@ export const handleChat = async (req, res) => {
         const isDev = process.env.NODE_ENV === "development";
         return res.status(500).json({
             botMessage: {
-                text: isDev ? `❌ Lỗi: ${error.message}` : "Tớ gặp chút sự cố, bạn thử lại nhé!",
+                text: "Lỗi rồi fen ơi: " + (error.message || "Lỗi không xác định"),
                 type: "text",
                 data: [],
             },
-            ...(isDev && { error: { message: error.message, type: error.constructor.name } }),
+            errorDetail: error.message
         });
     }
 };
