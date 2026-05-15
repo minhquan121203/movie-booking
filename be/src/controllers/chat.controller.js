@@ -27,23 +27,38 @@ export const handleChat = async (req, res) => {
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey) {
             console.error("❌ Không có GEMINI_API_KEYS trong .env");
+            console.error("GEMINI_API_KEYS value:", process.env.GEMINI_API_KEYS);
             return res.status(500).json({
                 botMessage: {
-                    text: "Hệ thống đang bảo trì, quay lại sau nhé!",
+                    text: "⚠️ Hệ thống chatbot chưa được cấu hình. Vui lòng liên hệ admin!",
                     type: "text",
                     data: [],
                 },
+                error: {
+                    message: "Missing GEMINI_API_KEYS in environment",
+                    step: "api_key_validation"
+                }
             });
         }
+        console.log(`✅ Using API key index: ${chatService.currentKeyIndex}`);
 
         // 3️⃣ FETCH DATA
         console.log(`📊 Fetching context data...`);
         let contextData;
         try {
             contextData = await chatService.fetchContextData();
-            console.log(`✅ Context data fetched - Movies: ${contextData.movies?.length || 0}, Theaters: ${contextData.theaters?.length || 0}`);
+            console.log(`✅ Context data fetched - Movies: ${contextData.movies?.length || 0}, Theaters: ${contextData.theaters?.length || 0}, Schedules: ${contextData.rawSchedules?.length || 0}`);
+
+            // Validate data
+            if (!contextData.movies || contextData.movies.length === 0) {
+                console.warn("⚠️ No movies found in database");
+            }
+            if (!contextData.theaters || contextData.theaters.length === 0) {
+                console.warn("⚠️ No theaters found in database");
+            }
         } catch (fetchError) {
             console.error("❌ Error in fetchContextData:", fetchError.message);
+            console.error("Stack:", fetchError.stack);
             throw new Error(`Data fetch failed: ${fetchError.message}`);
         }
 
@@ -51,15 +66,22 @@ export const handleChat = async (req, res) => {
         let formattedText, systemPrompt;
         try {
             formattedText = chatService.formatContextText(contextData);
+
+            // Validate formatted text
+            if (!formattedText.moviesText) formattedText.moviesText = "Không có phim";
+            if (!formattedText.theatersText) formattedText.theatersText = "Không có rạp";
+            if (!formattedText.schedulesText) formattedText.schedulesText = "Không có lịch chiếu";
+
             systemPrompt = chatService.createSystemPrompt(userName, formattedText);
-            console.log(`✅ System prompt created`);
+            console.log(`✅ System prompt created (length: ${systemPrompt.length} chars)`);
         } catch (formatError) {
             console.error("❌ Error formatting text:", formatError.message);
+            console.error("Stack:", formatError.stack);
             throw new Error(`Prompt creation failed: ${formatError.message}`);
         }
 
         // 4️⃣ GET HISTORY
-        const previousMessages = await chatService.getChatHistory(sessionId, 5);
+        const previousMessages = await chatService.getChatHistory(sessionId, 15);
         const recentChats = previousMessages
             .map((msg) => `${msg.role === "user" ? "User" : "Bot"}: ${msg.content}`)
             .join("\n");
@@ -71,6 +93,7 @@ export const handleChat = async (req, res) => {
         console.log(`🎯 Nhận diện: Phim=[${movieName}], Rạp=[${theaterName}]`);
 
         // 6️⃣ CALL GEMINI
+        console.log(`🤖 Calling Gemini API...`);
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -91,7 +114,28 @@ export const handleChat = async (req, res) => {
           "rap": "${theaterName || "null"}"
         }`;
 
-        let result = await model.generateContent(prompt);
+        let result;
+        try {
+            result = await model.generateContent(prompt);
+            console.log(`✅ Gemini response received`);
+        } catch (geminiError) {
+            console.error("❌ Gemini API Error:", geminiError.message);
+            console.error("Error status:", geminiError.status);
+            console.error("Error details:", geminiError);
+
+            if (geminiError.message?.includes("429")) {
+                chatService.rotateKeyOnError();
+                return res.json({
+                    botMessage: {
+                        text: "Hệ thống đang quá tải. Vui lòng thử lại sau 30 giây nhé!",
+                        type: "text",
+                        data: [],
+                    },
+                });
+            }
+            throw new Error(`Gemini API failed: ${geminiError.message}`);
+        }
+
         let responseText = result.response.text().trim();
 
         // 7️⃣ PARSE JSON
@@ -210,34 +254,42 @@ export const handleChat = async (req, res) => {
 
     if (error.response?.status) {
       console.error(`❌ Status Code: ${error.response.status}`);
+      console.error(`❌ Response Data:`, error.response.data);
     }
 
+    let errorStep = "unknown";
+    if (error.message?.includes("Data fetch")) errorStep = "database_query";
+    if (error.message?.includes("Prompt")) errorStep = "prompt_creation";
+    if (error.message?.includes("Gemini")) errorStep = "gemini_api";
+    if (error.message?.includes("JSON")) errorStep = "json_parsing";
+
     // Check if it's 429 (rate limit)
-    if (error.message && error.message.includes("429")) {
+    if (error.message?.includes("429")) {
       chatService.rotateKeyOnError();
       return res.json({
         botMessage: {
-          text: "Hệ thống tự động nâng cấp. Bạn gửi lại nhé!",
+          text: "🔄 Hệ thống tự động chuyển sang API khác. Thử lại nhé!",
           type: "text",
           data: [],
         },
       });
     }
 
-    // Return 500 with error details in dev mode
+    // Return detailed error in dev mode
+    const isDev = process.env.NODE_ENV === "development";
     res.status(500).json({
       botMessage: {
-        text: "Tớ gặp chút sự cố, bạn thử lại nhé!",
+        text: isDev
+          ? `❌ Lỗi: ${error.message}`
+          : "Tớ gặp chút sự cố, bạn thử lại nhé!",
         type: "text",
         data: [],
       },
-      error: process.env.NODE_ENV === "development" ? {
+      error: isDev ? {
         message: error.message,
         type: error.constructor.name,
-        step: error.message.includes("Data fetch") ? "data_fetch" :
-              error.message.includes("Prompt") ? "prompt_creation" :
-              error.message.includes("Gemini") ? "gemini_api" :
-              "unknown"
+        step: errorStep,
+        timestamp: new Date().toISOString(),
       } : undefined,
     });
   }

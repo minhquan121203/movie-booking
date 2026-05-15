@@ -31,26 +31,41 @@ class ChatService {
         try {
             const [movies, theaters, rawSchedules, products, vouchers] =
                 await Promise.all([
-                    Movie.find({ status: "Đang chiếu" }).populate("genres", "name").lean(),
-                    Theater.find({ isActive: true }).lean(),
+                    Movie.find({ status: "Đang chiếu" }).populate("genres", "name").lean().catch(e => {
+                        console.warn("⚠️ Error fetching movies:", e.message);
+                        return [];
+                    }),
+                    Theater.find({ isActive: true }).lean().catch(e => {
+                        console.warn("⚠️ Error fetching theaters:", e.message);
+                        return [];
+                    }),
 
-                    // Chỉ query các lịch chiếu trong vòng 7 ngày tới
+                    // Query lịch chiếu - loại bỏ filter status nếu không tồn tại
                     Schedule.find({
-                        startTime: { $gte: now, $lte: next7Days },
-                        status: { $ne: "Đã hủy" }
+                        startTime: { $gte: now, $lte: next7Days }
                     })
                         .populate("movie", "title")
                         .populate("theater", "name")
                         .sort({ startTime: 1 })
-                        .lean(),
-                    Product.find().lean(),
-                    Voucher.find({ isActive: true }).lean(),
+                        .lean()
+                        .catch(e => {
+                            console.warn("⚠️ Error fetching schedules:", e.message);
+                            return [];
+                        }),
+                    Product.find().lean().catch(e => {
+                        console.warn("⚠️ Error fetching products:", e.message);
+                        return [];
+                    }),
+                    Voucher.find({ isActive: true }).lean().catch(e => {
+                        console.warn("⚠️ Error fetching vouchers:", e.message);
+                        return [];
+                    }),
                 ]);
 
             return { movies, theaters, rawSchedules, products, vouchers, now, next7Days };
         } catch (error) {
-            console.error("❌ Error fetching context data:", error);
-            return { movies: [], theaters: [], rawSchedules: [], products: [], vouchers: [] };
+            console.error("❌ Error in fetchContextData:", error.message);
+            return { movies: [], theaters: [], rawSchedules: [], products: [], vouchers: [], now: new Date(), next7Days: new Date() };
         }
     }
 
@@ -119,9 +134,12 @@ BẮP & NƯỚC: ${formattedText.productsText}
 KHUYẾN MÃI: ${formattedText.vouchersText}
 LỊCH CHIẾU: ${formattedText.schedulesText}
 
-QUY TẮC HỖ TRỢ:
-- Chỉ cung cấp thông tin từ dữ liệu trên, KHÔNG bịa dặt
-- Nếu khách hỏi ngoài, xin lỗi và chuyển hướng`;
+HƯỚNG DẪN TRẢ LỜI:
+✅ Sử dụng lịch sử cuộc hội thoại để hiểu ngữ cảnh
+✅ Nếu khách hỏi "phim đó", hãy tham chiếu từ lịch sử đã nói
+✅ Nhớ sở thích phim của khách từ các câu hỏi trước
+✅ Chỉ cung cấp thông tin từ dữ liệu trên, KHÔNG bịa dặt
+✅ Nếu khách hỏi ngoài, xin lỗi và chuyển hướng`;
     }
 
     extractMovieName(userMessage, history = []) {
@@ -172,10 +190,15 @@ QUY TẮC HỖ TRỢ:
     async getChatHistory(sessionId, limit = 10) {
         try {
             const history = await ChatHistory.findOne({ sessionId });
-            if (!history) return [];
-            return history.messages.slice(-limit);
+            if (!history) {
+                console.log(`📝 No history found for session: ${sessionId}`);
+                return [];
+            }
+            const recentMessages = history.messages.slice(-limit);
+            console.log(`✅ Retrieved ${recentMessages.length} messages from history (limit: ${limit})`);
+            return recentMessages;
         } catch (error) {
-            console.error("❌ Lỗi lấy chat history:", error);
+            console.error("❌ Lỗi lấy chat history:", error.message);
             return [];
         }
     }
