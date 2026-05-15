@@ -80,7 +80,7 @@ export const handleChat = async (req, res) => {
             if (!activeKey) break;
             try {
                 const genAI = new GoogleGenerativeAI(activeKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
                 result = await model.generateContent(prompt);
                 // success
                 break;
