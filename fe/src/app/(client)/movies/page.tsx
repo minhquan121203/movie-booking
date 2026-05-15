@@ -150,6 +150,15 @@ function MoviesContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Khi "Tất cả" → filter bỏ phim "Ngừng chiếu" phía client
+  const filteredMovies = useMemo(() => {
+    const movies = listMovies?.movies || []
+    if (selectedType === 'Tất cả') {
+      return movies.filter((m: any) => m.status !== 'Ngừng chiếu')
+    }
+    return movies
+  }, [listMovies, selectedType])
+
   return (
     <div className="min-h-screen bg-bg-primary">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -189,8 +198,8 @@ function MoviesContent() {
           ) : (
             <>
               <MovieList
-                title={`🎬 Kết quả lọc (${listMovies.pagination?.totalItems || 0} phim)`}
-                movies={listMovies.movies}
+                title={`🎬 Kết quả lọc (${filteredMovies.length} phim)`}
+                movies={filteredMovies}
                 viewAllHref="#"
               />
               <div className="flex flex-col gap-4 mt-4">

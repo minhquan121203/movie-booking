@@ -332,7 +332,7 @@ export default function ChatBot() {
                             {m.content.data.map((movie: any, idx: number) => {
                               const title = movie.title || 'Phim Đang Chiếu';
                               const genre = movie.genre || 'Đang hot';
-                              const imageUrl = movie.poster || 'https://placehold.co/150x200?text=No+Poster';
+                              const imageUrl = movie.poster || movie.posterUrl || 'https://placehold.co/150x200?text=No+Poster';
                               const movieId = movie._id || '';
                               const rating = movie.rating || movie.averageRating || null;
 
@@ -420,7 +420,7 @@ export default function ChatBot() {
                           >
                             <div className="flex gap-3 p-3">
                               <img
-                                src={m.content.data.poster || 'https://placehold.co/100x140?text=Poster'}
+                                src={m.content.data.poster || m.content.data.posterUrl || 'https://placehold.co/100x140?text=Poster'}
                                 alt={m.content.data.title}
                                 className="w-20 h-28 object-cover rounded-lg shadow-sm flex-shrink-0"
                               />
@@ -449,6 +449,65 @@ export default function ChatBot() {
                                 </button>
                               </div>
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Food/Product Cards */}
+                      {m.content?.type === 'food_list' && Array.isArray(m.content?.data) && m.content.data.length > 0 && (
+                        <div className="px-3 pb-3">
+                          <div className="flex items-center gap-1.5 mb-2.5 px-1">
+                            <span className="text-xs">🍿</span>
+                            <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider">
+                              Đồ ăn & Thức uống
+                            </span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-[var(--primary)]/20 to-transparent ml-1" />
+                          </div>
+
+                          <div className="flex gap-2.5 overflow-x-auto pb-1 chatbot-movie-scroll snap-x snap-mandatory scroll-smooth">
+                            {m.content.data.map((item: any, idx: number) => {
+                              const name = item.name || 'Sản phẩm';
+                              const imageUrl = item.imageUrl || item.image || 'https://placehold.co/150x150?text=No+Image';
+                              const price = item.price || 0;
+                              const category = item.category || '';
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex-none w-[130px] rounded-xl overflow-hidden snap-center flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                                  style={{
+                                    background: 'linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%)',
+                                    border: '1px solid rgba(108, 99, 255, 0.12)',
+                                  }}
+                                >
+                                  {/* Image */}
+                                  <div className="relative w-full h-[120px] overflow-hidden">
+                                    <img
+                                      src={imageUrl}
+                                      alt={name}
+                                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                    {category && (
+                                      <div className="absolute top-2 left-2 bg-orange-500/90 backdrop-blur-sm rounded-full px-2 py-0.5">
+                                        <span className="text-white text-[9px] font-bold">{category}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Info */}
+                                  <div className="p-2.5 flex flex-col flex-1">
+                                    <h4 className="font-bold text-[11px] text-gray-800 line-clamp-2 leading-snug mb-1" title={name}>
+                                      {name}
+                                    </h4>
+                                    <div className="mt-auto flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-[var(--primary)]">
+                                        {price.toLocaleString('vi-VN')}đ
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
