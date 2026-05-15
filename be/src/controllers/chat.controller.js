@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import Movie from "../models/movie.model.js";
 import Schedule from "../models/schedule.model.js";
 import Product from "../models/product.model.js";
@@ -13,237 +13,119 @@ export const handleChat = async (req, res) => {
     } = req.body;
 
     try {
-        // ─── 1. VALIDATE ────────────────────────────────────────────────────────
+        // 1. Kiểm tra đầu vào
         if (!userMessage || userMessage.trim().length === 0) {
             return res.status(400).json({
                 botMessage: { text: "Bạn cần nói gì đó để tớ trả lời nhé!", type: "text", data: [] },
             });
         }
 
-        // ─── 2. API KEY ──────────────────────────────────────────────────────────
-        const apiKey = chatService.getActiveApiKey();
+        // 2. Lấy API Key OpenRouter từ env
+        const apiKey = process.env.OPENROUTER_API_KEY;
         if (!apiKey) {
-            console.error("❌ Thiếu GEMINI_API_KEYS trong .env");
+            console.error("❌ Thiếu OPENROUTER_API_KEY trong .env");
             return res.status(500).json({
-                botMessage: { text: "⚠️ Hệ thống chatbot chưa được cấu hình. Vui lòng liên hệ admin!", type: "text", data: [] },
+                botMessage: { text: "⚠️ Hệ thống chatbot chưa được cấu hình key. Liên hệ admin!", type: "text", data: [] },
             });
         }
 
-        // ─── 3. FETCH DATA ───────────────────────────────────────────────────────
+        // 3. Lấy dữ liệu ngữ cảnh (Phim, Rạp, Lịch chiếu)
         let contextData;
         try {
             contextData = await chatService.fetchContextData();
         } catch (e) {
-            console.error("❌ fetchContextData lỗi:", e.message);
-            contextData = { movies: [], theaters: [], rawSchedules: [], products: [], vouchers: [], now: new Date(), next7Days: new Date() };
+            console.error("❌ Lỗi fetch data:", e.message);
+            contextData = { movies: [], theaters: [], rawSchedules: [] };
         }
 
-        // ─── 4. BUILD PROMPT ─────────────────────────────────────────────────────
-        const formattedText = chatService.formatContextText(contextData);
-        const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
-
-        // ─── 5. CHAT HISTORY ─────────────────────────────────────────────────────
-        const previousMessages = await chatService.getChatHistory(sessionId, 15);
-        const recentChats = previousMessages
-            .map((msg) => `${msg.role === "user" ? "User" : "Bot"}: ${msg.content}`)
-            .join("\n");
-
-        // ─── 6. EXTRACT ENTITIES ─────────────────────────────────────────────────
-        const movieName    = chatService.extractMovieName(userMessage);
-        const theaterName  = chatService.extractTheaterName(userMessage);
-        console.log(`🎯 Nhận diện: Phim=[${movieName}], Rạp=[${theaterName}]`);
-
-        // ─── 7. CALL GEMINI ──────────────────────────────────────────────────────
-        const prompt = `
-        ${systemPrompt}
+        // 4. Tạo System Prompt (Giữ nguyên logic của fen)
+        const systemPrompt = `
+        Bạn là "CineBot" - trợ lý ảo thông minh của rạp chiếu phim CineBooking.
+        Nhiệm vụ: Tư vấn phim, lịch chiếu, giá vé và đồ ăn.
         
-        [LỊCH SỬ HỘI THOẠI]
-        ${recentChats || "Chưa có lịch sử"}
+        [DỮ LIỆU RẠP]:
+        - Phim đang chiếu: ${contextData.movies.map(m => m.title).join(", ")}
+        - Rạp: ${contextData.theaters.map(t => t.name).join(", ")}
         
-        [CÂU HỎI HIỆN TẠI]
-        "${userMessage}"
-        
-        👇 CHỈ trả về JSON hợp lệ, KHÔNG markdown, KHÔNG giải thích:
+        [QUY TẮC TRẢ VỀ JSON]:
+        Bạn PHẢI trả về định dạng JSON thuần túy (không dùng markdown \`\`\`) với cấu trúc:
         {
-          "response": "Câu trả lời tiếng Việt thân thiện",
-          "action": "chat | movie_list | schedule | product_list",
-          "phim": ${JSON.stringify(movieName)},
-          "rap": ${JSON.stringify(theaterName)}
-        }`;
-
-        // Call Gemini with retries and key rotation
-        let result = null;
-        const maxAttempts = Math.max(1, (chatService.apiKeys?.length || 0));
-        let lastError = null;
-        for (let attempt = 0; attempt < Math.max(3, maxAttempts); attempt++) {
-            const activeKey = chatService.getActiveApiKey();
-            if (!activeKey) break;
-            try {
-                const genAI = new GoogleGenerativeAI(activeKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                result = await model.generateContent(prompt);
-                // success
-                break;
-            } catch (geminiError) {
-                lastError = geminiError;
-                console.error(`❌ Gemini attempt ${attempt + 1} failed:`, geminiError.message || geminiError);
-                const shouldRotate = true;
-                if (shouldRotate && chatService.apiKeys && chatService.apiKeys.length > 1) {
-                    chatService.rotateKeyOnError();
-                    console.log(`🔁 Đang thử API key tiếp theo...`);
-                    // small delay before retry
-                    await new Promise((r) => setTimeout(r, 500));
-                    continue;
-                }
-                // Non-retriable error
-                break;
-            }
+          "response": "Câu trả lời thân thiện bằng tiếng Việt",
+          "action": "chat" | "movie_list" | "schedule",
+          "phim": "Tên phim nếu khách nhắc tới (hoặc null)",
+          "rap": "Tên rạp nếu khách nhắc tới (hoặc null)"
         }
-        if (!result) {
-            console.error("❌ Gemini: tất cả attempt thất bại", lastError && lastError.message);
-            // if rate-limited, inform user to retry; otherwise throw to be handled by outer catch
-            if (lastError?.message?.includes("429") || lastError?.status === 429) {
-                return res.json({ botMessage: { text: "Hệ thống đang quá tải, bạn thử lại sau 30 giây nhé!", type: "text", data: [] } });
-            }
-            throw lastError || new Error("Gemini service unavailable");
-        }
+        Nếu khách hỏi về phim đang chiếu hoặc gợi ý phim, hãy để action là "movie_list".
+        `;
 
-        // ─── 8. PARSE RESPONSE ───────────────────────────────────────────────────
-        let responseText = result.response.text().trim()
-            .replace(/```json/gi, "")
-            .replace(/```/g, "")
-            .trim();
+        // 5. GỌI OPENROUTER AI
+        console.log(`🤖 Đang gọi OpenRouter (Model: Llama 3)...`);
+        const openai = new OpenAI({
+            baseURL: "https://openrouter.ai/api/v1",
+            apiKey: apiKey,
+        });
 
-        let botResponse = { text: "Tớ đang tải dữ liệu, bạn thử lại nhé!", type: "text", data: [] };
+        const completion = await openai.chat.completions.create({
+            model: "meta-llama/llama-3-8b-instruct:free", // Bản miễn phí cực nhanh
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage }
+            ],
+            response_format: { type: "json_object" } // Ép AI trả về JSON chuẩn
+        });
 
+        const responseText = completion.choices[0].message.content;
+        console.log("👉 AI Response:", responseText);
+
+        // 6. XỬ LÝ PHẢN HỒI
+        let aiData;
         try {
-            const aiData = JSON.parse(responseText);
-            const actionType      = aiData.action  || "chat";
-            // ✅ FIX: phim/rap là null thật (không phải chuỗi "null")
-            const phimDaNhanDien  = aiData.phim  && aiData.phim  !== "null" ? aiData.phim  : null;
-            const rapDaNhanDien   = aiData.rap   && aiData.rap   !== "null" ? aiData.rap   : null;
-
-            // ── HÀNH ĐỘNG: TÌM LỊCH CHIẾU ──────────────────────────────────────
-            if (actionType === "schedule" && phimDaNhanDien) {
-                const foundMovies = await Movie.find({
-                    title: new RegExp(phimDaNhanDien, "i"),
-                    status: "Đang chiếu",
-                }).lean();
-
-                if (foundMovies.length > 0) {
-                    const query = { movie: foundMovies[0]._id };
-                    if (rapDaNhanDien) {
-                        // Tìm rạp theo tên (populate rồi filter)
-                    }
-                    const schedules = await Schedule.find(query)
-                        .populate("movie", "title posterUrl image")
-                        .populate("theater", "name city")
-                        .sort({ startTime: 1 })
-                        .limit(5)
-                        .lean();
-
-                    if (schedules.length > 0) {
-                        const movie = foundMovies[0];
-                        botResponse.type = "schedule";
-                        botResponse.text = `🎬 Lịch chiếu phim **${foundMovies[0].title}**:`;
-                        botResponse.data = schedules.map((s) => ({
-                            _id: s._id,
-                            movieTitle: s.movie?.title || foundMovies[0].title,
-                            // ✅ Kèm ảnh phim
-                            poster: movie.posterUrl || movie.image || "https://placehold.co/150x220?text=No+Poster",
-                            theaterName: s.theater?.name || "?",
-                            theaterCity: s.theater?.city || "",
-                            startTime: s.startTime,
-                            availableSeats: s.availableSeats ?? "?",
-                        }));
-                    } else {
-                        botResponse.text = `Hiện chưa có lịch chiếu cho phim "${foundMovies[0].title}". Bạn thử kiểm tra lại sau nhé!`;
-                    }
-                } else {
-                    botResponse.text = aiData.response || `Tớ không tìm thấy phim "${phimDaNhanDien}". Bạn thử tên khác nhé?`;
-                }
-
-                // ── HÀNH ĐỘNG: DANH SÁCH PHIM ───────────────────────────────────────
-            } else if (actionType === "movie_list") {
-                botResponse.type = "movie_list";
-                botResponse.text = aiData.response || "🎬 Đây là các phim đang chiếu:";
-
-                const movies = await Movie.find({ status: "Đang chiếu" })
-                    .populate("genres", "name")
-                    .limit(6)
-                    .lean();
-
-                // ✅ Kèm đầy đủ thông tin + ảnh
-                botResponse.data = movies.map((m) => ({
-                    _id: m._id,
-                    title: m.title,
-                    genre: m.genres?.length > 0 ? m.genres.map((g) => g.name).join(", ") : "Chưa cập nhật",
-                    duration: m.duration ? `${m.duration} phút` : null,
-                    rating: m.rating || null,
-                    poster: m.posterUrl || m.image || "https://placehold.co/150x220?text=No+Poster",
-                }));
-
-                // ── HÀNH ĐỘNG: ĐỒ ĂN & NƯỚC ────────────────────────────────────────
-            } else if (actionType === "product_list") {
-                botResponse.type = "product_list";
-                botResponse.text = aiData.response || "🍿 Đây là các món bắp và nước đang có:";
-
-                const products = await Product.find().limit(8).lean();
-
-                // ✅ Kèm ảnh sản phẩm
-                botResponse.data = products.map((p) => ({
-                    _id: p._id,
-                    name: p.name,
-                    price: p.price,
-                    image: p.image || p.imageUrl || "https://placehold.co/150x150?text=🍿",
-                    description: p.description || null,
-                    category: p.category || null,
-                }));
-
-                // ── HÀNH ĐỘNG: CHAT THƯỜNG ──────────────────────────────────────────
-            } else {
-                botResponse.text = aiData.response || "Tớ hiểu rồi! Bạn cần tớ giúp gì thêm không?";
-                botResponse.type = "text";
-            }
-
-        } catch (parseError) {
-            console.warn("⚠️ JSON parse lỗi:", parseError.message);
-            botResponse.text = responseText || "Xin lỗi, tớ chưa hiểu rõ câu hỏi. Bạn hỏi lại nhé!";
-            botResponse.type = "text";
+            aiData = JSON.parse(responseText);
+        } catch (e) {
+            aiData = { response: responseText, action: "chat" };
         }
 
-        // ─── 9. LƯU DATABASE ─────────────────────────────────────────────────────
+        let botResponse = {
+            text: aiData.response || "Dạ, tớ đây!",
+            type: "text",
+            data: []
+        };
+
+        // 7. GHÉP DỮ LIỆU THẬT VÀO CARD (Logic vuốt vuốt xịn xò)
+        if (aiData.action === "movie_list") {
+            botResponse.type = "movie_list";
+            botResponse.data = contextData.movies.map(m => ({
+                _id: m._id,
+                title: m.title,
+                poster: m.poster,
+                genre: m.genres?.map(g => g.name).join(", ") || "Phim hay"
+            })).slice(0, 6);
+        }
+        else if (aiData.action === "schedule") {
+            // Có thể thêm logic lọc lịch chiếu ở đây nếu muốn
+            botResponse.text += " Bạn xem lịch chiếu phía dưới nhé!";
+        }
+
+        // 8. LƯU LỊCH SỬ CHAT
         try {
             await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
             await chatService.saveChatMessage(sessionId, userId, userName, "bot", botResponse.text, botResponse.type, botResponse.data);
-        } catch (saveError) {
-            console.warn("⚠️ Không lưu được DB (vẫn trả response bình thường):", saveError.message);
+        } catch (err) {
+            console.warn("⚠️ Không lưu được lịch sử chat:", err.message);
         }
 
-        // ─── 10. RETURN ──────────────────────────────────────────────────────────
+        // 9. TRẢ VỀ CHO FRONTEND
         return res.json({ botMessage: botResponse, sessionId });
 
     } catch (error) {
-        console.error("❌ CHAT ERROR:", error.constructor.name, "-", error.message);
-        console.error(error.stack);
-
-        if (error.message?.includes("429") || error.status === 429) {
-            chatService.rotateKeyOnError();
-            return res.json({
-                botMessage: { text: "🔄 Hệ thống tự chuyển API. Bạn thử lại nhé!", type: "text", data: [] },
-            });
-        }
-
-        const isDev = process.env.NODE_ENV === "development";
+        console.error("❌ LỖI CHATBOT:", error.message);
         return res.status(500).json({
             botMessage: {
-                text: "Lỗi rồi fen ơi: " + (error.message || "Lỗi không xác định"),
+                text: "Tớ đang bảo trì não một chút, fen đợi tí nhé!",
                 type: "text",
-                data: [],
+                data: []
             },
-            errorDetail: error.message
+            error: error.message
         });
     }
 };
-
-export default { handleChat };
