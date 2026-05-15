@@ -235,11 +235,7 @@ export default function ChatBot() {
 
         {/* Chat Window */}
         {isOpen && (
-          <div className="chatbot-slide-up absolute bottom-[65px] right-0 w-[92vw] max-w-[400px] h-[78vh] max-h-[620px] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-            style={{
-              border: '1px solid rgba(108, 99, 255, 0.15)',
-              background: 'linear-gradient(180deg, #fafafe 0%, #f3f2ff 100%)',
-            }}
+          <div className="chatbot-slide-up absolute bottom-[65px] right-0 w-[92vw] max-w-[400px] h-[78vh] max-h-[620px] rounded-2xl shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-gray-900 border border-violet-500/15 dark:border-violet-400/20"
           >
             {/* Header */}
             <div
@@ -303,15 +299,11 @@ export default function ChatBot() {
 
                   {/* Bot Message */}
                   {m.role === 'bot' && (
-                    <div className="max-w-[85%] sm:max-w-[88%] flex flex-col overflow-hidden rounded-2xl rounded-tl-sm shadow-sm"
-                      style={{
-                        background: 'white',
-                        border: '1px solid rgba(108, 99, 255, 0.1)',
-                      }}
+                    <div className="max-w-[85%] sm:max-w-[88%] flex flex-col overflow-hidden rounded-2xl rounded-tl-sm shadow-sm bg-white dark:bg-gray-800 border border-violet-500/10 dark:border-violet-400/20"
                     >
                       {/* Text Content */}
                       {m.content?.text && (
-                        <div className="px-4 py-3 text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <div className="px-4 py-3 text-[13px] text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
                           {formatText(m.content.text)}
                         </div>
                       )}
@@ -339,11 +331,7 @@ export default function ChatBot() {
                               return (
                                 <div
                                   key={idx}
-                                  className="flex-none w-[135px] rounded-xl overflow-hidden snap-center flex flex-col group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                                  style={{
-                                    background: 'linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%)',
-                                    border: '1px solid rgba(108, 99, 255, 0.12)',
-                                  }}
+                                  className="flex-none w-[135px] rounded-xl overflow-hidden snap-center flex flex-col group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-50 dark:bg-gray-700 border border-violet-500/12 dark:border-violet-400/20"
                                 >
                                   {/* Poster */}
                                   <div className="relative w-full h-[175px] overflow-hidden">
@@ -376,7 +364,7 @@ export default function ChatBot() {
 
                                   {/* Info */}
                                   <div className="p-2.5 flex flex-col flex-1">
-                                    <h4 className="font-bold text-[11px] text-gray-800 line-clamp-2 leading-snug mb-1" title={title}>
+                                    <h4 className="font-bold text-[11px] text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug mb-1" title={title}>
                                       {title}
                                     </h4>
                                     <div className="flex items-center gap-1 mb-2">
@@ -425,10 +413,10 @@ export default function ChatBot() {
                                 className="w-20 h-28 object-cover rounded-lg shadow-sm flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0 flex flex-col">
-                                <h4 className="font-bold text-sm text-gray-800 line-clamp-2">{m.content.data.title}</h4>
-                                <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{m.content.data.genre}</p>
+                                <h4 className="font-bold text-sm text-gray-800 dark:text-gray-100 line-clamp-2">{m.content.data.title}</h4>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{m.content.data.genre}</p>
                                 {m.content.data.duration && (
-                                  <p className="text-[10px] text-gray-400 mt-0.5">⏱ {m.content.data.duration} phút</p>
+                                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">⏱ {m.content.data.duration} phút</p>
                                 )}
                                 <button
                                   onClick={() => {
@@ -474,11 +462,7 @@ export default function ChatBot() {
                               return (
                                 <div
                                   key={idx}
-                                  className="flex-none w-[130px] rounded-xl overflow-hidden snap-center flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                                  style={{
-                                    background: 'linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%)',
-                                    border: '1px solid rgba(108, 99, 255, 0.12)',
-                                  }}
+                                  className="flex-none w-[130px] rounded-xl overflow-hidden snap-center flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-50 dark:bg-gray-700 border border-violet-500/12 dark:border-violet-400/20"
                                 >
                                   {/* Image */}
                                   <div className="relative w-full h-[120px] overflow-hidden">
@@ -496,7 +480,7 @@ export default function ChatBot() {
 
                                   {/* Info */}
                                   <div className="p-2.5 flex flex-col flex-1">
-                                    <h4 className="font-bold text-[11px] text-gray-800 line-clamp-2 leading-snug mb-1" title={name}>
+                                    <h4 className="font-bold text-[11px] text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug mb-1" title={name}>
                                       {name}
                                     </h4>
                                     <div className="mt-auto flex items-center justify-between">
@@ -516,14 +500,10 @@ export default function ChatBot() {
                       {m.content?.type === 'action_booking' && m.content?.data?.movieId && (
                         <div className="px-4 pb-3">
                           <div
-                            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm"
-                            style={{
-                              background: 'linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(139, 92, 246, 0.08))',
-                              border: '1px solid rgba(108, 99, 255, 0.15)',
-                            }}
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm bg-violet-500/8 dark:bg-violet-400/10 border border-violet-500/15 dark:border-violet-400/25"
                           >
                             <span className="text-lg">🎫</span>
-                            <span className="text-xs text-gray-600">Đang chuyển đến trang đặt vé...</span>
+                            <span className="text-xs text-gray-600 dark:text-gray-300">Đang chuyển đến trang đặt vé...</span>
                             <div className="ml-auto flex gap-0.5">
                               <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full chatbot-dot-1" />
                               <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full chatbot-dot-2" />
@@ -546,11 +526,7 @@ export default function ChatBot() {
                     <span className="text-xs">🤖</span>
                   </div>
                   <div
-                    className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center"
-                    style={{
-                      background: 'white',
-                      border: '1px solid rgba(108, 99, 255, 0.1)',
-                    }}
+                    className="px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center bg-white dark:bg-gray-800 border border-violet-500/10 dark:border-violet-400/20"
                   >
                     <span className="w-2 h-2 bg-[var(--primary)] rounded-full chatbot-dot-1" />
                     <span className="w-2 h-2 bg-[var(--primary)] rounded-full chatbot-dot-2" />
@@ -567,12 +543,7 @@ export default function ChatBot() {
                   <button
                     key={i}
                     onClick={() => handleSend(q)}
-                    className="flex-none px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200 hover:shadow-sm active:scale-95 whitespace-nowrap"
-                    style={{
-                      background: 'rgba(108, 99, 255, 0.08)',
-                      color: 'var(--primary)',
-                      border: '1px solid rgba(108, 99, 255, 0.15)',
-                    }}
+                    className="flex-none px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200 hover:shadow-sm active:scale-95 whitespace-nowrap bg-violet-500/10 dark:bg-violet-400/15 text-violet-600 dark:text-violet-300 border border-violet-500/15 dark:border-violet-400/25"
                   >
                     {q}
                   </button>
@@ -582,22 +553,14 @@ export default function ChatBot() {
 
             {/* Input Area */}
             <div
-              className="px-3 py-3 flex items-center gap-2"
-              style={{
-                background: 'white',
-                borderTop: '1px solid rgba(108, 99, 255, 0.1)',
-              }}
+              className="px-3 py-3 flex items-center gap-2 bg-white dark:bg-gray-900 border-t border-violet-500/10 dark:border-violet-400/20"
             >
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Nhập tin nhắn..."
-                className="flex-1 min-w-0 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none"
-                style={{
-                  background: '#f5f4ff',
-                  border: '1.5px solid rgba(108, 99, 255, 0.12)',
-                }}
+                className="flex-1 min-w-0 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 outline-none bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-[1.5px] border-violet-500/12 dark:border-violet-400/25"
                 onFocus={(e) => {
                   e.target.style.borderColor = 'rgba(108, 99, 255, 0.4)';
                   e.target.style.boxShadow = '0 0 0 3px rgba(108, 99, 255, 0.08)';
