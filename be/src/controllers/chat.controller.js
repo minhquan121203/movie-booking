@@ -56,38 +56,58 @@ export const handleChat = async (req, res) => {
         // ─── 7. CALL GEMINI ──────────────────────────────────────────────────────
         // ✅ FIX: dùng JSON.stringify để tránh null/"null" bug và special-char injection
         const prompt = `
-${systemPrompt}
+        ${systemPrompt}
+        
+        [LỊCH SỬ HỘI THOẠI]
+        ${recentChats || "Chưa có lịch sử"}
+        
+        [CÂU HỎI HIỆN TẠI]
+        "${userMessage}"
+        
+        👇 CHỈ trả về JSON hợp lệ, KHÔNG markdown, KHÔNG giải thích:
+        {
+          "response": "Câu trả lời tiếng Việt thân thiện",
+          "action": "chat | movie_list | schedule | product_list",
+          "phim": ${JSON.stringify(movieName)},
+          "rap": ${JSON.stringify(theaterName)}
+        }`;
 
-[LỊCH SỬ HỘI THOẠI]
-${recentChats || "Chưa có lịch sử"}
-
-[CÂU HỎI HIỆN TẠI]
-"${userMessage}"
-
-👇 CHỈ trả về JSON hợp lệ, KHÔNG markdown, KHÔNG giải thích:
-{
-  "response": "Câu trả lời tiếng Việt thân thiện",
-  "action": "chat | movie_list | schedule | product_list",
-  "phim": ${JSON.stringify(movieName)},
-  "rap": ${JSON.stringify(theaterName)}
-}`;
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // ✅ FIX: tên model chính xác
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        let result;
-        try {
-            result = await model.generateContent(prompt);
-        } catch (geminiError) {
-            console.error("❌ Gemini API Error:", geminiError.message);
-            if (geminiError.message?.includes("429") || geminiError.status === 429) {
-                chatService.rotateKeyOnError();
-                return res.json({
-                    botMessage: { text: "Hệ thống đang quá tải, bạn thử lại sau 30 giây nhé!", type: "text", data: [] },
-                });
+        // Call Gemini with retries and key rotation
+        let result = null;
+        const maxAttempts = Math.max(1, (chatService.apiKeys?.length || 0));
+        let lastError = null;
+        for (let attempt = 0; attempt < Math.max(3, maxAttempts); attempt++) {
+            const activeKey = chatService.getActiveApiKey();
+            if (!activeKey) break;
+            try {
+                const genAI = new GoogleGenerativeAI(activeKey);
+                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+                result = await model.generateContent(prompt);
+                // success
+                break;
+            } catch (geminiError) {
+                lastError = geminiError;
+                console.error(`❌ Gemini attempt ${attempt + 1} failed:`, geminiError.message || geminiError);
+                // if rate limit or server error, rotate key and retry
+                const shouldRotate = geminiError?.message?.includes("429") || geminiError?.status === 429 || (geminiError?.status >= 500 && geminiError?.status < 600);
+                if (shouldRotate && chatService.apiKeys && chatService.apiKeys.length > 1) {
+                    chatService.rotateKeyOnError();
+                    console.log(`🔁 Đang thử API key tiếp theo...`);
+                    // small delay before retry
+                    await new Promise((r) => setTimeout(r, 500));
+                    continue;
+                }
+                // Non-retriable error
+                break;
             }
-            throw geminiError;
+        }
+        if (!result) {
+            console.error("❌ Gemini: tất cả attempt thất bại", lastError && lastError.message);
+            // if rate-limited, inform user to retry; otherwise throw to be handled by outer catch
+            if (lastError?.message?.includes("429") || lastError?.status === 429) {
+                return res.json({ botMessage: { text: "Hệ thống đang quá tải, bạn thử lại sau 30 giây nhé!", type: "text", data: [] } });
+            }
+            throw lastError || new Error("Gemini service unavailable");
         }
 
         // ─── 8. PARSE RESPONSE ───────────────────────────────────────────────────

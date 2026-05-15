@@ -7,24 +7,57 @@ import ChatHistory from "../models/chat-history.model.js";
 
 class ChatService {
     constructor() {
-        this.apiKeys = process.env.GEMINI_API_KEYS
-            ? process.env.GEMINI_API_KEYS.split(",").map((k) => k.trim()).filter(Boolean)
-            : [];
+        // Hỗ trợ nhiều cách viết trong .env: comma separated, newline separated, or JSON array
+        const raw = process.env.GEMINI_API_KEYS || "";
+        let keys = [];
+        try {
+            if (raw.trim().startsWith("[")) {
+                keys = JSON.parse(raw);
+            } else {
+                // split by comma or whitespace/newline
+                keys = raw.split(/[,\n\s]+/).map((k) => k.trim()).filter(Boolean);
+            }
+        } catch (e) {
+            console.warn("⚠️ Không parse được GEMINI_API_KEYS từ .env, dùng tách theo dấu phẩy/space");
+            keys = raw.split(/[,\n\s]+/).map((k) => k.trim()).filter(Boolean);
+        }
+        this.apiKeys = keys;
         this.currentKeyIndex = 0;
+        console.log(`🔑 ChatService loaded ${this.apiKeys.length} GEMINI API key(s)`);
     }
 
     getActiveApiKey() {
+        if (!this.apiKeys || this.apiKeys.length === 0) return null;
+        // Ensure index is within bounds
+        if (this.currentKeyIndex >= this.apiKeys.length) this.currentKeyIndex = 0;
         return this.apiKeys[this.currentKeyIndex] || null;
     }
 
     rotateKeyOnError() {
-        if (this.apiKeys.length > 1) {
-            this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-            console.log(`🔄 Chuyển sang API key #${this.currentKeyIndex + 1}`);
-        }
+        if (!this.apiKeys || this.apiKeys.length === 0) return;
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+        console.log(`🔄 Chuyển sang API key #${this.currentKeyIndex + 1}`);
     }
 
-    async fetchContextData() {
+    hasValidKeys() {
+        return Array.isArray(this.apiKeys) && this.apiKeys.length > 0;
+    }
+
+    // Simple in-memory cache for context data to reduce DB load
+    _contextCache = { data: null, expiresAt: 0 };
+
+    async _getCachedContext(ttlMs = 60 * 1000) {
+        const now = Date.now();
+        if (this._contextCache.data && this._contextCache.expiresAt > now) {
+            return this._contextCache.data;
+        }
+        const data = await this._fetchContextNoCache();
+        this._contextCache = { data, expiresAt: now + ttlMs };
+        return data;
+    }
+
+    // internal fetch logic (kept for readability)
+    async _fetchContextNoCache() {
         const now = new Date();
         const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -50,6 +83,16 @@ class ChatService {
         ]);
 
         return { movies, theaters, rawSchedules, products, vouchers, now, next7Days };
+    }
+
+    async fetchContextData() {
+        // Use cached context to avoid heavy DB reads on each chat request
+        try {
+            return await this._getCachedContext(30 * 1000); // cache 30s
+        } catch (err) {
+            console.warn("⚠️ fetchContextData fallback error:", err.message);
+            return await this._fetchContextNoCache();
+        }
     }
 
     formatContextText(data) {
