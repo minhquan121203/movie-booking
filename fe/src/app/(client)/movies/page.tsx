@@ -12,7 +12,7 @@ import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom
 import type { Genre } from '@/types/genre'
 
 // --- CONSTANTS UI ---
-const movieTypes = ['Tất cả', 'Đang chiếu', 'Sắp chiếu']
+const movieTypes = ['Đang chiếu', 'Sắp chiếu']
 const ratings = ['P', 'C13', 'C16', 'C18']
 const sortOptions = ['Mới nhất', 'Mới cập nhật', 'Điểm IMDb', 'Lượt xem']
 
@@ -26,7 +26,7 @@ function MoviesContent() {
   // --- 1. DRAFT STATE ---
   const [showFilters, setShowFilters] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')
-  const [selectedType, setSelectedType] = useState('Tất cả')
+  const [selectedType, setSelectedType] = useState('Đang chiếu')
   const [selectedRating, setSelectedRating] = useState('P')
   const [selectedGenreNames, setSelectedGenreNames] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState('Tất cả')
@@ -62,6 +62,7 @@ function MoviesContent() {
     limit: itemsPerPage,
     sortBy: 'releaseDate',
     order: 'desc',
+    status: 'Đang chiếu',
   })
 
   // --- 3. FETCH DATA ---
@@ -87,7 +88,7 @@ function MoviesContent() {
 
       rating: selectedRating === 'P' ? undefined : selectedRating,
 
-      status: selectedType === 'Tất cả' ? undefined : selectedType,
+      status: selectedType,
 
       country: selectedCountry === 'Tất cả' ? undefined : selectedCountry,
 
@@ -150,15 +151,6 @@ function MoviesContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Khi "Tất cả" → filter bỏ phim "Ngừng chiếu" phía client
-  const filteredMovies = useMemo(() => {
-    const movies = listMovies?.movies || []
-    if (selectedType === 'Tất cả') {
-      return movies.filter((m: any) => m.status !== 'Ngừng chiếu')
-    }
-    return movies
-  }, [listMovies, selectedType])
-
   return (
     <div className="min-h-screen bg-bg-primary">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -198,8 +190,8 @@ function MoviesContent() {
           ) : (
             <>
               <MovieList
-                title={`🎬 Kết quả lọc (${filteredMovies.length} phim)`}
-                movies={filteredMovies}
+                title={`🎬 Kết quả lọc (${totalItems} phim)`}
+                movies={listMovies.movies}
                 viewAllHref="#"
               />
               <div className="flex flex-col gap-4 mt-4">
