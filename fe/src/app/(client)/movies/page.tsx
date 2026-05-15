@@ -12,7 +12,7 @@ import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom
 import type { Genre } from '@/types/genre'
 
 // --- CONSTANTS UI ---
-const movieTypes = ['Đang chiếu', 'Sắp chiếu']
+const movieTypes = ['Tất cả', 'Đang chiếu', 'Sắp chiếu']
 const ratings = ['P', 'C13', 'C16', 'C18']
 const sortOptions = ['Mới nhất', 'Mới cập nhật', 'Điểm IMDb', 'Lượt xem']
 
@@ -26,7 +26,7 @@ function MoviesContent() {
   // --- 1. DRAFT STATE ---
   const [showFilters, setShowFilters] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')
-  const [selectedType, setSelectedType] = useState('Đang chiếu')
+  const [selectedType, setSelectedType] = useState('Tất cả')
   const [selectedRating, setSelectedRating] = useState('P')
   const [selectedGenreNames, setSelectedGenreNames] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState('Tất cả')
@@ -62,7 +62,6 @@ function MoviesContent() {
     limit: itemsPerPage,
     sortBy: 'releaseDate',
     order: 'desc',
-    status: 'Đang chiếu',
   })
 
   // --- 3. FETCH DATA ---
@@ -88,7 +87,7 @@ function MoviesContent() {
 
       rating: selectedRating === 'P' ? undefined : selectedRating,
 
-      status: selectedType,
+      status: selectedType === 'Tất cả' ? undefined : selectedType,
 
       country: selectedCountry === 'Tất cả' ? undefined : selectedCountry,
 

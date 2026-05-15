@@ -80,9 +80,6 @@ export default function HomePage() {
   const displayMovies = activeTab === 'top' ? allMoviesForTab.slice(0, TOP_MOVIE_LIMIT) : allMoviesForTab
   const hasMore = activeTab === 'top' && allMoviesForTab.length > TOP_MOVIE_LIMIT
 
-  const nowCount = nowShowingData?.pagination?.totalItems || nowShowingData?.movies?.length || 0
-  const comingCount = comingSoonData?.pagination?.totalItems || comingSoonData?.movies?.length || 0
-  const topCount = topMovieData?.pagination?.totalItems || topMovieData?.movies?.length || 0
 
   return (
     <div className="flex flex-col w-full overflow-x-hidden">
@@ -107,7 +104,6 @@ export default function HomePage() {
               >
                 <Flame className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Top Movies</span>
-                {topCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{topCount}</span>}
               </button>
 
               <button
@@ -118,7 +114,6 @@ export default function HomePage() {
               >
                 <Popcorn className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Đang chiếu</span>
-                {nowCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{nowCount}</span>}
               </button>
 
               <button
@@ -129,7 +124,6 @@ export default function HomePage() {
               >
                 <CalendarClock className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Sắp chiếu</span>
-                {comingCount > 0 && <span className="text-[9px] bg-white/20 rounded-full px-1.5 py-0.5 leading-none">{comingCount}</span>}
               </button>
 
             </div>
