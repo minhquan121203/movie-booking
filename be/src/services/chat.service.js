@@ -67,8 +67,9 @@ class ChatService {
                 return [];
             });
 
-        const [movies, theaters, rawSchedules, products, vouchers] = await Promise.all([
-            safeQuery(Movie.find({ status: "Đang chiếu" }).populate("genres", "name").lean(), "movies"),
+        const [allActiveMovies, theaters, rawSchedules, products, vouchers] = await Promise.all([
+            // Fetch tất cả phim chưa ngừng chiếu (cả "Đang chiếu" + "Sắp chiếu") để hỗ trợ movie_detail
+            safeQuery(Movie.find({ status: { $ne: "Ngừng chiếu" } }).populate("genres", "name").lean(), "movies"),
             safeQuery(Theater.find({ isActive: true }).lean(), "theaters"),
             safeQuery(
                 Schedule.find({ startTime: { $gte: now, $lte: next7Days } })
@@ -82,7 +83,11 @@ class ChatService {
             safeQuery(Voucher.find({ isActive: true }).lean(), "vouchers"),
         ]);
 
-        return { movies, theaters, rawSchedules, products, vouchers, now, next7Days };
+        // movies = chỉ "Đang chiếu" (dùng cho movie_list hiển thị)
+        // allMovies = tất cả chưa ngừng (dùng cho movie_detail lookup)
+        const movies = allActiveMovies.filter(m => m.status === "Đang chiếu");
+
+        return { movies, allMovies: allActiveMovies, theaters, rawSchedules, products, vouchers, now, next7Days };
     }
 
     async fetchContextData() {
@@ -96,13 +101,17 @@ class ChatService {
     }
 
     formatContextText(data) {
-        const { movies, theaters, rawSchedules, products, vouchers, now, next7Days } = data;
+        const { movies, allMovies, theaters, rawSchedules, products, vouchers, now, next7Days } = data;
+
+        // Dùng allMovies (bao gồm cả Sắp chiếu) để Gemini biết về TẤT CẢ phim
+        const movieSource = allMovies?.length ? allMovies : (movies || []);
 
         // CHI TIẾT PHIM: bao gồm mô tả, thời lượng, rating, đạo diễn
-        const moviesText = movies?.length
-            ? movies.map((m) => {
+        const moviesText = movieSource.length
+            ? movieSource.map((m) => {
                 const genres = m.genres?.length ? m.genres.map((g) => g.name).join(", ") : "Đang cập nhật";
-                const parts = [`🎬 ${m.title}`];
+                const statusLabel = m.status === "Sắp chiếu" ? " [Sắp chiếu]" : "";
+                const parts = [`🎬 ${m.title}${statusLabel}`];
                 parts.push(`  Thể loại: ${genres}`);
                 if (m.duration) parts.push(`  Thời lượng: ${m.duration} phút`);
                 if (m.rating) parts.push(`  Phân loại: ${m.rating}`);

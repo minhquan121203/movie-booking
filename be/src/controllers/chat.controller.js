@@ -139,7 +139,7 @@ function buildSmartFallback(userMessage, contextData) {
         // Thử tìm phim cụ thể trước
         const extractedName = chatService.extractMovieName(userMessage);
         if (extractedName) {
-            const movie = findMovieByName(extractedName, contextData.movies);
+            const movie = findMovieByName(extractedName, contextData.allMovies || contextData.movies);
             if (movie) {
                 const genres = movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật";
                 const detail = `🎬 **${movie.title}**\n📝 ${movie.description || "Chưa có mô tả"}\n🎭 Thể loại: ${genres}\n⏱️ Thời lượng: ${movie.duration || "?"} phút\n🔞 Phân loại: ${movie.rating || "P"}\n🌐 Ngôn ngữ: ${movie.language || "Đang cập nhật"}${movie.director ? `\n🎬 Đạo diễn: ${movie.director}` : ""}`;
@@ -284,7 +284,7 @@ export const handleChat = async (req, res) => {
             console.log(`📊 DB: ${contextData.movies?.length || 0} phim, ${contextData.theaters?.length || 0} rạp, ${contextData.products?.length || 0} sản phẩm, ${contextData.rawSchedules?.length || 0} lịch chiếu`);
         } catch (e) {
             console.error("❌ Lỗi fetch DB:", e.message);
-            contextData = { movies: [], theaters: [], rawSchedules: [], products: [], vouchers: [] };
+            contextData = { movies: [], allMovies: [], theaters: [], rawSchedules: [], products: [], vouchers: [] };
         }
 
         // 2. Kiểm tra API Key
@@ -389,7 +389,7 @@ export const handleChat = async (req, res) => {
 
         // === ACTION: movie_detail — hỏi về 1 phim cụ thể ===
         if (aiData.action === "movie_detail" && aiData.phim) {
-            const movie = findMovieByName(aiData.phim, contextData.movies);
+            const movie = findMovieByName(aiData.phim, contextData.allMovies || contextData.movies);
             if (movie) {
                 botResponse.type = "movie_detail";
                 botResponse.data = buildMovieDetailData(movie);
@@ -403,7 +403,7 @@ export const handleChat = async (req, res) => {
             // Trích tên phim từ userMessage
             const extractedName = chatService.extractMovieName(userMessage);
             if (extractedName) {
-                const movie = findMovieByName(extractedName, contextData.movies);
+                const movie = findMovieByName(extractedName, contextData.allMovies || contextData.movies);
                 if (movie) {
                     console.log(`🔍 Post-processing: tìm thấy phim "${movie.title}" từ "${extractedName}"`);
                     const genres = movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật";
@@ -417,7 +417,7 @@ export const handleChat = async (req, res) => {
             }
             // Cũng thử nếu Gemini trả tên phim trong response
             if (botResponse.type === "text" && aiData.phim) {
-                const movie = findMovieByName(aiData.phim, contextData.movies);
+                const movie = findMovieByName(aiData.phim, contextData.allMovies || contextData.movies);
                 if (movie) {
                     botResponse.type = "movie_detail";
                     botResponse.data = buildMovieDetailData(movie);
