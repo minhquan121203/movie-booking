@@ -33,6 +33,9 @@ interface BookingSummaryProps {
   // --- Tổng tiền ---
   subtotalAmount: number // Tiền gốc
   totalAmount: number // Tiền cuối cùng (Đã trừ voucher & điểm)
+
+  // --- Hiển thị voucher/điểm ---
+  showDiscountSection?: boolean
 }
 
 export function BookingSummary({
@@ -59,7 +62,9 @@ export function BookingSummary({
   handleClearPoints,
 
   subtotalAmount,
-  totalAmount
+  totalAmount,
+
+  showDiscountSection = false,
 }: BookingSummaryProps) {
   const formatPrice = (price: number) => price.toLocaleString('vi-VN') + ' đ'
 
@@ -99,43 +104,43 @@ export function BookingSummary({
 
   return (
     <div className="w-full lg:w-[380px] flex-shrink-0">
-      <div className="bg-surface rounded-2xl p-6 border border-border sticky top-24 shadow-lg">
-        <div className="pb-4 mb-4 border-b border-border border-dashed">
-          <h3 className="text-xl font-bold text-text-primary mb-2">{movieTitle}</h3>
+      <div className="bg-surface rounded-2xl p-4 sm:p-6 border border-border sticky top-24 shadow-lg">
+        <div className="pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-border border-dashed">
+          <h3 className="text-lg sm:text-xl font-bold text-text-primary mb-2">{movieTitle}</h3>
           {selectedSchedule ? (
-            <div className="space-y-2 text-sm text-text-secondary">
+            <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-text-secondary">
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{selectedSchedule.theater?.name} - {selectedSchedule.roomName}</span>
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 shrink-0" />
+                <span className="line-clamp-2">{selectedSchedule.theater?.name} - {selectedSchedule.roomName}</span>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" /> {new Date(selectedSchedule.showDate).toLocaleDateString()}
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {new Date(selectedSchedule.showDate).toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" /> {selectedSchedule.startTime}
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {selectedSchedule.startTime}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-sm text-text-secondary italic">Vui lòng chọn suất chiếu</div>
+            <div className="text-xs sm:text-sm text-text-secondary italic">Vui lòng chọn suất chiếu</div>
           )}
         </div>
 
         {/* Danh sách ghế */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
           <div className="flex justify-between items-center">
-            <span className="font-semibold text-text-primary flex items-center gap-2">
-              <Ticket className="w-4 h-4" /> Ghế ({renderBadges().length})
+            <span className="font-semibold text-text-primary flex items-center gap-2 text-sm sm:text-base">
+              <Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Ghế ({renderBadges().length})
             </span>
-            <span className="font-bold text-primary">
+            <span className="font-bold text-primary text-sm sm:text-base">
               {formatPrice(seatsTotal)}
             </span>
           </div>
           {selectedSeats.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {renderBadges().map((badgeTxt, idx) => (
-                <Badge key={idx} variant="outline" className="bg-bg-secondary">
+                <Badge key={idx} variant="outline" className="bg-bg-secondary text-[10px] sm:text-xs">
                   {badgeTxt}
                 </Badge>
               ))}
@@ -147,137 +152,141 @@ export function BookingSummary({
 
         {/* Bắp nước */}
         {cartItems.length > 0 && (
-          <div className="space-y-3 mb-4 border-t border-border border-dashed pt-4">
+          <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4 border-t border-border border-dashed pt-3 sm:pt-4">
             <div className="flex justify-between items-center">
-              <span className="font-semibold text-text-primary">Bắp nước</span>
-              <span className="font-bold text-primary">{formatPrice(combosTotal)}</span>
+              <span className="font-semibold text-text-primary text-sm sm:text-base">Bắp nước</span>
+              <span className="font-bold text-primary text-sm sm:text-base">{formatPrice(combosTotal)}</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {cartItems.map(item => (
-                <div key={item.product._id} className="flex justify-between text-sm">
-                  <span className="text-text-secondary">{item.quantity}x {item.product.name}</span>
-                  <span>{formatPrice(item.product.price * item.quantity)}</span>
+                <div key={item.product._id} className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-text-secondary line-clamp-1">{item.quantity}x {item.product.name}</span>
+                  <span className="shrink-0 ml-2">{formatPrice(item.product.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ============ KHU VỰC NHẬP VOUCHER ============ */}
-        <div className="mt-5 pt-5 border-t border-dashed border-border">
-          <label className="text-sm font-bold text-text-primary mb-3 block">Mã Khuyến Mãi</label>
-          <div className="flex items-stretch gap-2.5">
-            <input
-              type="text"
-              placeholder="NHẬP Mã VOUCHER..."
-              value={voucherInput}
-              onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
-              disabled={appliedVoucher !== null}
-              className="flex-1 w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary uppercase transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
-            />
+        {/* ============ KHU VỰC NHẬP VOUCHER — Chỉ hiện ở step 4+ ============ */}
+        {showDiscountSection && (
+          <>
+            <div className="mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-dashed border-border">
+              <label className="text-xs sm:text-sm font-bold text-text-primary mb-2 sm:mb-3 block">Mã Khuyến Mãi</label>
+              <div className="flex items-stretch gap-2">
+                <input
+                  type="text"
+                  placeholder="NHẬP Mã VOUCHER..."
+                  value={voucherInput}
+                  onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                  disabled={appliedVoucher !== null}
+                  className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 border border-border rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary uppercase transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
+                />
 
-            {appliedVoucher ? (
-              <button
-                onClick={handleClearVoucher}
-                className="shrink-0 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100"
-              >
-                Hủy mã
-              </button>
-            ) : (
-              <button
-                onClick={handleApplyVoucher}
-                disabled={!voucherInput || isCheckingVoucher}
-                className="shrink-0 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[100px]"
-              >
-                {isCheckingVoucher ? 'Đang...' : 'Áp dụng'}
-              </button>
-            )}
-          </div>
+                {appliedVoucher ? (
+                  <button
+                    onClick={handleClearVoucher}
+                    className="shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100"
+                  >
+                    Hủy mã
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleApplyVoucher}
+                    disabled={!voucherInput || isCheckingVoucher}
+                    className="shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 bg-primary text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[70px] sm:min-w-[100px]"
+                  >
+                    {isCheckingVoucher ? 'Đang...' : 'Áp dụng'}
+                  </button>
+                )}
+              </div>
 
-          {voucherError && (
-            <p className="text-xs text-red-500 font-medium mt-2.5 flex items-center gap-1.5">
-              <span className="w-1 h-1 rounded-full bg-red-500"></span> {voucherError}
-            </p>
-          )}
+              {voucherError && (
+                <p className="text-[10px] sm:text-xs text-red-500 font-medium mt-2 flex items-center gap-1.5">
+                  <span className="w-1 h-1 rounded-full bg-red-500"></span> {voucherError}
+                </p>
+              )}
 
-          {appliedVoucher && (
-            <div className="flex justify-between items-center mt-3.5 text-sm text-emerald-700 font-bold bg-emerald-50 px-4 py-3 rounded-xl border border-emerald-200 shadow-sm">
-              <span className="flex items-center gap-2">
-                <Ticket className="w-4 h-4" />
-                {appliedVoucher.code}
-              </span>
-              <span>- {formatPrice(appliedVoucher.discountAmount)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* ============ KHU VỰC ĐỔI ĐIỂM THƯỞNG ============ */}
-        {user && (
-          <div className="mt-4 pt-4 border-t border-dashed border-border">
-            <div className="flex justify-between items-end mb-3">
-              <label className="text-sm font-bold text-text-primary">Đổi Điểm Thưởng</label>
-              <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                Khả dụng: {user.loyaltyPoints?.toLocaleString('vi-VN') || 0} điểm
-              </span>
-            </div>
-
-            <div className="flex items-stretch gap-2.5">
-              <input
-                type="number"
-                placeholder="Nhập số điểm muốn đổi..."
-                value={pointsInput}
-                onChange={(e) => setPointsInput(e.target.value ? Number(e.target.value) : '')}
-                disabled={appliedPointsDiscount > 0}
-                className="flex-1 w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
-              />
-
-              {appliedPointsDiscount > 0 ? (
-                <button
-                  onClick={handleClearPoints}
-                  className="shrink-0 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100 flex items-center gap-1"
-                >
-                  <XCircle className="w-4 h-4" /> Hủy
-                </button>
-              ) : (
-                <button
-                  onClick={handleApplyPoints}
-                  disabled={!pointsInput || isCheckingPoints || pointsInput > (user.loyaltyPoints || 0)}
-                  className="shrink-0 px-5 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[100px]"
-                >
-                  {isCheckingPoints ? 'Đang...' : 'Đổi điểm'}
-                </button>
+              {appliedVoucher && (
+                <div className="flex justify-between items-center mt-3 text-xs sm:text-sm text-emerald-700 font-bold bg-emerald-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-emerald-200 shadow-sm">
+                  <span className="flex items-center gap-2">
+                    <Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    {appliedVoucher.code}
+                  </span>
+                  <span>- {formatPrice(appliedVoucher.discountAmount)}</span>
+                </div>
               )}
             </div>
 
-            <p className="text-[11px] text-text-secondary mt-2 italic leading-relaxed">
-              * Tỷ lệ quy đổi: Bạc (1đ = 500đ), Vàng (1đ = 600đ), Kim Cương (1đ = 800đ).<br />
-              * Số điểm sử dụng tối đa không vượt quá 50% giá trị đơn hàng.
-            </p>
+            {/* ============ KHU VỰC ĐỔI ĐIỂM THƯỞNG ============ */}
+            {user && (
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-dashed border-border">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-1 sm:gap-0 mb-2 sm:mb-3">
+                  <label className="text-xs sm:text-sm font-bold text-text-primary">Đổi Điểm Thưởng</label>
+                  <span className="text-[10px] sm:text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 w-fit">
+                    Khả dụng: {user.loyaltyPoints?.toLocaleString('vi-VN') || 0} điểm
+                  </span>
+                </div>
 
-            {pointsError && (
-              <p className="text-xs text-red-500 font-medium mt-2.5 flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-red-500"></span> {pointsError}
-              </p>
-            )}
+                <div className="flex items-stretch gap-2">
+                  <input
+                    type="number"
+                    placeholder="Nhập số điểm..."
+                    value={pointsInput}
+                    onChange={(e) => setPointsInput(e.target.value ? Number(e.target.value) : '')}
+                    disabled={appliedPointsDiscount > 0}
+                    className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 border border-border rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
+                  />
 
-            {appliedPointsDiscount > 0 && (
-              <div className="flex justify-between items-center mt-3.5 text-sm text-amber-700 font-bold bg-amber-50 px-4 py-3 rounded-xl border border-amber-200 shadow-sm">
-                <span className="flex items-center gap-2">
-                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                  Đã dùng {pointsInput} điểm
-                </span>
-                <span>- {formatPrice(appliedPointsDiscount)}</span>
+                  {appliedPointsDiscount > 0 ? (
+                    <button
+                      onClick={handleClearPoints}
+                      className="shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100 flex items-center gap-1"
+                    >
+                      <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Hủy
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleApplyPoints}
+                      disabled={!pointsInput || isCheckingPoints || pointsInput > (user.loyaltyPoints || 0)}
+                      className="shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 bg-amber-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[70px] sm:min-w-[100px]"
+                    >
+                      {isCheckingPoints ? 'Đang...' : 'Đổi điểm'}
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[10px] sm:text-[11px] text-text-secondary mt-1.5 sm:mt-2 italic leading-relaxed">
+                  * Tỷ lệ quy đổi: Bạc (1đ = 500đ), Vàng (1đ = 600đ), Kim Cương (1đ = 800đ).<br />
+                  * Số điểm sử dụng tối đa không vượt quá 50% giá trị đơn hàng.
+                </p>
+
+                {pointsError && (
+                  <p className="text-[10px] sm:text-xs text-red-500 font-medium mt-2 flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-red-500"></span> {pointsError}
+                  </p>
+                )}
+
+                {appliedPointsDiscount > 0 && (
+                  <div className="flex justify-between items-center mt-3 text-xs sm:text-sm text-amber-700 font-bold bg-amber-50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-amber-200 shadow-sm">
+                    <span className="flex items-center gap-2">
+                      <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-500 text-amber-500" />
+                      Đã dùng {pointsInput} điểm
+                    </span>
+                    <span>- {formatPrice(appliedPointsDiscount)}</span>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* ============ DÒNG TỔNG CỘNG TÍNH TIỀN ============ */}
-        <div className="pt-5 mt-5 border-t-2 border-border flex flex-col gap-2">
+        <div className="pt-4 sm:pt-5 mt-4 sm:mt-5 border-t-2 border-border flex flex-col gap-1.5 sm:gap-2">
 
           {/* Hiển thị tóm tắt các khoản giảm trừ (Nếu có) */}
           {(appliedVoucher || appliedPointsDiscount > 0) && (
-            <div className="flex flex-col gap-1 text-sm font-medium text-text-secondary w-full border-b border-border/50 pb-3 mb-1">
+            <div className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-text-secondary w-full border-b border-border/50 pb-2 sm:pb-3 mb-1">
               <div className="flex justify-between">
                 <span>Tạm tính</span>
                 <span>{formatPrice(subtotalAmount)}</span>
@@ -290,7 +299,7 @@ export function BookingSummary({
               )}
               {appliedPointsDiscount > 0 && (
                 <div className="flex justify-between text-amber-600">
-                  <span>Giảm giá (Điểm thưởng)</span>
+                  <span>Giảm giá (Điểm)</span>
                   <span>-{formatPrice(appliedPointsDiscount)}</span>
                 </div>
               )}
@@ -298,10 +307,10 @@ export function BookingSummary({
           )}
 
           <div className="flex justify-between items-end">
-            <span className="text-base text-text-secondary font-bold mb-1">Tổng cộng</span>
+            <span className="text-sm sm:text-base text-text-secondary font-bold mb-1">Tổng cộng</span>
             <div className="flex flex-col items-end">
-              {/* Giá cuối cùng siêu to khổng lồ */}
-              <span className="text-3xl font-black text-primary leading-none">
+              {/* Giá cuối cùng */}
+              <span className="text-2xl sm:text-3xl font-black text-primary leading-none">
                 {formatPrice(totalAmount)}
               </span>
             </div>
