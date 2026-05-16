@@ -7,8 +7,8 @@ export const getLoyaltyMe = async () => {
 };
 
 // Lấy lịch sử tích/tiêu điểm
-export const getLoyaltyHistory = async () => {
-    const res = await api.get('/loyalty/history');
+export const getLoyaltyHistory = async (page = 1, limit = 5) => {
+    const res = await api.get('/loyalty/history', { params: { page, limit } });
     return res.data;
 };
 
