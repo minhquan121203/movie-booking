@@ -7,6 +7,7 @@ import Product from "../models/product.model.js";
 import Schedule from "../models/schedule.model.js";
 import User from "../models/user.model.js";
 import Voucher from "../models/voucher.model.js";
+import PointTransaction from "../models/point-transaction.model.js";
 import emailService from "./email.service.js";
 import momoService from "./payment/momo.service.js";
 import vnpayService from "./payment/vnpay.service.js";
@@ -292,6 +293,36 @@ class PaymentStatusService {
               }
 
               await customer.save({ session });
+
+              // Ghi log PointTransaction
+              try {
+                if (pointsEarned > 0) {
+                  await PointTransaction.recordTransaction({
+                    userId: customer._id,
+                    type: "earn",
+                    points: pointsEarned,
+                    currentBalance: customer.loyaltyPoints,
+                    description: `Tích điểm từ vé ${booking.bookingCode} - ${booking.movieTitle}`,
+                    bookingId: booking._id,
+                    metadata: { movieTitle: booking.movieTitle, totalAmount: booking.totalAmount },
+                  });
+                }
+                if (booking.pointsUsed > 0) {
+                  await PointTransaction.recordTransaction({
+                    userId: customer._id,
+                    type: "redeem",
+                    points: -booking.pointsUsed,
+                    currentBalance: customer.loyaltyPoints,
+                    description: `Đổi điểm giảm ${booking.pointsDiscount?.toLocaleString("vi-VN")}đ cho vé ${booking.bookingCode}`,
+                    bookingId: booking._id,
+                    metadata: { pointsDiscount: booking.pointsDiscount },
+                  });
+                }
+                booking.pointsEarned = pointsEarned;
+                await booking.save({ session });
+              } catch (ptErr) {
+                console.error("PointTransaction log error (polling):", ptErr);
+              }
 
               // Send notifications (không chờ, không block transaction)
               Promise.all([

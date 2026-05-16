@@ -118,6 +118,7 @@ router.get("/loyalty/config", loyaltyController.getConfig);
 router.get("/loyalty/me", authenticateToken, loyaltyController.getMyLoyalty);
 router.get("/loyalty/history", authenticateToken, loyaltyController.getHistory);
 router.post("/loyalty/preview", authenticateToken, loyaltyController.previewRedeem);
+router.post("/loyalty/backfill", authenticateToken, authorize("admin", "super-admin"), loyaltyController.backfillHistory);
 
 //  FIX #5 & #9: Add validation and rate limiting for bookings
 router.post("/bookings", authenticateToken, bookingRateLimiter, validateBookingInput, checkAge, bookingController.createBooking);

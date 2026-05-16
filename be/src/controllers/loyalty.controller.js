@@ -190,12 +190,85 @@ const loyaltyController = {
         levelThresholds: LOYALTY_CONFIG.levelThresholds,
         levels: [
           { name: "Bạc", icon: "🥈", threshold: 0, color: "#C0C0C0" },
-          { name: "Vàng", icon: "🥇", threshold: 1000, color: "#FFD700" },
-          { name: "Kim Cương", icon: "💎", threshold: 5000, color: "#B9F2FF" },
+          { name: "Vàng", icon: "🥇", threshold: 500, color: "#FFD700" },
+          { name: "Kim Cương", icon: "💎", threshold: 1125, color: "#B9F2FF" },
         ],
       });
     } catch (error) {
       return errorResponse(res, "Lỗi server", 500);
+    }
+  },
+
+  /**
+   * POST /api/loyalty/backfill
+   * Backfill lịch sử điểm từ booking đã hoàn tất (chạy 1 lần)
+   */
+  backfillHistory: async (req, res) => {
+    try {
+      const Booking = (await import("../models/booking.model.js")).default;
+
+      // Tìm tất cả booking hoàn tất mà chưa có PointTransaction
+      const completedBookings = await Booking.find({
+        status: { $in: ["Hoàn tất", "Đã sử dụng"] },
+        customer: { $exists: true, $ne: null },
+      })
+        .populate("customer", "loyaltyPoints membershipLevel")
+        .sort({ createdAt: 1 })
+        .lean();
+
+      let created = 0;
+      let skipped = 0;
+
+      for (const booking of completedBookings) {
+        if (!booking.customer) { skipped++; continue; }
+
+        // Kiểm tra đã có PointTransaction cho booking này chưa
+        const exists = await PointTransaction.findOne({
+          relatedBooking: booking._id,
+          type: "earn",
+        });
+        if (exists) { skipped++; continue; }
+
+        const pointsEarned = booking.pointsEarned || Math.floor((booking.totalAmount || 0) / 10000);
+        if (pointsEarned <= 0) { skipped++; continue; }
+
+        // Tạo record earn
+        await PointTransaction.create({
+          user: booking.customer._id,
+          type: "earn",
+          points: pointsEarned,
+          balance: booking.customer.loyaltyPoints || 0,
+          description: `Tích điểm từ vé ${booking.bookingCode} - ${booking.movieTitle || "Phim"}`,
+          relatedBooking: booking._id,
+          metadata: { movieTitle: booking.movieTitle, totalAmount: booking.totalAmount, backfilled: true },
+          createdAt: booking.createdAt,
+        });
+        created++;
+
+        // Nếu booking có dùng điểm
+        if (booking.pointsUsed > 0) {
+          await PointTransaction.create({
+            user: booking.customer._id,
+            type: "redeem",
+            points: -booking.pointsUsed,
+            balance: booking.customer.loyaltyPoints || 0,
+            description: `Đổi điểm giảm ${booking.pointsDiscount?.toLocaleString("vi-VN")}đ cho vé ${booking.bookingCode}`,
+            relatedBooking: booking._id,
+            metadata: { pointsDiscount: booking.pointsDiscount, backfilled: true },
+            createdAt: booking.createdAt,
+          });
+          created++;
+        }
+      }
+
+      return successResponse(res, {
+        totalBookings: completedBookings.length,
+        created,
+        skipped,
+      }, `Backfill hoàn tất: tạo ${created} records, bỏ qua ${skipped} bookings`);
+    } catch (error) {
+      console.error("Backfill error:", error);
+      return errorResponse(res, "Lỗi backfill: " + error.message, 500);
     }
   },
 };
