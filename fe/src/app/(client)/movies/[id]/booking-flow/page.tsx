@@ -29,8 +29,11 @@ export default function BookingPage() {
 
   // Lấy điểm mới nhất từ server khi vào trang booking
   useEffect(() => {
-    if (fetchUser) fetchUser()
-  }, [])
+    if (typeof fetchUser === 'function') {
+      fetchUser()
+    }
+  }, [fetchUser])
+
   const {
     currentStep,
     selectedSchedule,

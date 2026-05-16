@@ -253,12 +253,13 @@ const UserNav = () => {
   const { theme, setTheme } = useTheme()
   const isMounted = useMounted()
 
-  // Cập nhật dữ liệu user từ server khi component mount (tránh hiện điểm cũ từ cache)
+  const pathname = usePathname()
+
   useEffect(() => {
-    if (isAuthenticated && fetchUser) {
+    if (isAuthenticated && typeof fetchUser === 'function') {
       fetchUser()
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, pathname, fetchUser])
 
   return (
     <div className="flex items-center gap-2">
