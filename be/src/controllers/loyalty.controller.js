@@ -45,22 +45,24 @@ const loyaltyController = {
       const level = user.membershipLevel || "Bạc";
       const points = user.loyaltyPoints || 0;
 
-      // Tính điểm cần để nâng hạng tiếp theo
+      // Lấy thống kê (totalEarned, totalRedeemed, ...)
+      const stats = await PointTransaction.getUserStats(req.userId);
+      const totalEarned = (stats.totalEarned || 0) + (stats.totalBonus || 0) + (stats.totalRefunded || 0);
+
+      // Tính điểm cần để nâng hạng tiếp theo (dựa trên TỔNG ĐIỂM ĐÃ TÍCH, không phải điểm hiện tại)
       let nextLevel = null;
       let pointsToNextLevel = 0;
       if (level === "Bạc") {
         nextLevel = "Vàng";
-        pointsToNextLevel = Math.max(0, LOYALTY_CONFIG.levelThresholds["Vàng"] - points);
+        pointsToNextLevel = Math.max(0, LOYALTY_CONFIG.levelThresholds["Vàng"] - totalEarned);
       } else if (level === "Vàng") {
         nextLevel = "Kim Cương";
-        pointsToNextLevel = Math.max(0, LOYALTY_CONFIG.levelThresholds["Kim Cương"] - points);
+        pointsToNextLevel = Math.max(0, LOYALTY_CONFIG.levelThresholds["Kim Cương"] - totalEarned);
       }
-
-      // Lấy thống kê
-      const stats = await PointTransaction.getUserStats(req.userId);
 
       return successResponse(res, {
         points,
+        totalEarned,
         level,
         earnRate: LOYALTY_CONFIG.earnRate[level],
         redeemRate: LOYALTY_CONFIG.redeemRate[level],
@@ -69,7 +71,7 @@ const loyaltyController = {
         nextLevel,
         pointsToNextLevel,
         progress: nextLevel
-          ? Math.min(100, Math.round((points / LOYALTY_CONFIG.levelThresholds[nextLevel]) * 100))
+          ? Math.min(100, Math.round((totalEarned / LOYALTY_CONFIG.levelThresholds[nextLevel]) * 100))
           : 100,
         stats,
       });
