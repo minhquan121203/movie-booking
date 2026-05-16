@@ -285,10 +285,10 @@ class PaymentStatusService {
 
               // Tự động nâng hạng membership
               const oldLevel = customer.membershipLevel;
-              if (customer.loyaltyPoints >= 1000 && customer.membershipLevel === "Bạc") {
+              if (customer.loyaltyPoints >= 500 && customer.membershipLevel === "Bạc") {
                 customer.membershipLevel = "Vàng";
-              } else if (customer.loyaltyPoints >= 5000 && customer.membershipLevel === "Vàng") {
-                customer.membershipLevel = "Bạch kim";
+              } else if (customer.loyaltyPoints >= 1125 && customer.membershipLevel === "Vàng") {
+                customer.membershipLevel = "Kim Cương";
               }
 
               await customer.save({ session });

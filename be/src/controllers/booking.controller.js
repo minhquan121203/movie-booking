@@ -658,9 +658,9 @@ const bookingController = {
             customer.loyaltyPoints += pointsEarned;
 
             const oldLevel = customer.membershipLevel;
-            if (customer.loyaltyPoints >= 1000 && customer.membershipLevel === "Bạc") {
+            if (customer.loyaltyPoints >= 500 && customer.membershipLevel === "Bạc") {
               customer.membershipLevel = "Vàng";
-            } else if (customer.loyaltyPoints >= 5000 && customer.membershipLevel === "Vàng") {
+            } else if (customer.loyaltyPoints >= 1125 && customer.membershipLevel === "Vàng") {
               customer.membershipLevel = "Kim Cương";
             }
 
@@ -729,7 +729,7 @@ const bookingController = {
             booking,
             pointsEarned,
             newMembershipLevel: customer.membershipLevel,
-            upgraded: customer.membershipLevel !== "Bạc" && customer.loyaltyPoints >= 1000,
+            upgraded: customer.membershipLevel !== "Bạc" && customer.loyaltyPoints >= 500,
           },
           "Thanh toán thành công"
       );

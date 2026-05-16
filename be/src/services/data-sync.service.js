@@ -135,9 +135,9 @@ class DataSyncService {
         const currentLevel = user.membershipLevel;
         let newLevel = currentLevel;
 
-        if (user.loyaltyPoints >= 5000 && currentLevel !== "Bạch kim") {
-          newLevel = "Bạch kim";
-        } else if (user.loyaltyPoints >= 1000 && currentLevel === "Bạc") {
+        if (user.loyaltyPoints >= 1125 && currentLevel !== "Kim Cương") {
+          newLevel = "Kim Cương";
+        } else if (user.loyaltyPoints >= 500 && currentLevel === "Bạc") {
           newLevel = "Vàng";
         }
 

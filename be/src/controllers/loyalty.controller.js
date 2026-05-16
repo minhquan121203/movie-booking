@@ -25,8 +25,8 @@ const LOYALTY_CONFIG = {
   minRedeemPoints: 10,  // Tối thiểu dùng 10 điểm
   // Ngưỡng nâng hạng
   levelThresholds: {
-    "Vàng": 1000,
-    "Kim Cương": 5000,
+    "Vàng": 500,       // ~5.000.000đ chi tiêu
+    "Kim Cương": 1125,  // ~10.000.000đ chi tiêu
   },
 };
 

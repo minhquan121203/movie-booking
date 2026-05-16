@@ -251,8 +251,8 @@ userSchema.virtual("isAgeVerified").get(function () {
 });
 
 userSchema.virtual("nextMembershipLevel").get(function () {
-  if (this.membershipLevel === "Bạc" && this.loyaltyPoints >= 1000) return "Vàng";
-  if (this.membershipLevel === "Vàng" && this.loyaltyPoints >= 5000) return "Kim Cương";
+  if (this.membershipLevel === "Bạc" && this.loyaltyPoints >= 500) return "Vàng";
+  if (this.membershipLevel === "Vàng" && this.loyaltyPoints >= 1125) return "Kim Cương";
   return this.membershipLevel;
 });
 
@@ -270,9 +270,9 @@ userSchema.pre("save", async function (next) {
   }
 
   // Auto-upgrade membership
-  if (this.loyaltyPoints >= 5000 && this.membershipLevel !== "Kim Cương") {
+  if (this.loyaltyPoints >= 1125 && this.membershipLevel !== "Kim Cương") {
     this.membershipLevel = "Kim Cương";
-  } else if (this.loyaltyPoints >= 1000 && this.membershipLevel === "Bạc") {
+  } else if (this.loyaltyPoints >= 500 && this.membershipLevel === "Bạc") {
     this.membershipLevel = "Vàng";
   }
 
