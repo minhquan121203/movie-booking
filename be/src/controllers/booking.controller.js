@@ -6,6 +6,8 @@ import Product from "../models/product.model.js";
 import Schedule from "../models/schedule.model.js";
 import User from "../models/user.model.js";
 import Voucher from "../models/voucher.model.js";
+import PointTransaction from "../models/point-transaction.model.js";
+import { LOYALTY_CONFIG } from "../controllers/loyalty.controller.js";
 
 // Import services
 import Notification from "../models/notification.model.js";
@@ -20,7 +22,7 @@ import { errorResponse, successResponse } from "../utils/response.js";
 const bookingController = {
   // Tạo đơn đặt vé mới
   createBooking: async (req, res) => {
-    let { scheduleId, seats, products, voucherCode, paymentMethod } = req.body;
+    let { scheduleId, seats, products, voucherCode, paymentMethod, pointsToUse } = req.body;
 
     if (paymentMethod?.toLowerCase() === 'momo') paymentMethod = 'MoMo';
     if (paymentMethod?.toLowerCase() === 'vnpay') paymentMethod = 'VNPAY';
@@ -297,7 +299,42 @@ const bookingController = {
         }
 
         const subtotal = ticketsAmount + productsAmount;
-        const totalAmount = subtotal - discountAmount;
+
+        // === TÍCH ĐIỂM: Tính giảm giá từ điểm ===
+        let pointsDiscount = 0;
+        let actualPointsUsed = 0;
+
+        if (pointsToUse && pointsToUse > 0 && req.userId) {
+          const customer = await User.findById(req.userId).session(session);
+          if (customer) {
+            const level = customer.membershipLevel || "Bạc";
+            const availablePoints = customer.loyaltyPoints || 0;
+            const redeemRate = LOYALTY_CONFIG.redeemRate[level] || 500;
+
+            // Validate điểm
+            actualPointsUsed = Math.min(pointsToUse, availablePoints);
+            if (actualPointsUsed >= LOYALTY_CONFIG.minRedeemPoints) {
+              pointsDiscount = actualPointsUsed * redeemRate;
+
+              // Giới hạn tối đa 50% subtotal (sau voucher)
+              const afterVoucher = subtotal - discountAmount;
+              const maxDiscount = Math.floor(afterVoucher * LOYALTY_CONFIG.maxRedeemPercent / 100);
+              if (pointsDiscount > maxDiscount) {
+                pointsDiscount = maxDiscount;
+                actualPointsUsed = Math.ceil(maxDiscount / redeemRate);
+              }
+
+              // Trừ điểm tạm thời
+              customer.loyaltyPoints -= actualPointsUsed;
+              await customer.save({ session });
+            } else {
+              actualPointsUsed = 0;
+              pointsDiscount = 0;
+            }
+          }
+        }
+
+        const totalAmount = subtotal - discountAmount - pointsDiscount;
 
         const bookingData = {
           customer: req.userId,
@@ -315,6 +352,8 @@ const bookingController = {
           productsAmount,
           subtotal,
           discountAmount,
+          pointsUsed: actualPointsUsed,
+          pointsDiscount,
           totalAmount,
           status: BOOKING_STATUS.PENDING_PAYMENT,
           paymentDetails: {
@@ -622,10 +661,41 @@ const bookingController = {
             if (customer.loyaltyPoints >= 1000 && customer.membershipLevel === "Bạc") {
               customer.membershipLevel = "Vàng";
             } else if (customer.loyaltyPoints >= 5000 && customer.membershipLevel === "Vàng") {
-              customer.membershipLevel = "Bạch kim";
+              customer.membershipLevel = "Kim Cương";
             }
 
             await customer.save({ session });
+
+            // Ghi log PointTransaction
+            try {
+              if (pointsEarned > 0) {
+                await PointTransaction.recordTransaction({
+                  userId: customer._id,
+                  type: "earn",
+                  points: pointsEarned,
+                  currentBalance: customer.loyaltyPoints - pointsEarned,
+                  description: `Tích điểm từ vé ${booking.bookingCode} - ${booking.movieTitle}`,
+                  bookingId: booking._id,
+                  metadata: { movieTitle: booking.movieTitle, totalAmount: booking.totalAmount },
+                });
+              }
+              if (booking.pointsUsed > 0) {
+                await PointTransaction.recordTransaction({
+                  userId: customer._id,
+                  type: "redeem",
+                  points: -booking.pointsUsed,
+                  currentBalance: customer.loyaltyPoints,
+                  description: `Đổi điểm giảm ${booking.pointsDiscount?.toLocaleString("vi-VN")}đ cho vé ${booking.bookingCode}`,
+                  bookingId: booking._id,
+                  metadata: { pointsDiscount: booking.pointsDiscount },
+                });
+              }
+              // Lưu pointsEarned vào booking
+              booking.pointsEarned = pointsEarned;
+              await booking.save({ session });
+            } catch (ptErr) {
+              console.error("PointTransaction log error:", ptErr);
+            }
 
             try {
               await emailService.sendBookingConfirmation(booking, customer);

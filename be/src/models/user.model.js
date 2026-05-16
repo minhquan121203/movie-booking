@@ -134,7 +134,7 @@ const userSchema = new Schema(
     membershipLevel: {
       type: String,
       enum: {
-        values: ["Bạc", "Vàng", "Bạch kim"],
+        values: ["Bạc", "Vàng", "Kim Cương"],
         message: "{VALUE} không phải là hạng thành viên hợp lệ",
       },
       default: "Bạc",
@@ -252,7 +252,7 @@ userSchema.virtual("isAgeVerified").get(function () {
 
 userSchema.virtual("nextMembershipLevel").get(function () {
   if (this.membershipLevel === "Bạc" && this.loyaltyPoints >= 1000) return "Vàng";
-  if (this.membershipLevel === "Vàng" && this.loyaltyPoints >= 5000) return "Bạch kim";
+  if (this.membershipLevel === "Vàng" && this.loyaltyPoints >= 5000) return "Kim Cương";
   return this.membershipLevel;
 });
 
@@ -270,8 +270,8 @@ userSchema.pre("save", async function (next) {
   }
 
   // Auto-upgrade membership
-  if (this.loyaltyPoints >= 5000 && this.membershipLevel !== "Bạch kim") {
-    this.membershipLevel = "Bạch kim";
+  if (this.loyaltyPoints >= 5000 && this.membershipLevel !== "Kim Cương") {
+    this.membershipLevel = "Kim Cương";
   } else if (this.loyaltyPoints >= 1000 && this.membershipLevel === "Bạc") {
     this.membershipLevel = "Vàng";
   }

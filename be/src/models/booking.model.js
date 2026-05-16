@@ -152,6 +152,23 @@ const bookingSchema = new Schema(
     // === THÔNG TIN THANH TOÁN ===
     paymentDetails: paymentDetailSchema,
 
+    // === THÔNG TIN TÍCH ĐIỂM ===
+    pointsUsed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    }, // Số điểm đã dùng để giảm giá
+    pointsDiscount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    }, // Số tiền giảm từ điểm (VNĐ)
+    pointsEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    }, // Số điểm được cộng sau thanh toán
+
     // === THÔNG TIN HỦY VÉ ===
     cancelledBy: { type: Schema.Types.ObjectId, ref: "User" },
     cancelledAt: { type: Date },
@@ -197,9 +214,9 @@ bookingSchema.pre("save", function (next) {
     this.bookingCode = `BK${dateStr}${randomStr}`;
   }
 
-  //  FIX #15: Auto-calculate subtotal và totalAmount
+  //  FIX #15: Auto-calculate subtotal và totalAmount (bao gồm pointsDiscount)
   this.subtotal = this.ticketsAmount + this.productsAmount;
-  this.totalAmount = this.subtotal - this.discountAmount;
+  this.totalAmount = this.subtotal - this.discountAmount - (this.pointsDiscount || 0);
   // Remove validation check vì đã auto-calculate
 
   next();

@@ -26,6 +26,7 @@ import uploadController from "../controllers/upload.controller.js";
 import userController from "../controllers/user.controller.js";
 import voucherController from "../controllers/voucher.controller.js";
 import workScheduleController from "../controllers/workSchedule.controller.js";
+import loyaltyController from "../controllers/loyalty.controller.js";
 
 import chatRoutes from "./chat.routes.js";
 
@@ -111,6 +112,12 @@ router.get("/user/age-status", authenticateToken, userController.getAgeStatus);
 router.put("/users/profile", authenticateToken, userController.updateProfile);
 router.get("/users/loyalty-points", authenticateToken, userController.getLoyaltyPoints);
 router.get("/users/spending-stats", authenticateToken, userController.getSpendingStats);
+
+// Loyalty routes (Customer)
+router.get("/loyalty/config", loyaltyController.getConfig);
+router.get("/loyalty/me", authenticateToken, loyaltyController.getMyLoyalty);
+router.get("/loyalty/history", authenticateToken, loyaltyController.getHistory);
+router.post("/loyalty/preview", authenticateToken, loyaltyController.previewRedeem);
 
 //  FIX #5 & #9: Add validation and rate limiting for bookings
 router.post("/bookings", authenticateToken, bookingRateLimiter, validateBookingInput, checkAge, bookingController.createBooking);

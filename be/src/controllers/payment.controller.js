@@ -8,6 +8,7 @@ import Product from "../models/product.model.js";
 import Schedule from "../models/schedule.model.js";
 import User from "../models/user.model.js";
 import Voucher from "../models/voucher.model.js";
+import PointTransaction from "../models/point-transaction.model.js";
 import emailService from "../services/email.service.js";
 import momoService from "../services/payment/momo.service.js";
 import vnpayService from "../services/payment/vnpay.service.js";
@@ -126,10 +127,41 @@ async function confirmPaymentSuccess(booking, paymentMethod, transactionId, paym
         if (customer.loyaltyPoints >= 1000 && customer.membershipLevel === "Bạc") {
           customer.membershipLevel = "Vàng";
         } else if (customer.loyaltyPoints >= 5000 && customer.membershipLevel === "Vàng") {
-          customer.membershipLevel = "Bạch kim";
+          customer.membershipLevel = "Kim Cương";
         }
 
         await customer.save({ session });
+
+        // Ghi log PointTransaction
+        try {
+          if (pointsEarned > 0) {
+            await PointTransaction.recordTransaction({
+              userId: customer._id,
+              type: "earn",
+              points: pointsEarned,
+              currentBalance: customer.loyaltyPoints,
+              description: `Tích điểm từ vé ${booking.bookingCode} - ${booking.movieTitle}`,
+              bookingId: booking._id,
+              metadata: { movieTitle: booking.movieTitle, totalAmount: booking.totalAmount },
+            });
+          }
+          if (booking.pointsUsed > 0) {
+            await PointTransaction.recordTransaction({
+              userId: customer._id,
+              type: "redeem",
+              points: -booking.pointsUsed,
+              currentBalance: customer.loyaltyPoints,
+              description: `Đổi điểm giảm ${booking.pointsDiscount?.toLocaleString("vi-VN")}đ cho vé ${booking.bookingCode}`,
+              bookingId: booking._id,
+              metadata: { pointsDiscount: booking.pointsDiscount },
+            });
+          }
+          // Lưu pointsEarned
+          booking.pointsEarned = pointsEarned;
+          await booking.save({ session });
+        } catch (ptErr) {
+          console.error("PointTransaction log error:", ptErr);
+        }
 
         // Send notifications (không chờ, không block transaction)
         Promise.all([
