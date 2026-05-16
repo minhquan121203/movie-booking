@@ -23,7 +23,6 @@ async function callGeminiWithFullRetry(prompt) {
 
     let lastError = null;
 
-    // Thử qua tất cả các API key
     for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey) break;
@@ -31,7 +30,6 @@ async function callGeminiWithFullRetry(prompt) {
         const genAI = new GoogleGenerativeAI(apiKey);
         console.log(`🔑 Đang dùng key #${chatService.currentKeyIndex + 1} (${apiKey.substring(0, 8)}...)`);
 
-        // Thử từng model với key này
         for (const modelName of MODEL_CANDIDATES) {
             try {
                 console.log(`🤖 Thử model: ${modelName}`);
@@ -46,40 +44,90 @@ async function callGeminiWithFullRetry(prompt) {
                 lastError = err;
                 const msg = err.message || "";
 
-                // 404 = model không tồn tại → thử model khác (cùng key)
                 if (msg.includes("404") || msg.includes("not found") || msg.includes("not supported")) {
                     console.warn(`⚠️ Model ${modelName} không khả dụng, thử model tiếp...`);
                     continue;
                 }
 
-                // 429 = rate limit → rotate key, break ra vòng ngoài để thử key mới
                 if (msg.includes("429") || err.status === 429) {
                     console.warn(`⚠️ Key #${chatService.currentKeyIndex + 1} bị rate limit, xoay key...`);
                     chatService.rotateKeyOnError();
-                    break; // thoát vòng model, quay lại vòng key
+                    break;
                 }
 
-                // 403 = key bị cấm hoặc hết quota → rotate key
                 if (msg.includes("403") || msg.includes("PERMISSION_DENIED") || msg.includes("quota")) {
                     console.warn(`⚠️ Key #${chatService.currentKeyIndex + 1} bị từ chối/hết quota, xoay key...`);
                     chatService.rotateKeyOnError();
                     break;
                 }
 
-                // Lỗi mạng / unknown → thử model tiếp
                 console.warn(`⚠️ Lỗi không xác định với ${modelName}: ${msg.substring(0, 100)}`);
                 continue;
             }
         }
     }
 
-    // Nếu tất cả key × model đều thất bại
     throw lastError || new Error("ALL_KEYS_EXHAUSTED");
 }
 
 /**
- * Fallback thông minh: khi Gemini hoàn toàn không khả dụng,
- * phân tích câu hỏi bằng keyword matching và trả data trực tiếp từ DB.
+ * Tìm phim trong DB bằng tên (fuzzy match)
+ */
+function findMovieByName(movieName, movies) {
+    if (!movieName || !movies?.length) return null;
+
+    const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const target = normalize(movieName);
+
+    // Exact match first
+    let found = movies.find(m => normalize(m.title) === target);
+    if (found) return found;
+
+    // Partial match
+    found = movies.find(m => normalize(m.title).includes(target) || target.includes(normalize(m.title)));
+    if (found) return found;
+
+    // Word-based fuzzy match
+    const targetWords = target.split(/\s+/);
+    let bestMatch = null;
+    let bestScore = 0;
+    for (const m of movies) {
+        const titleWords = normalize(m.title).split(/\s+/);
+        const matchCount = targetWords.filter(w => titleWords.some(tw => tw.includes(w) || w.includes(tw))).length;
+        const score = matchCount / Math.max(targetWords.length, titleWords.length);
+        if (score > bestScore && score >= 0.4) {
+            bestScore = score;
+            bestMatch = m;
+        }
+    }
+    return bestMatch;
+}
+
+/**
+ * Tạo data chi tiết cho 1 phim (dùng cho movie_detail action)
+ */
+function buildMovieDetailData(movie) {
+    return {
+        _id: movie._id,
+        title: movie.title,
+        poster: movie.posterUrl,
+        posterUrl: movie.posterUrl,
+        description: movie.description || "",
+        duration: movie.duration,
+        rating: movie.rating,
+        genre: movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật",
+        language: movie.language,
+        country: movie.country,
+        director: movie.director,
+        actors: movie.actors,
+        releaseDate: movie.releaseDate,
+        averageRating: movie.averageRating,
+        totalReviews: movie.totalReviews,
+    };
+}
+
+/**
+ * Fallback thông minh: khi Gemini hoàn toàn không khả dụng
  */
 function buildSmartFallback(userMessage, contextData) {
     const msg = userMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -88,6 +136,22 @@ function buildSmartFallback(userMessage, contextData) {
     // Kiểm tra hỏi về phim
     const movieKeywords = ["phim", "xem gi", "xem gì", "dang chieu", "đang chiếu", "goi y", "gợi ý", "co phim", "có phim", "chieu gi", "chiếu gì"];
     if (movieKeywords.some(kw => msgOriginal.includes(kw) || msg.includes(kw))) {
+        // Thử tìm phim cụ thể trước
+        const extractedName = chatService.extractMovieName(userMessage);
+        if (extractedName) {
+            const movie = findMovieByName(extractedName, contextData.movies);
+            if (movie) {
+                const genres = movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật";
+                const detail = `🎬 **${movie.title}**\n📝 ${movie.description || "Chưa có mô tả"}\n🎭 Thể loại: ${genres}\n⏱️ Thời lượng: ${movie.duration || "?"} phút\n🔞 Phân loại: ${movie.rating || "P"}\n🌐 Ngôn ngữ: ${movie.language || "Đang cập nhật"}${movie.director ? `\n🎬 Đạo diễn: ${movie.director}` : ""}`;
+                return {
+                    text: detail,
+                    type: "movie_detail",
+                    data: buildMovieDetailData(movie),
+                };
+            }
+        }
+
+        // Fallback: danh sách phim
         const movies = (contextData.movies || []).slice(0, 10);
         if (movies.length > 0) {
             const movieNames = movies.map(m => m.title).join(", ");
@@ -165,7 +229,7 @@ function buildSmartFallback(userMessage, contextData) {
         return { text: "Hiện chưa có thông tin rạp phim. Bạn thử hỏi lại sau nhé! 🏛️", type: "text", data: [] };
     }
 
-    // Kiểm tra hỏi về khuyến mãi / voucher
+    // Kiểm tra hỏi về khuyến mãi
     const voucherKeywords = ["khuyen mai", "khuyến mãi", "giam gia", "giảm giá", "voucher", "uu dai", "ưu đãi", "ma giam", "mã giảm"];
     if (voucherKeywords.some(kw => msgOriginal.includes(kw) || msg.includes(kw))) {
         const vouchers = (contextData.vouchers || []);
@@ -190,7 +254,7 @@ function buildSmartFallback(userMessage, contextData) {
         };
     }
 
-    // Mặc định: giới thiệu khả năng
+    // Mặc định
     return {
         text: "Xin lỗi bạn, tớ đang gặp chút trục trặc kỹ thuật 🙏 Nhưng tớ vẫn có thể giúp bạn:\n🎬 Hỏi \"phim đang chiếu\" để xem danh sách phim\n📅 Hỏi \"lịch chiếu\" để xem giờ chiếu\n🍿 Hỏi \"bắp nước\" để xem menu\n🎟️ Hỏi \"khuyến mãi\" để xem ưu đãi\nBạn thử hỏi lại nhé!",
         type: "text",
@@ -213,7 +277,7 @@ export const handleChat = async (req, res) => {
             });
         }
 
-        // 1. Fetch Data từ DB (luôn fetch trước, bất kể Gemini có hoạt động không)
+        // 1. Fetch Data từ DB
         let contextData;
         try {
             contextData = await chatService.fetchContextData();
@@ -226,28 +290,57 @@ export const handleChat = async (req, res) => {
         // 2. Kiểm tra API Key
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey || !chatService.hasValidKeys()) {
-            // Không có key → dùng fallback thông minh từ DB
             console.warn("⚠️ Không có API key, dùng fallback từ DB");
             const fallback = buildSmartFallback(userMessage, contextData);
             return res.json({ botMessage: fallback, sessionId });
         }
 
-        // 3. Tạo System Prompt chi tiết từ service
+        // 3. ĐỌC LỊCH SỬ HỘI THOẠI (để chatbot nhớ ngữ cảnh)
+        let chatHistory = [];
+        try {
+            chatHistory = await chatService.getChatHistory(sessionId, 8);
+        } catch (e) {
+            console.warn("⚠️ Không đọc được lịch sử chat:", e.message);
+        }
+
+        // Format lịch sử thành text cho prompt
+        let historyText = "";
+        if (chatHistory.length > 0) {
+            historyText = "\n\n💬 LỊCH SỬ HỘI THOẠI GẦN ĐÂY (dùng để hiểu ngữ cảnh, \"phim đó\", \"cái đó\" là gì):\n";
+            historyText += chatHistory.map(msg => {
+                const role = msg.role === "user" ? "Khách" : "CineBot";
+                return `${role}: ${msg.content}`;
+            }).join("\n");
+        }
+
+        // 4. Tạo System Prompt chi tiết (bao gồm thông tin chi tiết phim)
         const formattedText = chatService.formatContextText(contextData);
         const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
 
         const jsonFormat = `
-        LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
-        {
-        "response": "Câu trả lời thân thiện dựa trên DỮ LIỆU THỰC TẾ ở trên",
-        "action": "chat" hoặc "movie_list" hoặc "schedule" hoặc "product_list",
-        "phim": "Tên phim nếu có hoặc null",
-        "rap": "Tên rạp nếu có hoặc null"
-        }`;
+LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
+{
+  "response": "Câu trả lời thân thiện chi tiết dựa trên DỮ LIỆU THỰC TẾ ở trên",
+  "action": "chat" | "movie_list" | "movie_detail" | "schedule" | "product_list",
+  "phim": "Tên CHÍNH XÁC của phim trong dữ liệu (nếu khách hỏi về 1 phim cụ thể) hoặc null",
+  "rap": "Tên rạp nếu có hoặc null"
+}
 
-        const prompt = `${systemPrompt}\n\n${jsonFormat}\n\nKhách nói: "${userMessage}"`;
+QUY TẮC CHỌN action:
+- "movie_list"   → khách hỏi DANH SÁCH phim, phim nào hay, gợi ý phim, có phim gì
+- "movie_detail" → khách hỏi về 1 PHIM CỤ THỂ (giới thiệu phim X, phim X hay không, nội dung phim X, phim đó là gì). PHẢI kèm "phim" = tên phim chính xác
+- "schedule"     → khách hỏi lịch chiếu, giờ chiếu, suất chiếu
+- "product_list" → khách hỏi bắp rang, nước uống, đồ ăn, combo, menu
+- "chat"         → chào hỏi, cảm ơn, câu hỏi chung
 
-        // 4. GỌI GEMINI VỚI FULL RETRY (tất cả key × tất cả model)
+QUAN TRỌNG VỀ movie_detail:
+- Khi khách hỏi về 1 phim cụ thể, trả "action": "movie_detail" kèm "phim": "TÊN CHÍNH XÁC TRONG DỮ LIỆU"
+- Trong "response" PHẢI bao gồm chi tiết: nội dung, thể loại, thời lượng, phân loại tuổi, đạo diễn nếu có
+- Nếu khách nói "phim đó" / "bộ phim đó" → tìm trong LỊCH SỬ HỘI THOẠI để biết đang nói phim nào`;
+
+        const prompt = `${systemPrompt}${historyText}\n\n${jsonFormat}\n\nKhách nói: "${userMessage}"`;
+
+        // 5. GỌI GEMINI
         let result;
         let useGeminiFailed = false;
 
@@ -258,12 +351,11 @@ export const handleChat = async (req, res) => {
             useGeminiFailed = true;
         }
 
-        // 5. Nếu Gemini thất bại hoàn toàn → dùng fallback thông minh từ DB
+        // 6. Nếu Gemini thất bại → dùng fallback
         if (useGeminiFailed || !result) {
             console.log("🔄 Dùng fallback thông minh từ dữ liệu DB");
             const fallback = buildSmartFallback(userMessage, contextData);
 
-            // Lưu lịch sử
             try {
                 await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
                 await chatService.saveChatMessage(sessionId, userId, userName, "bot", fallback.text, fallback.type, fallback.data);
@@ -274,7 +366,7 @@ export const handleChat = async (req, res) => {
             return res.json({ botMessage: fallback, sessionId });
         }
 
-        // 6. XỬ LÝ RESPONSE TỪ GEMINI
+        // 7. XỬ LÝ RESPONSE TỪ GEMINI
         const responseText = result.response.text();
         console.log("📝 Gemini raw response:", responseText.substring(0, 300));
 
@@ -288,7 +380,19 @@ export const handleChat = async (req, res) => {
 
         let botResponse = { text: aiData.response, type: "text", data: [] };
 
-        // Logic UI Vuốt ngang (Card Phim)
+        // === ACTION: movie_detail — hỏi về 1 phim cụ thể ===
+        if (aiData.action === "movie_detail" && aiData.phim) {
+            const movie = findMovieByName(aiData.phim, contextData.movies);
+            if (movie) {
+                botResponse.type = "movie_detail";
+                botResponse.data = buildMovieDetailData(movie);
+            } else {
+                // Không tìm thấy phim → vẫn trả text, nhưng type text
+                botResponse.type = "text";
+            }
+        }
+
+        // === ACTION: movie_list — danh sách phim ===
         if (aiData.action === "movie_list") {
             botResponse.type = "movie_list";
             botResponse.data = (contextData.movies || [])
@@ -302,7 +406,7 @@ export const handleChat = async (req, res) => {
                 .slice(0, 10);
         }
 
-        // Logic hiển thị sản phẩm (bắp nước)
+        // === ACTION: product_list — menu bắp nước ===
         if (aiData.action === "product_list") {
             botResponse.type = "product_list";
             botResponse.data = (contextData.products || [])
@@ -317,23 +421,32 @@ export const handleChat = async (req, res) => {
                 }));
         }
 
-        // Logic hiển thị lịch chiếu
+        // === ACTION: schedule — lịch chiếu ===
         if (aiData.action === "schedule") {
             botResponse.type = "schedule";
-            const filteredSchedules = (contextData.rawSchedules || [])
-                .filter(s => s.movie && s.theater)
-                .slice(0, 10);
+            // Nếu Gemini trả tên phim cụ thể → lọc lịch chiếu theo phim đó
+            let schedules = (contextData.rawSchedules || []).filter(s => s.movie && s.theater);
 
-            if (filteredSchedules.length > 0) {
-                botResponse.data = filteredSchedules.map(s => ({
-                    movieTitle: s.movie?.title || "?",
-                    theaterName: s.theater?.name || "?",
-                    startTime: s.startTime,
-                }));
+            if (aiData.phim) {
+                const movieMatch = findMovieByName(aiData.phim, contextData.movies);
+                if (movieMatch) {
+                    const movieSchedules = schedules.filter(s =>
+                        s.movie?.title === movieMatch.title || String(s.movie?._id) === String(movieMatch._id)
+                    );
+                    if (movieSchedules.length > 0) {
+                        schedules = movieSchedules;
+                    }
+                }
             }
+
+            botResponse.data = schedules.slice(0, 10).map(s => ({
+                movieTitle: s.movie?.title || "?",
+                theaterName: s.theater?.name || "?",
+                startTime: s.startTime,
+            }));
         }
 
-        // Lưu lịch sử chat
+        // 8. Lưu lịch sử chat (quan trọng cho memory!)
         try {
             await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
             await chatService.saveChatMessage(sessionId, userId, userName, "bot", botResponse.text, botResponse.type, botResponse.data);

@@ -98,11 +98,19 @@ class ChatService {
     formatContextText(data) {
         const { movies, theaters, rawSchedules, products, vouchers, now, next7Days } = data;
 
+        // CHI TIẾT PHIM: bao gồm mô tả, thời lượng, rating, đạo diễn
         const moviesText = movies?.length
-            ? movies.slice(0, 8).map((m) => {
+            ? movies.map((m) => {
                 const genres = m.genres?.length ? m.genres.map((g) => g.name).join(", ") : "Đang cập nhật";
-                return `- ${m.title} | Thể loại: ${genres}${m.duration ? ` | ${m.duration} phút` : ""}`;
-            }).join("\n")
+                const parts = [`🎬 ${m.title}`];
+                parts.push(`  Thể loại: ${genres}`);
+                if (m.duration) parts.push(`  Thời lượng: ${m.duration} phút`);
+                if (m.rating) parts.push(`  Phân loại: ${m.rating}`);
+                if (m.director) parts.push(`  Đạo diễn: ${m.director}`);
+                if (m.language) parts.push(`  Ngôn ngữ: ${m.language}`);
+                if (m.description) parts.push(`  Nội dung: ${m.description.substring(0, 200)}`);
+                return parts.join("\n");
+            }).join("\n\n")
             : "Chưa có phim nào";
 
         const theatersText = theaters?.length
@@ -110,7 +118,13 @@ class ChatService {
             : "Chưa có rạp";
 
         const productsText = products?.length
-            ? products.map((p) => `- ${p.name}: ${Number(p.price).toLocaleString("vi-VN")} VNĐ`).join("\n")
+            ? products.map((p) => {
+                const parts = [`- ${p.name}`];
+                if (p.category) parts.push(`(${p.category})`);
+                if (p.size && p.size !== 'N/A') parts.push(`Size ${p.size}`);
+                parts.push(`: ${Number(p.price).toLocaleString("vi-VN")} VNĐ`);
+                return parts.join(" ");
+            }).join("\n")
             : "Chưa có sản phẩm";
 
         const vouchersText = vouchers?.length
@@ -125,7 +139,7 @@ class ChatService {
                         return s.movie && s.theater && d >= now && d <= next7Days;
                     } catch { return false; }
                 })
-                .slice(0, 8)
+                .slice(0, 15)
                 .map((s) => {
                     const d = new Date(s.startTime);
                     return `- ${s.movie?.title || "?"} @ ${s.theater?.name || "?"} | ${d.toLocaleString("vi-VN")}`;
@@ -137,36 +151,35 @@ class ChatService {
     }
 
     createSystemPrompt(userName, formattedText) {
-        return `Bạn là CineBot 🎬 - trợ lý ảo thông minh của CineBooking.
-        Người dùng hiện tại: ${userName}. Luôn xưng "tớ", gọi khách là "bạn".
-        
-        📊 DỮ LIỆU THỰC TẾ (chỉ dùng thông tin này):
-        🎬 PHIM ĐANG CHIẾU:
-        ${formattedText.moviesText}
-        
-        🏛️ RẠP PHIM:
-        ${formattedText.theatersText}
-        
-        🍿 BẮP & NƯỚC:
-        ${formattedText.productsText}
-        
-        🎟️ KHUYẾN MÃI:
-        ${formattedText.vouchersText}
-        
-        📅 LỊCH CHIẾU 7 NGÀY TỚI:
-        ${formattedText.schedulesText}
-        
-        QUY TẮC CHỌN action:
-        - "movie_list"   → khách hỏi phim gì, phim nào, gợi ý phim, danh sách phim
-        - "schedule"     → khách hỏi lịch chiếu, giờ chiếu, chiếu lúc mấy giờ
-        - "product_list" → khách hỏi bắp rang, nước uống, đồ ăn, combo
-        - "chat"         → tất cả các câu hỏi khác
-        
-        QUY TẮC TRẢ LỜI:
-        ✅ Tham chiếu lịch sử để hiểu ngữ cảnh ("phim đó" = phim đã nhắc trước đó)
-        ✅ Chỉ dùng thông tin có trong dữ liệu trên, KHÔNG bịa đặt
-        ✅ Trả lời ngắn gọn, thân thiện, có emoji phù hợp
-        ✅ Nếu hỏi ngoài phạm vi rạp phim, xin lỗi và chuyển hướng`;
+        return `Bạn là CineBot 🎬 - trợ lý ảo thông minh và chuyên nghiệp của CineBooking.
+    Người dùng hiện tại: ${userName}. Luôn xưng "tớ", gọi khách là "bạn".
+
+    📊 DỮ LIỆU THỰC TẾ TỪ HỆ THỐNG (chỉ dùng thông tin này, KHÔNG bịa đặt):
+
+    🎬 PHIM ĐANG CHIẾU:
+    ${formattedText.moviesText}
+
+    🏛️ RẠP PHIM:
+    ${formattedText.theatersText}
+
+    🍿 BẮP & NƯỚC:
+    ${formattedText.productsText}
+
+    🎟️ KHUYẾN MÃI:
+    ${formattedText.vouchersText}
+
+    📅 LỊCH CHIẾU 7 NGÀY TỚI:
+    ${formattedText.schedulesText}
+
+    QUY TẮC NHỚ NGỮ CẢNH (RẤT QUAN TRỌNG):
+    ✅ Luôn đọc LỊCH SỬ HỘI THOẠI để hiểu "phim đó", "bộ phim đó", "cái đó" đang nói về gì
+    ✅ Nếu khách nói "phim đó có suất chiếu lúc nào" → tìm phim đã nhắc trước đó trong lịch sử
+    ✅ Nếu khách nói "giới thiệu thêm" → giới thiệu thêm về phim/sản phẩm đang thảo luận
+
+    QUY TẮC TRẢ LỜI:
+    ✅ Khi khách hỏi về 1 phim CỤ THỂ → trả chi tiết: nội dung, thể loại, thời lượng, phân loại tuổi, đạo diễn
+    ✅ Trả lời thân thiện, có emoji phù hợp
+    ✅ Nếu hỏi ngoài phạm vi rạp phim → xin lỗi và chuyển hướng về dịch vụ rạp`;
     }
 
     // ✅ FIX: trả về null thật, không phải chuỗi "null"
