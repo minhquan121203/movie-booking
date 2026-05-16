@@ -417,6 +417,8 @@ const bookingController = {
         newBooking.paymentDetails.transactionId = payosOrderCode.toString();
         await newBooking.save();
 
+        const clientOrigin = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:3000';
+
         const requestData = {
           orderCode: payosOrderCode,
           amount: newBooking.totalAmount,
