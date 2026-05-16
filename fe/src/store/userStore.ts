@@ -50,40 +50,45 @@ export const useUserStore = create<UserState>()(
 
           const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
           const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
-          const headers = {
+          const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
 
-          // Gọi song song /users/me và /loyalty/me để lấy data mới nhất
-          const [userRes, loyaltyRes] = await Promise.all([
-            fetch(`${apiBase}/users/me`, { method: 'GET', headers }),
-            fetch(`${apiBase}/loyalty/me`, { method: 'GET', headers }).catch(() => null)
-          ])
-
+          // 1. Lấy user data cơ bản
+          const userRes = await fetch(`${apiBase}/users/me`, {
+            method: 'GET',
+            headers,
+            credentials: 'include'
+          })
           if (!userRes.ok) return
 
           const userData = await userRes.json()
+          if (!userData?.data) return
 
-          if (userData?.data) {
-            let mergedUser = userData.data
+          let mergedUser = { ...userData.data }
 
-            // Nếu loyalty API trả về thành công → dùng điểm từ đó (chính xác hơn)
-            if (loyaltyRes?.ok) {
-              try {
-                const loyaltyData = await loyaltyRes.json()
-                if (loyaltyData?.data) {
-                  mergedUser = {
-                    ...mergedUser,
-                    loyaltyPoints: loyaltyData.data.points ?? mergedUser.loyaltyPoints,
-                    membershipLevel: loyaltyData.data.level ?? mergedUser.membershipLevel,
-                  }
-                }
-              } catch { /* ignore parse error */ }
+          // 2. Lấy điểm chính xác từ /loyalty/me (source of truth)
+          try {
+            const loyaltyRes = await fetch(`${apiBase}/loyalty/me`, {
+              method: 'GET',
+              headers,
+              credentials: 'include'
+            })
+
+            if (loyaltyRes.ok) {
+              const loyaltyData = await loyaltyRes.json()
+              if (loyaltyData?.data) {
+                mergedUser.loyaltyPoints = loyaltyData.data.points ?? mergedUser.loyaltyPoints
+                mergedUser.membershipLevel = loyaltyData.data.level ?? mergedUser.membershipLevel
+              }
             }
-
-            set({ user: mergedUser, isAuthenticated: true })
+          } catch (loyaltyErr) {
+            // Nếu loyalty API lỗi → giữ nguyên điểm từ /users/me
+            console.warn('⚠️ Loyalty API fallback:', loyaltyErr)
           }
+
+          set({ user: mergedUser, isAuthenticated: true })
         } catch (error) {
           console.error('❌ Lỗi cập nhật UserStore:', error)
         }
