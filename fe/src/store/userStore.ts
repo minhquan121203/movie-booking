@@ -14,11 +14,12 @@ interface UserState {
   setStaffTheaterName: (theaterName: string | null) => void
   logout: () => void
   setHasHydrated: (state: boolean) => void
+  fetchUser: () => Promise<void>
 }
 
 export const useUserStore = create<UserState>()(
   persist(
-    set => ({
+    (set) => ({
       user: null,
       isAuthenticated: false,
       staffTheaterId: null,
@@ -41,6 +42,37 @@ export const useUserStore = create<UserState>()(
       },
 
       setHasHydrated: state => set({ _hasHydrated: state }),
+
+      fetchUser: async () => {
+        try {
+          const token = Cookies.get('authToken')
+          if (!token) return
+
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
+
+          const fetchUrl = baseUrl.endsWith('/api')
+            ? `${baseUrl}/users/me`
+            : `${baseUrl}/api/users/me`
+
+          const res = await fetch(fetchUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          })
+
+          if (!res.ok) return
+
+          const data = await res.json()
+
+          if (data && data.data) {
+            set({ user: data.data, isAuthenticated: true })
+          }
+        } catch (error) {
+          console.error('❌ Lỗi cập nhật UserStore:', error)
+        }
+      }
     }),
     {
       name: 'user-storage',

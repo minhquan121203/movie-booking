@@ -11,8 +11,9 @@ import { StepSeatSelection } from './components/steps/StepSeatSelection'
 import { StepCombo } from './components/steps/StepCombo'
 import { StepPaymentMethod } from './components/steps/StepPaymentMethod'
 import { StepPayment } from './components/steps/StepPayment'
-import { WebSocketDebug } from './WebSocketDebug' 
+import { WebSocketDebug } from './WebSocketDebug'
 import { useParams, useSearchParams } from 'next/navigation'
+import { useUserStore } from '@/store/userStore'
 
 export default function BookingPage() {
   const params = useParams()
@@ -22,6 +23,8 @@ export default function BookingPage() {
   const preSelectedScheduleId = searchParams.get('scheduleId') || undefined
 
   const movieTitle = 'Đặt vé xem phim'
+
+  const { user } = useUserStore()
 
   const {
     currentStep,
@@ -41,7 +44,7 @@ export default function BookingPage() {
     voucherError,
     isCheckingVoucher,
     handleApplyVoucher,
-    handleClearVoucher, 
+    handleClearVoucher,
     subtotalAmount,
     totalAmount,
     nextStep,
@@ -55,6 +58,14 @@ export default function BookingPage() {
     isInRoom,
     isConnected,
     isSeatAvailable,
+
+    pointsInput,
+    setPointsInput,
+    appliedPointsDiscount,
+    pointsError,
+    isCheckingPoints,
+    handleApplyPoints,
+    handleClearPoints,
   } = useBooking({ movieId, preSelectedScheduleId })
 
   // Render step content
@@ -118,13 +129,13 @@ export default function BookingPage() {
       case 1:
         return !selectedSchedule
       case 2:
-        return selectedSeats.length === 0 || !isInRoom // Phải ở trong room mới cho tiếp tục
+        return selectedSeats.length === 0 || !isInRoom
       case 3:
-        return false // Có thể bỏ qua combo
+        return false
       case 4:
-        return !paymentMethod // Phải chọn phương thức thanh toán
+        return !paymentMethod
       case 5:
-        return true // Ở bước cuối không có nút tiếp tục
+        return true
       default:
         return false
     }
@@ -191,14 +202,20 @@ export default function BookingPage() {
                 handleClearVoucher={handleClearVoucher}
                 subtotalAmount={subtotalAmount}
                 totalAmount={totalAmount}
+
+                user={user}
+                pointsInput={pointsInput}
+                setPointsInput={setPointsInput}
+                appliedPointsDiscount={appliedPointsDiscount}
+                pointsError={pointsError}
+                isCheckingPoints={isCheckingPoints}
+                handleApplyPoints={handleApplyPoints}
+                handleClearPoints={handleClearPoints}
               />
             </div>
           )}
         </div>
       </main>
-
-      {/* Debug component - chỉ hiện trong development */}
-      {/* {process.env.NODE_ENV === 'development' && <WebSocketDebug />} */}
     </div>
   )
 }

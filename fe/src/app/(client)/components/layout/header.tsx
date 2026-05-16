@@ -18,7 +18,7 @@ import {
   Clock,
   Star,
   Film,
-  Menu, 
+  Menu,
 } from 'lucide-react'
 
 // UI Components
@@ -291,24 +291,37 @@ const UserNav = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none truncate">{user.fullName}</p>
-                <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+              <div className="flex flex-col space-y-2.5">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none truncate">{user.fullName}</p>
+                  <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1.5 rounded-md w-fit border border-amber-200 dark:border-amber-800/50">
+                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  <span className="text-xs font-bold">{user.membershipLevel || 'Thành viên'}</span>
+                  <span className="text-[10px] opacity-80">•</span>
+                  <span className="text-xs font-bold">{user.loyaltyPoints || 0} điểm</span>
+                </div>
+
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+
             <DropdownMenuItem asChild>
               <Link href="/profile" className="cursor-pointer">
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Hồ sơ cá nhân</span>
               </Link>
             </DropdownMenuItem>
+
             <DropdownMenuItem asChild>
               <Link href="/order-history" className="cursor-pointer">
                 <Ticket className="mr-2 h-4 w-4" />
                 <span>Vé của tôi</span>
               </Link>
             </DropdownMenuItem>
+
             {user.role === 'admin' && (
               <DropdownMenuItem asChild>
                 <Link href="/admin" className="cursor-pointer">
@@ -339,7 +352,7 @@ const UserNav = () => {
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -413,8 +426,8 @@ export function Header() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
                 'text-base font-semibold px-4 py-3 rounded-xl transition-all',
-                pathname === link.href 
-                  ? 'bg-primary/10 text-primary' 
+                pathname === link.href
+                  ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >

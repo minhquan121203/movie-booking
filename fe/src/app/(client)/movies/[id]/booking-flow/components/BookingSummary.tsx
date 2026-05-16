@@ -1,4 +1,4 @@
-import { MapPin, Clock, Calendar, Ticket } from 'lucide-react'
+import { MapPin, Clock, Calendar, Ticket, Star, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CartItem } from '@/types'
 import { BookedSeat } from '@/types/booking'
@@ -9,7 +9,9 @@ interface BookingSummaryProps {
   selectedSchedule: Schedule | null
   selectedSeats: BookedSeat[]
   cartItems: CartItem[]
-  total?: number 
+  total?: number
+
+  // --- Props của Voucher ---
   voucherInput: string
   setVoucherInput: (val: string) => void
   appliedVoucher: { code: string; discountAmount: number } | null
@@ -17,8 +19,20 @@ interface BookingSummaryProps {
   isCheckingVoucher: boolean
   handleApplyVoucher: () => void
   handleClearVoucher: () => void
-  subtotalAmount: number
-  totalAmount: number
+
+  // --- Props mới thêm cho Điểm thưởng ---
+  user: any // Để lấy user.loyaltyPoints hiển thị số dư
+  pointsInput: number | ''
+  setPointsInput: (val: number | '') => void
+  appliedPointsDiscount: number // Số tiền được giảm từ điểm (0 nếu chưa áp dụng)
+  pointsError: string
+  isCheckingPoints: boolean
+  handleApplyPoints: () => void
+  handleClearPoints: () => void
+
+  // --- Tổng tiền ---
+  subtotalAmount: number // Tiền gốc
+  totalAmount: number // Tiền cuối cùng (Đã trừ voucher & điểm)
 }
 
 export function BookingSummary({
@@ -33,6 +47,17 @@ export function BookingSummary({
   isCheckingVoucher,
   handleApplyVoucher,
   handleClearVoucher,
+
+  // Props điểm thưởng
+  user,
+  pointsInput,
+  setPointsInput,
+  appliedPointsDiscount,
+  pointsError,
+  isCheckingPoints,
+  handleApplyPoints,
+  handleClearPoints,
+
   subtotalAmount,
   totalAmount
 }: BookingSummaryProps) {
@@ -59,13 +84,13 @@ export function BookingSummary({
       const next = coupleSeats[i + 1];
 
       if (next && current.seatNumber.charAt(0) === next.seatNumber.charAt(0)) {
-         const num1 = parseInt(current.seatNumber.slice(1));
-         const num2 = parseInt(next.seatNumber.slice(1));
-         if (num2 === num1 + 1) {
-            badges.push(`${current.seatNumber.charAt(0)}${num1}-${num2} (Ghế đôi)`);
-            i++; 
-            continue;
-         }
+        const num1 = parseInt(current.seatNumber.slice(1));
+        const num2 = parseInt(next.seatNumber.slice(1));
+        if (num2 === num1 + 1) {
+          badges.push(`${current.seatNumber.charAt(0)}${num1}-${num2} (Ghế đôi)`);
+          i++;
+          continue;
+        }
       }
       badges.push(`${current.seatNumber} (Ghế đôi)`);
     }
@@ -138,28 +163,28 @@ export function BookingSummary({
           </div>
         )}
 
-        {/* ============ KHU VỰC NHẬP VOUCHER (ĐÃ FIX UI) ============ */}
+        {/* ============ KHU VỰC NHẬP VOUCHER ============ */}
         <div className="mt-5 pt-5 border-t border-dashed border-border">
           <label className="text-sm font-bold text-text-primary mb-3 block">Mã Khuyến Mãi</label>
           <div className="flex items-stretch gap-2.5">
             <input
               type="text"
-              placeholder="NHẬP MÃ VOUCHER..."
+              placeholder="NHẬP Mã VOUCHER..."
               value={voucherInput}
               onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
               disabled={appliedVoucher !== null}
               className="flex-1 w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary uppercase transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
             />
-            
+
             {appliedVoucher ? (
-              <button 
+              <button
                 onClick={handleClearVoucher}
                 className="shrink-0 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100"
               >
                 Hủy mã
               </button>
             ) : (
-              <button 
+              <button
                 onClick={handleApplyVoucher}
                 disabled={!voucherInput || isCheckingVoucher}
                 className="shrink-0 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[100px]"
@@ -169,18 +194,16 @@ export function BookingSummary({
             )}
           </div>
 
-          {/* Báo lỗi UI mới */}
           {voucherError && (
             <p className="text-xs text-red-500 font-medium mt-2.5 flex items-center gap-1.5">
               <span className="w-1 h-1 rounded-full bg-red-500"></span> {voucherError}
             </p>
           )}
 
-          {/* Báo thành công UI mới (Màu xanh ngọc xịn xò) */}
           {appliedVoucher && (
             <div className="flex justify-between items-center mt-3.5 text-sm text-emerald-700 font-bold bg-emerald-50 px-4 py-3 rounded-xl border border-emerald-200 shadow-sm">
               <span className="flex items-center gap-2">
-                <Ticket className="w-4 h-4" /> 
+                <Ticket className="w-4 h-4" />
                 {appliedVoucher.code}
               </span>
               <span>- {formatPrice(appliedVoucher.discountAmount)}</span>
@@ -188,21 +211,100 @@ export function BookingSummary({
           )}
         </div>
 
-        {/* ============ DÒNG TỔNG CỘNG TÍNH TIỀN ============ */}
-        <div className="pt-5 mt-5 border-t-2 border-border flex justify-between items-end">
-          <span className="text-base text-text-secondary font-bold mb-1">Tổng cộng</span>
-          <div className="flex flex-col items-end">
-            {/* Hiển thị giá gốc bị gạch ngang (gạch màu đỏ mờ cho nổi bật) */}
-            {appliedVoucher && (
-              <span className="text-sm text-text-secondary line-through mb-1 decoration-red-400 decoration-2">
-                {formatPrice(subtotalAmount)}
+        {/* ============ KHU VỰC ĐỔI ĐIỂM THƯỞNG ============ */}
+        {user && (
+          <div className="mt-4 pt-4 border-t border-dashed border-border">
+            <div className="flex justify-between items-end mb-3">
+              <label className="text-sm font-bold text-text-primary">Đổi Điểm Thưởng</label>
+              <span className="text-xs text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                Khả dụng: {user.loyaltyPoints?.toLocaleString('vi-VN') || 0} điểm
               </span>
+            </div>
+
+            <div className="flex items-stretch gap-2.5">
+              <input
+                type="number"
+                placeholder="Nhập số điểm muốn đổi..."
+                value={pointsInput}
+                onChange={(e) => setPointsInput(e.target.value ? Number(e.target.value) : '')}
+                disabled={appliedPointsDiscount > 0}
+                className="flex-1 w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all bg-surface disabled:bg-bg-secondary disabled:text-text-secondary placeholder:text-gray-400"
+              />
+
+              {appliedPointsDiscount > 0 ? (
+                <button
+                  onClick={handleClearPoints}
+                  className="shrink-0 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all shadow-sm border border-red-100 flex items-center gap-1"
+                >
+                  <XCircle className="w-4 h-4" /> Hủy
+                </button>
+              ) : (
+                <button
+                  onClick={handleApplyPoints}
+                  disabled={!pointsInput || isCheckingPoints || pointsInput > (user.loyaltyPoints || 0)}
+                  className="shrink-0 px-5 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center min-w-[100px]"
+                >
+                  {isCheckingPoints ? 'Đang...' : 'Đổi điểm'}
+                </button>
+              )}
+            </div>
+
+            <p className="text-[11px] text-text-secondary mt-2 italic leading-relaxed">
+              * Tỷ lệ quy đổi: Bạc (1đ = 500đ), Vàng (1đ = 600đ), Kim Cương (1đ = 800đ).<br />
+              * Số điểm sử dụng tối đa không vượt quá 50% giá trị đơn hàng.
+            </p>
+
+            {pointsError && (
+              <p className="text-xs text-red-500 font-medium mt-2.5 flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-red-500"></span> {pointsError}
+              </p>
             )}
-            
-            {/* Giá cuối cùng siêu to khổng lồ */}
-            <span className="text-3xl font-black text-primary leading-none">
-              {formatPrice(totalAmount)}
-            </span>
+
+            {appliedPointsDiscount > 0 && (
+              <div className="flex justify-between items-center mt-3.5 text-sm text-amber-700 font-bold bg-amber-50 px-4 py-3 rounded-xl border border-amber-200 shadow-sm">
+                <span className="flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                  Đã dùng {pointsInput} điểm
+                </span>
+                <span>- {formatPrice(appliedPointsDiscount)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============ DÒNG TỔNG CỘNG TÍNH TIỀN ============ */}
+        <div className="pt-5 mt-5 border-t-2 border-border flex flex-col gap-2">
+
+          {/* Hiển thị tóm tắt các khoản giảm trừ (Nếu có) */}
+          {(appliedVoucher || appliedPointsDiscount > 0) && (
+            <div className="flex flex-col gap-1 text-sm font-medium text-text-secondary w-full border-b border-border/50 pb-3 mb-1">
+              <div className="flex justify-between">
+                <span>Tạm tính</span>
+                <span>{formatPrice(subtotalAmount)}</span>
+              </div>
+              {appliedVoucher && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Giảm giá (Voucher)</span>
+                  <span>-{formatPrice(appliedVoucher.discountAmount)}</span>
+                </div>
+              )}
+              {appliedPointsDiscount > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span>Giảm giá (Điểm thưởng)</span>
+                  <span>-{formatPrice(appliedPointsDiscount)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-between items-end">
+            <span className="text-base text-text-secondary font-bold mb-1">Tổng cộng</span>
+            <div className="flex flex-col items-end">
+              {/* Giá cuối cùng siêu to khổng lồ */}
+              <span className="text-3xl font-black text-primary leading-none">
+                {formatPrice(totalAmount)}
+              </span>
+            </div>
           </div>
         </div>
 

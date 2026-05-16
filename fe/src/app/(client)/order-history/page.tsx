@@ -1,20 +1,29 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react' 
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Filters, { type BookingStatus } from './components/Filters'
 import BookingList from './components/BookingList'
 import { useMyBookings } from '@/lib/api/booking'
 import { CustomPagination, PaginationInfo } from '@/app/components/shared/custom-pagination'
 import Link from 'next/link'
+import { useUserStore } from '@/store/userStore'
 
 function OrderHistoryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
 
+  const { fetchUser } = useUserStore()
+
+  useEffect(() => {
+    if (typeof fetchUser === 'function') {
+      fetchUser()
+    }
+  }, [fetchUser])
+
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
-  
+
   // Xử lý status trên URL
   let rawStatus = searchParams.get('status')
   if (rawStatus === 'PAID') {
@@ -29,7 +38,7 @@ function OrderHistoryContent() {
   useEffect(() => {
     const currentStatus = searchParams.get('status')
     if (currentStatus === 'PAID') {
-      router.replace(pathname, { scroll: false }) 
+      router.replace(pathname, { scroll: false })
     }
   }, [pathname, router, searchParams])
 
@@ -52,7 +61,7 @@ function OrderHistoryContent() {
   } = useMyBookings({
     page: currentPage,
     limit: itemsPerPage,
-    status: apiStatus as any, 
+    status: apiStatus as any,
   })
 
   const bookings = bookingData?.bookings || []
@@ -78,14 +87,14 @@ function OrderHistoryContent() {
     if (hasPending) {
       console.log("🛰️ Đang tự động hóng kết quả thanh toán từ MoMo...");
       intervalId = setInterval(() => {
-        if (typeof refetch === 'function') refetch(); 
-        router.refresh(); 
-      }, 3000); 
+        if (typeof refetch === 'function') refetch();
+        router.refresh();
+      }, 3000);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [safeBookings, router, refetch]); 
+  }, [safeBookings, router, refetch]);
 
   const updateUrlParams = (newPage: number, newStatus: BookingStatus | 'all') => {
     const params = new URLSearchParams()
