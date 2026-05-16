@@ -25,6 +25,7 @@ export default function ChatBot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -123,7 +124,7 @@ export default function ChatBot() {
         body: JSON.stringify({
           userMessage: msg,
           userName: "bạn",
-          sessionId: `session_${Date.now()}`,
+          sessionId: sessionIdRef.current,
         }),
       });
 
