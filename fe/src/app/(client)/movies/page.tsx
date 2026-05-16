@@ -21,14 +21,15 @@ function MoviesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
+  const genreFromUrl = searchParams.get('genre') || ''
   const itemsPerPage = 15
 
   // --- 1. DRAFT STATE ---
-  const [showFilters, setShowFilters] = useState(true)
+  const [showFilters, setShowFilters] = useState(!genreFromUrl)
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')
   const [selectedType, setSelectedType] = useState('Đang chiếu')
   const [selectedRating, setSelectedRating] = useState('P')
-  const [selectedGenreNames, setSelectedGenreNames] = useState<string[]>([])
+  const [selectedGenreNames, setSelectedGenreNames] = useState<string[]>(genreFromUrl ? [genreFromUrl] : [])
   const [selectedYear, setSelectedYear] = useState('Tất cả')
   const [customYear, setCustomYear] = useState('')
   const [selectedSort, setSelectedSort] = useState('Mới nhất')
@@ -63,6 +64,7 @@ function MoviesContent() {
     sortBy: 'releaseDate',
     order: 'desc',
     status: 'Đang chiếu',
+    ...(genreFromUrl ? { genres: genreFromUrl } : {}),
   })
 
   // --- 3. FETCH DATA ---
