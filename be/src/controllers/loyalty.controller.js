@@ -94,6 +94,51 @@ const loyaltyController = {
         query.type = type;
       }
 
+      // Auto-backfill: nếu user có điểm nhưng chưa có record nào → tạo từ booking cũ
+      const existingCount = await PointTransaction.countDocuments({ user: req.userId });
+      if (existingCount === 0) {
+        try {
+          const Booking = (await import("../models/booking.model.js")).default;
+          const completedBookings = await Booking.find({
+            customer: req.userId,
+            status: { $in: ["Hoàn tất", "Đã sử dụng"] },
+          }).sort({ createdAt: 1 }).lean();
+
+          const user = await User.findById(req.userId).select("loyaltyPoints").lean();
+
+          for (const booking of completedBookings) {
+            const pointsEarned = booking.pointsEarned || Math.floor((booking.totalAmount || 0) / 10000);
+            if (pointsEarned <= 0) continue;
+
+            await PointTransaction.create({
+              user: req.userId,
+              type: "earn",
+              points: pointsEarned,
+              balance: user?.loyaltyPoints || 0,
+              description: `Tích điểm từ vé ${booking.bookingCode} - ${booking.movieTitle || "Phim"}`,
+              relatedBooking: booking._id,
+              metadata: { movieTitle: booking.movieTitle, totalAmount: booking.totalAmount, backfilled: true },
+              createdAt: booking.createdAt,
+            });
+
+            if (booking.pointsUsed > 0) {
+              await PointTransaction.create({
+                user: req.userId,
+                type: "redeem",
+                points: -booking.pointsUsed,
+                balance: user?.loyaltyPoints || 0,
+                description: `Đổi điểm giảm ${booking.pointsDiscount?.toLocaleString("vi-VN")}đ cho vé ${booking.bookingCode}`,
+                relatedBooking: booking._id,
+                metadata: { pointsDiscount: booking.pointsDiscount, backfilled: true },
+                createdAt: booking.createdAt,
+              });
+            }
+          }
+        } catch (backfillErr) {
+          console.error("Auto-backfill error:", backfillErr);
+        }
+      }
+
       const [transactions, total] = await Promise.all([
         PointTransaction.find(query)
           .sort({ createdAt: -1 })
