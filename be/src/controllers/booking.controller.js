@@ -70,9 +70,9 @@ const bookingController = {
 
       await session.withTransaction(async () => {
         schedule = await Schedule.findById(scheduleId)
-            .populate("movie", "title")
-            .populate("theater", "name")
-            .session(session);
+          .populate("movie", "title")
+          .populate("theater", "name")
+          .session(session);
 
         const scheduleMovieTitle = schedule.movie?.title;
         const scheduleTheaterName = schedule.theater?.name;
@@ -108,33 +108,33 @@ const bookingController = {
         seatNumbers.forEach((seatNum) => {
           const placeholder = `seat${seatNum.replace(/[^a-zA-Z0-9]/g, "")}`;
           setUpdate[`seatAvailability.$[${placeholder}].holdUntil`] = new Date(
-              Date.now() + BOOKING_CONSTANTS.SEAT_HOLD_DURATION_MS
+            Date.now() + BOOKING_CONSTANTS.SEAT_HOLD_DURATION_MS
           );
         });
 
         const updatedSchedule = await Schedule.findOneAndUpdate(
-            {
-              _id: scheduleId,
-              __v: currentVersion,
-              status: "Đang mở bán vé",
-              $and: seatNumbers.map((seatNum) => ({
-                seatAvailability: {
-                  $elemMatch: {
-                    seatNumber: seatNum,
-                    isBooked: false,
-                  },
+          {
+            _id: scheduleId,
+            __v: currentVersion,
+            status: "Đang mở bán vé",
+            $and: seatNumbers.map((seatNum) => ({
+              seatAvailability: {
+                $elemMatch: {
+                  seatNumber: seatNum,
+                  isBooked: false,
                 },
-              })),
-            },
-            {
-              $inc: { __v: 1 },
-              $set: setUpdate,
-            },
-            {
-              arrayFilters,
-              new: true,
-              session,
-            }
+              },
+            })),
+          },
+          {
+            $inc: { __v: 1 },
+            $set: setUpdate,
+          },
+          {
+            arrayFilters,
+            new: true,
+            session,
+          }
         );
 
         if (!updatedSchedule) {
@@ -189,20 +189,20 @@ const bookingController = {
                 const currentVersion = product.__v;
 
                 updatedProduct = await Product.findOneAndUpdate(
-                    {
-                      _id: item.productId,
-                      __v: currentVersion,
-                      inStock: true,
-                      stockQuantity: { $gte: item.quantity },
+                  {
+                    _id: item.productId,
+                    __v: currentVersion,
+                    inStock: true,
+                    stockQuantity: { $gte: item.quantity },
+                  },
+                  {
+                    $inc: {
+                      stockQuantity: -item.quantity,
+                      totalSold: item.quantity,
+                      __v: 1,
                     },
-                    {
-                      $inc: {
-                        stockQuantity: -item.quantity,
-                        totalSold: item.quantity,
-                        __v: 1,
-                      },
-                    },
-                    { new: true, session }
+                  },
+                  { new: true, session }
                 );
 
                 if (!updatedProduct) {
@@ -249,25 +249,25 @@ const bookingController = {
           while (retries > 0 && !voucher) {
             try {
               voucher = await Voucher.findOneAndUpdate(
-                  {
-                    code: voucherCode.toUpperCase(),
-                    isActive: true,
-                    startDate: { $lte: new Date() },
-                    endDate: { $gte: new Date() },
-                    minOrderValue: { $lte: subtotal },
-                    $expr: { $lt: ["$usageCount", "$usageLimit"] },
-                  },
-                  {
-                    $inc: { usageCount: 1 },
-                    $push: {
-                      usedBy: {
-                        user: req.userId,
-                        bookingId: null,
-                        usedAt: new Date(),
-                      },
+                {
+                  code: voucherCode.toUpperCase(),
+                  isActive: true,
+                  startDate: { $lte: new Date() },
+                  endDate: { $gte: new Date() },
+                  minOrderValue: { $lte: subtotal },
+                  $expr: { $lt: ["$usageCount", "$usageLimit"] },
+                },
+                {
+                  $inc: { usageCount: 1 },
+                  $push: {
+                    usedBy: {
+                      user: req.userId,
+                      bookingId: null,
+                      usedAt: new Date(),
                     },
                   },
-                  { new: true, session }
+                },
+                { new: true, session }
               );
 
               if (!voucher) {
@@ -368,15 +368,15 @@ const bookingController = {
 
         if (appliedVoucher) {
           await Voucher.updateOne(
-              {
-                _id: appliedVoucher,
-                "usedBy.user": req.userId,
-                "usedBy.bookingId": null,
-              },
-              {
-                $set: { "usedBy.$.bookingId": newBooking._id },
-              },
-              { session }
+            {
+              _id: appliedVoucher,
+              "usedBy.user": req.userId,
+              "usedBy.bookingId": null,
+            },
+            {
+              $set: { "usedBy.$.bookingId": newBooking._id },
+            },
+            { session }
           );
         }
 
@@ -391,9 +391,9 @@ const bookingController = {
         });
 
         await Schedule.updateOne(
-            { _id: scheduleId },
-            { $set: bookingIdSetUpdate },
-            { arrayFilters: bookingIdArrayFilters, session }
+          { _id: scheduleId },
+          { $set: bookingIdSetUpdate },
+          { arrayFilters: bookingIdArrayFilters, session }
         );
       });
 
@@ -421,8 +421,8 @@ const bookingController = {
           orderCode: payosOrderCode,
           amount: newBooking.totalAmount,
           description: `VE ${newBooking.bookingCode}`.substring(0, 25),
-          returnUrl: `https://movie-booking-cinema.vercel.app/order-history`,
-          cancelUrl: `https://movie-booking-cinema.vercel.app/order-history`
+          returnUrl: `${clientOrigin}/order-history`,
+          cancelUrl: `${clientOrigin}/order-history`
         };
 
         try {
@@ -430,9 +430,9 @@ const bookingController = {
           const PayOSClass = PayOSModule.PayOS || PayOSModule.default;
 
           const payosClient = new PayOSClass(
-              process.env.PAYOS_CLIENT_ID,
-              process.env.PAYOS_API_KEY,
-              process.env.PAYOS_CHECKSUM_KEY
+            process.env.PAYOS_CLIENT_ID,
+            process.env.PAYOS_API_KEY,
+            process.env.PAYOS_CHECKSUM_KEY
           );
 
           let paymentLink;
@@ -479,16 +479,16 @@ const bookingController = {
       }
 
       return successResponse(
-          res,
-          {
-            bookingId: newBooking._id,
-            bookingCode: newBooking.bookingCode,
-            totalAmount: newBooking.totalAmount,
-            payosCheckoutUrl: checkoutUrl,
-            holdUntil: new Date(Date.now() + BOOKING_CONSTANTS.SEAT_HOLD_DURATION_MS),
-          },
-          "Tạo đơn đặt vé thành công. Vui lòng thanh toán trong 10 phút",
-          201
+        res,
+        {
+          bookingId: newBooking._id,
+          bookingCode: newBooking.bookingCode,
+          totalAmount: newBooking.totalAmount,
+          payosCheckoutUrl: checkoutUrl,
+          holdUntil: new Date(Date.now() + BOOKING_CONSTANTS.SEAT_HOLD_DURATION_MS),
+        },
+        "Tạo đơn đặt vé thành công. Vui lòng thanh toán trong 10 phút",
+        201
       );
     } catch (error) {
       await session.endSession();
@@ -570,21 +570,21 @@ const bookingController = {
       try {
         await session.withTransaction(async () => {
           const updatedBooking = await Booking.findOneAndUpdate(
-              { _id: bookingId, status: BOOKING_STATUS.PENDING_PAYMENT },
-              {
-                $set: {
-                  status: BOOKING_STATUS.COMPLETED,
-                  paymentDetails: {
-                    paymentMethod,
-                    transactionId,
-                    status: "Thành công",
-                    amount: booking.totalAmount,
-                    paymentDate: new Date(),
-                    paymentInfo: JSON.stringify(paymentInfo),
-                  },
+            { _id: bookingId, status: BOOKING_STATUS.PENDING_PAYMENT },
+            {
+              $set: {
+                status: BOOKING_STATUS.COMPLETED,
+                paymentDetails: {
+                  paymentMethod,
+                  transactionId,
+                  status: "Thành công",
+                  amount: booking.totalAmount,
+                  paymentDate: new Date(),
+                  paymentInfo: JSON.stringify(paymentInfo),
                 },
               },
-              { new: true, session }
+            },
+            { new: true, session }
           );
 
           if (!updatedBooking) throw new Error("Booking đã được xác nhận thanh toán bởi hệ thống khác");
@@ -627,20 +627,20 @@ const bookingController = {
           });
 
           const finalizedSchedule = await Schedule.findOneAndUpdate(
-              {
-                _id: booking.schedule,
-                seatAvailability: { $exists: true, $not: { $size: 0 } }, // Đảm bảo trường này tồn tại và không rỗng
-                $and: seatNumbers.map((seatNum) => ({
-                  seatAvailability: {
-                    $elemMatch: { seatNumber: seatNum, isBooked: false },
-                  },
-                })),
-              },
-              {
-                $set: confirmSetUpdate,
-                $inc: { bookedSeatsCount: seatNumbers.length }
-              },
-              { arrayFilters: confirmArrayFilters, new: true, session }
+            {
+              _id: booking.schedule,
+              seatAvailability: { $exists: true, $not: { $size: 0 } }, // Đảm bảo trường này tồn tại và không rỗng
+              $and: seatNumbers.map((seatNum) => ({
+                seatAvailability: {
+                  $elemMatch: { seatNumber: seatNum, isBooked: false },
+                },
+              })),
+            },
+            {
+              $set: confirmSetUpdate,
+              $inc: { bookedSeatsCount: seatNumbers.length }
+            },
+            { arrayFilters: confirmArrayFilters, new: true, session }
           );
 
           if (!finalizedSchedule) throw new Error("Giao dịch thất bại. Một số ghế đã bị người khác mua ngay trước khi bạn thanh toán.");
@@ -711,9 +711,9 @@ const bookingController = {
             }
           }
 
-          redisService.delPattern(`bookings:user:${booking.customer}:*`).catch(() => {});
-          redisService.del(`booking:temp:${bookingId}`).catch(() => {});
-          redisService.invalidateScheduleCache(booking.schedule.toString()).catch(() => {});
+          redisService.delPattern(`bookings:user:${booking.customer}:*`).catch(() => { });
+          redisService.del(`booking:temp:${bookingId}`).catch(() => { });
+          redisService.invalidateScheduleCache(booking.schedule.toString()).catch(() => { });
         });
       } finally {
         await session.endSession();
@@ -724,14 +724,14 @@ const bookingController = {
       const pointsEarned = Math.floor(booking.totalAmount / 10000);
 
       return successResponse(
-          res,
-          {
-            booking,
-            pointsEarned,
-            newMembershipLevel: customer.membershipLevel,
-            upgraded: customer.membershipLevel !== "Bạc" && customer.loyaltyPoints >= 500,
-          },
-          "Thanh toán thành công"
+        res,
+        {
+          booking,
+          pointsEarned,
+          newMembershipLevel: customer.membershipLevel,
+          upgraded: customer.membershipLevel !== "Bạc" && customer.loyaltyPoints >= 500,
+        },
+        "Thanh toán thành công"
       );
     } catch (error) {
       console.error("Confirm payment error:", error);
@@ -756,17 +756,17 @@ const bookingController = {
 
       const [bookings, total] = await Promise.all([
         Booking.find(query)
-            .populate({
-              path: "schedule",
-              populate: [
-                { path: "movie", select: "title posterUrl duration genres rating" },
-                { path: "theater", select: "name address city" },
-              ],
-            })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
+          .populate({
+            path: "schedule",
+            populate: [
+              { path: "movie", select: "title posterUrl duration genres rating" },
+              { path: "theater", select: "name address city" },
+            ],
+          })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
         Booking.countDocuments(query),
       ]);
 
@@ -811,18 +811,18 @@ const bookingController = {
     try {
       const { id } = req.params;
       const b = await Booking.findById(id)
-          .populate("customer", "fullName email phoneNumber")
-          .populate({
-            path: "schedule",
-            populate: [
-              { path: "movie", select: "title posterUrl duration genre rating" },
-              { path: "theater", select: "name address city" },
-              { path: "room", select: "name roomType" },
-            ],
-          })
-          .populate("appliedVoucher", "code description discountValue")
-          .populate("products.product", "name category price imageUrl")
-          .lean();
+        .populate("customer", "fullName email phoneNumber")
+        .populate({
+          path: "schedule",
+          populate: [
+            { path: "movie", select: "title posterUrl duration genre rating" },
+            { path: "theater", select: "name address city" },
+            { path: "room", select: "name roomType" },
+          ],
+        })
+        .populate("appliedVoucher", "code description discountValue")
+        .populate("products.product", "name category price imageUrl")
+        .lean();
 
       if (!b) return errorResponse(res, "Không tìm thấy đơn đặt vé", 404);
       if (b.customer._id.toString() !== req.userId && req.userRole !== "admin") return errorResponse(res, "Bạn không có quyền xem đơn đặt vé này", 403);
@@ -901,9 +901,9 @@ const bookingController = {
                   if (product) {
                     const currentVersion = product.__v;
                     const updated = await Product.findOneAndUpdate(
-                        { _id: item.product, __v: currentVersion },
-                        { $inc: { stockQuantity: item.quantity, totalSold: -item.quantity, __v: 1 }, $set: { inStock: true } },
-                        { session, new: true }
+                      { _id: item.product, __v: currentVersion },
+                      { $inc: { stockQuantity: item.quantity, totalSold: -item.quantity, __v: 1 }, $set: { inStock: true } },
+                      { session, new: true }
                     );
                     if (updated) restored = true;
                     else { retries--; if (retries > 0) await new Promise((resolve) => setTimeout(resolve, 50)); }
@@ -1089,8 +1089,8 @@ const bookingController = {
           };
 
           const fakeRes = {
-            status: function() { return this; },
-            json: function(resData) {
+            status: function () { return this; },
+            json: function (resData) {
               console.log("[WEBHOOK] HOÀN TẤT DUYỆT ĐƠN! Kết quả:", resData.message);
               return this;
             }
