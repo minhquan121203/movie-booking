@@ -49,25 +49,40 @@ export const useUserStore = create<UserState>()(
           if (!token) return
 
           const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://movie-booking-api-bcfe.onrender.com'
+          const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`
+          const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
 
-          const fetchUrl = baseUrl.endsWith('/api')
-            ? `${baseUrl}/users/me`
-            : `${baseUrl}/api/users/me`
+          // Gọi song song /users/me và /loyalty/me để lấy data mới nhất
+          const [userRes, loyaltyRes] = await Promise.all([
+            fetch(`${apiBase}/users/me`, { method: 'GET', headers }),
+            fetch(`${apiBase}/loyalty/me`, { method: 'GET', headers }).catch(() => null)
+          ])
 
-          const res = await fetch(fetchUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+          if (!userRes.ok) return
+
+          const userData = await userRes.json()
+
+          if (userData?.data) {
+            let mergedUser = userData.data
+
+            // Nếu loyalty API trả về thành công → dùng điểm từ đó (chính xác hơn)
+            if (loyaltyRes?.ok) {
+              try {
+                const loyaltyData = await loyaltyRes.json()
+                if (loyaltyData?.data) {
+                  mergedUser = {
+                    ...mergedUser,
+                    loyaltyPoints: loyaltyData.data.points ?? mergedUser.loyaltyPoints,
+                    membershipLevel: loyaltyData.data.level ?? mergedUser.membershipLevel,
+                  }
+                }
+              } catch { /* ignore parse error */ }
             }
-          })
 
-          if (!res.ok) return
-
-          const data = await res.json()
-
-          if (data && data.data) {
-            set({ user: data.data, isAuthenticated: true })
+            set({ user: mergedUser, isAuthenticated: true })
           }
         } catch (error) {
           console.error('❌ Lỗi cập nhật UserStore:', error)

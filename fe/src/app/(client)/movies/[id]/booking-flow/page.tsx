@@ -14,6 +14,7 @@ import { StepPayment } from './components/steps/StepPayment'
 import { WebSocketDebug } from './WebSocketDebug'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useUserStore } from '@/store/userStore'
+import { useEffect } from 'react'
 
 export default function BookingPage() {
   const params = useParams()
@@ -24,8 +25,12 @@ export default function BookingPage() {
 
   const movieTitle = 'Đặt vé xem phim'
 
-  const { user } = useUserStore()
+  const { user, fetchUser } = useUserStore()
 
+  // Lấy điểm mới nhất từ server khi vào trang booking
+  useEffect(() => {
+    if (fetchUser) fetchUser()
+  }, [])
   const {
     currentStep,
     selectedSchedule,
