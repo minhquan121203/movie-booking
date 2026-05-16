@@ -150,7 +150,12 @@ export const ProfileHeader = memo(({ user }: ProfileHeaderProps) => {
             {user.membershipLevel && (
               <Badge
                 variant="outline"
-                className="border-yellow-500/50 text-yellow-600 dark:text-yellow-500 gap-1 px-3 py-1"
+                className={cn(
+                  'gap-1 px-3 py-1 font-semibold',
+                  user.membershipLevel === 'Bạc' && 'border-slate-400/50 text-slate-500 dark:text-slate-400',
+                  user.membershipLevel === 'Vàng' && 'border-amber-500/50 text-amber-600 dark:text-amber-400',
+                  user.membershipLevel === 'Kim Cương' && 'border-violet-500/50 text-violet-600 dark:text-violet-400',
+                )}
               >
                 <BadgeCheck className="w-3 h-3" />
                 {user.membershipLevel}
