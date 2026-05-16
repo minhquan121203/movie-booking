@@ -5,8 +5,8 @@ import { CartItem } from '../types'
 import { useCreateBooking } from '@/hooks/useCreateBooking'
 import { useCreateVNPayUrl, useCreateMoMoUrl } from '@/lib/api/payment'
 import { useSchedules } from '@/lib/api/schedules'
-// 👇 Import API Loyalty fen đã tạo ở Bước 1
 import { previewPointDiscount } from '@/lib/api/loyalty'
+import { useUserStore } from '@/store/userStore'
 import { toast } from 'sonner'
 import type { Product } from '@/types/product'
 import type { BookingResponseData } from '@/types/booking'
@@ -40,6 +40,7 @@ interface UseBookingProps {
 export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) {
   // --- WEBSOCKET ---
   const { socket, isConnected } = useSocket()
+  const { fetchUser } = useUserStore()
 
   // --- DATA ---
   const { data: scheduleData, isLoading: isLoadingSchedules } = useSchedules({ movieId })
@@ -319,6 +320,10 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
       const bookingRes = await createBookingAsync(bookingPayload)
       const bookingData = bookingRes.data as BookingResponseData
       setCreatedBookingData(bookingData)
+      // Refresh user data nếu đã dùng điểm (để cập nhật số dư)
+      if (pointsInput && Number(pointsInput) > 0) {
+        fetchUser()
+      }
       toast.info('Thông tin đặt vé đã được ghi nhận!', { icon: '📝', duration: 2000 })
       return bookingData
     } catch (error) {

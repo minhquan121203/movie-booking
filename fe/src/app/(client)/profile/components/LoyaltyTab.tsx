@@ -8,7 +8,7 @@ import { useUserStore } from '@/store/userStore'
 const ITEMS_PER_PAGE = 5
 
 export function LoyaltyTab() {
-    const { user } = useUserStore()
+    const { user, fetchUser } = useUserStore()
     const [history, setHistory] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
@@ -31,6 +31,11 @@ export function LoyaltyTab() {
             setLoading(false)
         }
     }
+
+    // Fetch lại user mới nhất từ server khi mở tab (tránh hiện số điểm cũ từ cache)
+    useEffect(() => {
+        fetchUser()
+    }, [])
 
     useEffect(() => {
         fetchHistory(currentPage)
