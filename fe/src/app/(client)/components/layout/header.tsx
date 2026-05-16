@@ -249,9 +249,16 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
 
 // 3. User Navigation Component
 const UserNav = () => {
-  const { user, isAuthenticated } = useUserStore()
+  const { user, isAuthenticated, fetchUser } = useUserStore()
   const { theme, setTheme } = useTheme()
   const isMounted = useMounted()
+
+  // Cập nhật dữ liệu user từ server khi component mount (tránh hiện điểm cũ từ cache)
+  useEffect(() => {
+    if (isAuthenticated && fetchUser) {
+      fetchUser()
+    }
+  }, [isAuthenticated])
 
   return (
     <div className="flex items-center gap-2">
