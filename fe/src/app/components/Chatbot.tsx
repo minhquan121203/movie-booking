@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
 
@@ -42,6 +42,63 @@ export default function ChatBot() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Drag-to-scroll helper for horizontal carousels on desktop
+  const useDragScroll = () => {
+    const ref = useRef<HTMLDivElement>(null);
+    const isDragging = useRef(false);
+    const startX = useRef(0);
+    const scrollLeft = useRef(0);
+
+    const onMouseDown = useCallback((e: React.MouseEvent) => {
+      if (!ref.current) return;
+      isDragging.current = true;
+      startX.current = e.pageX - ref.current.offsetLeft;
+      scrollLeft.current = ref.current.scrollLeft;
+      ref.current.style.cursor = 'grabbing';
+      ref.current.style.userSelect = 'none';
+    }, []);
+
+    const onMouseMove = useCallback((e: React.MouseEvent) => {
+      if (!isDragging.current || !ref.current) return;
+      e.preventDefault();
+      const x = e.pageX - ref.current.offsetLeft;
+      const walk = (x - startX.current) * 1.5;
+      ref.current.scrollLeft = scrollLeft.current - walk;
+    }, []);
+
+    const onMouseUp = useCallback(() => {
+      isDragging.current = false;
+      if (ref.current) {
+        ref.current.style.cursor = 'grab';
+        ref.current.style.userSelect = '';
+      }
+    }, []);
+
+    const onWheel = useCallback((e: React.WheelEvent) => {
+      if (!ref.current) return;
+      // Shift+scroll or trackpad horizontal scroll
+      if (e.deltaX !== 0) return; // already horizontal
+      if (Math.abs(e.deltaY) > 0) {
+        e.preventDefault();
+        ref.current.scrollLeft += e.deltaY;
+      }
+    }, []);
+
+    return {
+      ref,
+      handlers: {
+        onMouseDown,
+        onMouseMove,
+        onMouseUp,
+        onMouseLeave: onMouseUp,
+        onWheel,
+      },
+    };
+  };
+
+  const movieScroll = useDragScroll();
+  const productScroll = useDragScroll();
 
   const handleSend = async (directMessage?: string) => {
     const msg = directMessage || input;
@@ -320,7 +377,7 @@ export default function ChatBot() {
                             <div className="flex-1 h-px bg-gradient-to-r from-[var(--primary)]/20 to-transparent ml-1" />
                           </div>
 
-                          <div className="flex gap-2.5 overflow-x-auto pb-1 chatbot-movie-scroll snap-x snap-mandatory scroll-smooth">
+                          <div ref={movieScroll.ref} {...movieScroll.handlers} className="flex gap-2.5 overflow-x-auto pb-1 chatbot-movie-scroll snap-x snap-mandatory scroll-smooth cursor-grab select-none">
                             {m.content.data.map((movie: any, idx: number) => {
                               const title = movie.title || 'Phim Đang Chiếu';
                               const genre = movie.genre || 'Đang hot';
@@ -452,7 +509,7 @@ export default function ChatBot() {
                             <div className="flex-1 h-px bg-gradient-to-r from-[var(--primary)]/20 to-transparent ml-1" />
                           </div>
 
-                          <div className="flex gap-2.5 overflow-x-auto pb-1 chatbot-movie-scroll snap-x snap-mandatory scroll-smooth">
+                          <div ref={productScroll.ref} {...productScroll.handlers} className="flex gap-2.5 overflow-x-auto pb-1 chatbot-movie-scroll snap-x snap-mandatory scroll-smooth cursor-grab select-none">
                             {m.content.data.map((item: any, idx: number) => {
                               const name = item.name || 'Sản phẩm';
                               const imageUrl = item.imageUrl || item.image || 'https://placehold.co/150x150?text=No+Image';
