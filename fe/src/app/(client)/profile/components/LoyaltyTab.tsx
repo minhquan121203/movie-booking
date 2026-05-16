@@ -9,12 +9,20 @@ const ITEMS_PER_PAGE = 5
 
 interface LoyaltyData {
     points: number
+    totalEarned: number
     level: string
     earnRate: number
     redeemRate: number
     nextLevel: string | null
     pointsToNextLevel: number
     progress: number
+    stats: {
+        totalEarned: number
+        totalRedeemed: number
+        totalRefunded: number
+        totalBonus: number
+        transactionCount: number
+    }
 }
 
 export function LoyaltyTab() {
@@ -93,43 +101,57 @@ export function LoyaltyTab() {
                     </div>
                 </div>
 
-                <div className="mt-8 relative z-10">
-                    <p className="text-amber-100 text-sm mb-1">Điểm khả dụng</p>
-                    {loyaltyLoading ? (
-                        <div className="flex items-center gap-3">
-                            <Loader2 className="w-6 h-6 animate-spin text-white/70" />
-                            <span className="text-lg font-medium text-white/70">Đang tải...</span>
-                        </div>
-                    ) : (
-                        <div className="text-4xl font-black flex items-center gap-2 drop-shadow-md">
-                            {(loyaltyData?.points ?? user?.loyaltyPoints ?? 0).toLocaleString('vi-VN')}
-                            <Star className="w-7 h-7 fill-white" />
-                        </div>
-                    )}
-
-                    {/* Progress bar tới hạng tiếp theo */}
-                    {!loyaltyLoading && loyaltyData?.nextLevel && (
-                        <div className="mt-4">
-                            <div className="flex justify-between text-xs text-amber-100 mb-1.5">
-                                <span>Tiến trình lên hạng {loyaltyData.nextLevel}</span>
-                                <span>{loyaltyData.progress}%</span>
+                {loyaltyLoading ? (
+                    <div className="mt-6 flex items-center gap-3 relative z-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-white/70" />
+                        <span className="text-lg font-medium text-white/70">Đang tải...</span>
+                    </div>
+                ) : (
+                    <div className="mt-6 relative z-10">
+                        {/* 2 cột: Tổng đã tích + Điểm khả dụng */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-amber-100 text-xs mb-1 font-medium">Tổng điểm đã tích</p>
+                                <div className="text-3xl font-black flex items-center gap-1.5 drop-shadow-md">
+                                    {(loyaltyData?.totalEarned ?? 0).toLocaleString('vi-VN')}
+                                    <Star className="w-5 h-5 fill-amber-200 text-amber-200" />
+                                </div>
+                                <p className="text-[10px] text-amber-100/70 mt-0.5">Dùng để xét nâng hạng</p>
                             </div>
-                            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-white rounded-full transition-all duration-700 ease-out"
-                                    style={{ width: `${loyaltyData.progress}%` }}
-                                />
+                            <div>
+                                <p className="text-amber-100 text-xs mb-1 font-medium">Điểm khả dụng</p>
+                                <div className="text-3xl font-black flex items-center gap-1.5 drop-shadow-md">
+                                    {(loyaltyData?.points ?? user?.loyaltyPoints ?? 0).toLocaleString('vi-VN')}
+                                    <Star className="w-5 h-5 fill-white" />
+                                </div>
+                                <p className="text-[10px] text-amber-100/70 mt-0.5">Có thể đổi giảm giá</p>
                             </div>
-                            <p className="text-xs text-amber-100/80 mt-1.5">
-                                Cần thêm {loyaltyData.pointsToNextLevel.toLocaleString('vi-VN')} điểm
-                            </p>
                         </div>
-                    )}
 
-                    {!loyaltyLoading && !loyaltyData?.nextLevel && (
-                        <p className="text-xs text-amber-100/80 mt-3 font-medium">✨ Bạn đã đạt hạng cao nhất!</p>
-                    )}
-                </div>
+                        {/* Progress bar tới hạng tiếp theo */}
+                        {loyaltyData?.nextLevel && (
+                            <div className="mt-5">
+                                <div className="flex justify-between text-xs text-amber-100 mb-1.5">
+                                    <span>Tiến trình lên hạng {loyaltyData.nextLevel}</span>
+                                    <span className="font-bold">{loyaltyData.progress}%</span>
+                                </div>
+                                <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-white rounded-full transition-all duration-700 ease-out"
+                                        style={{ width: `${loyaltyData.progress}%` }}
+                                    />
+                                </div>
+                                <p className="text-xs text-amber-100/80 mt-1.5">
+                                    Cần tích thêm <span className="font-bold">{loyaltyData.pointsToNextLevel.toLocaleString('vi-VN')}</span> điểm nữa
+                                </p>
+                            </div>
+                        )}
+
+                        {!loyaltyData?.nextLevel && (
+                            <p className="text-xs text-amber-100/80 mt-4 font-medium">✨ Bạn đã đạt hạng cao nhất!</p>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* BẢNG LỊCH SỬ GIAO DỊCH */}
