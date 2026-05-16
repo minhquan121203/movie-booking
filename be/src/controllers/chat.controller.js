@@ -318,25 +318,32 @@ export const handleChat = async (req, res) => {
         const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
 
         const jsonFormat = `
-LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
-{
-  "response": "Câu trả lời thân thiện chi tiết dựa trên DỮ LIỆU THỰC TẾ ở trên",
-  "action": "chat" | "movie_list" | "movie_detail" | "schedule" | "product_list",
-  "phim": "Tên CHÍNH XÁC của phim trong dữ liệu (nếu khách hỏi về 1 phim cụ thể) hoặc null",
-  "rap": "Tên rạp nếu có hoặc null"
-}
+        LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
+        {
+        "response": "Câu trả lời ngắn gọn, dễ đọc, có xuống dòng",
+        "action": "chat" | "movie_list" | "movie_detail" | "schedule" | "product_list",
+        "phim": "Tên phim GẦN ĐÚNG NHẤT trong dữ liệu (nếu khách hỏi về phim) hoặc null",
+        "rap": "Tên rạp nếu có hoặc null"
+        }
 
-QUY TẮC CHỌN action:
-- "movie_list"   → khách hỏi DANH SÁCH phim, phim nào hay, gợi ý phim, có phim gì
-- "movie_detail" → khách hỏi về 1 PHIM CỤ THỂ (giới thiệu phim X, phim X hay không, nội dung phim X, phim đó là gì). PHẢI kèm "phim" = tên phim chính xác
-- "schedule"     → khách hỏi lịch chiếu, giờ chiếu, suất chiếu
-- "product_list" → khách hỏi bắp rang, nước uống, đồ ăn, combo, menu
-- "chat"         → chào hỏi, cảm ơn, câu hỏi chung
+        QUY TẮC FORMAT "response" (RẤT QUAN TRỌNG):
+        - NGẮN GỌN, tối đa 3-5 dòng
+        - Dùng \n để xuống dòng, KHÔNG viết 1 đoạn dài
+        - Dùng emoji đầu mỗi dòng để dễ đọc
+        - Ví dụ format đẹp:
+        "🎬 Tội Phạm 101\n📝 Nội dung: ...\n🎭 Thể loại: Hình Sự, Gây Cấn\n⏱️ Thời lượng: 141 phút\n🔞 Phân loại: C16"
 
-QUAN TRỌNG VỀ movie_detail:
-- Khi khách hỏi về 1 phim cụ thể, trả "action": "movie_detail" kèm "phim": "TÊN CHÍNH XÁC TRONG DỮ LIỆU"
-- Trong "response" PHẢI bao gồm chi tiết: nội dung, thể loại, thời lượng, phân loại tuổi, đạo diễn nếu có
-- Nếu khách nói "phim đó" / "bộ phim đó" → tìm trong LỊCH SỬ HỘI THOẠI để biết đang nói phim nào`;
+        QUY TẮC CHỌN action:
+        - "movie_list"   → khách hỏi DANH SÁCH phim, gợi ý, có phim gì
+        - "movie_detail" → khách hỏi về 1 PHIM CỤ THỂ (giới thiệu phim X, phim X là gì, nội dung phim X)
+        - "schedule"     → khách hỏi lịch chiếu, giờ chiếu
+        - "product_list" → khách hỏi bắp rang, nước uống, đồ ăn, combo
+        - "chat"         → chào hỏi, cảm ơn, câu hỏi chung
+
+        QUAN TRỌNG VỀ PHIM:
+        - Khi khách nhắc tên phim (dù sai chính tả nhẹ), TÌM phim GẦN ĐÚNG NHẤT trong dữ liệu
+        - LUÔN trả action: "movie_detail" + "phim": "TÊN CHÍNH XÁC TRONG DỮ LIỆU" khi tìm thấy
+        - Nếu khách nói "phim đó" → tìm trong LỊCH SỬ HỘI THOẠI`;
 
         const prompt = `${systemPrompt}${historyText}\n\n${jsonFormat}\n\nKhách nói: "${userMessage}"`;
 
@@ -387,8 +394,34 @@ QUAN TRỌNG VỀ movie_detail:
                 botResponse.type = "movie_detail";
                 botResponse.data = buildMovieDetailData(movie);
             } else {
-                // Không tìm thấy phim → vẫn trả text, nhưng type text
                 botResponse.type = "text";
+            }
+        }
+
+        // === POST-PROCESSING: Gemini trả chat nhưng user hỏi về phim → tự tìm ===
+        if (aiData.action === "chat" && botResponse.type === "text") {
+            // Trích tên phim từ userMessage
+            const extractedName = chatService.extractMovieName(userMessage);
+            if (extractedName) {
+                const movie = findMovieByName(extractedName, contextData.movies);
+                if (movie) {
+                    console.log(`🔍 Post-processing: tìm thấy phim "${movie.title}" từ "${extractedName}"`);
+                    const genres = movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật";
+                    botResponse.type = "movie_detail";
+                    botResponse.data = buildMovieDetailData(movie);
+                    // Nếu Gemini trả text "không tìm thấy" → override text
+                    if (botResponse.text.includes("không tìm thấy") || botResponse.text.includes("không có")) {
+                        botResponse.text = `🎬 ${movie.title}\n📝 ${movie.description || "Phim đang chiếu tại CineBooking"}\n🎭 Thể loại: ${genres}\n⏱️ Thời lượng: ${movie.duration || "?"} phút\n🔞 Phân loại: ${movie.rating || "P"}${movie.director ? `\n🎬 Đạo diễn: ${movie.director}` : ""}\n\nBạn muốn đặt vé xem phim này không? 🎟️`;
+                    }
+                }
+            }
+            // Cũng thử nếu Gemini trả tên phim trong response
+            if (botResponse.type === "text" && aiData.phim) {
+                const movie = findMovieByName(aiData.phim, contextData.movies);
+                if (movie) {
+                    botResponse.type = "movie_detail";
+                    botResponse.data = buildMovieDetailData(movie);
+                }
             }
         }
 
