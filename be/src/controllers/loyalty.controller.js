@@ -54,8 +54,10 @@ const loyaltyController = {
 
       // Nếu số điểm trong DB khác với tính toán từ giao dịch → sync lại DB
       if (user.loyaltyPoints !== computedPoints && stats.transactionCount > 0) {
-        user.loyaltyPoints = computedPoints;
-        await user.save();
+        await User.updateOne(
+          { _id: req.userId },
+          { $set: { loyaltyPoints: computedPoints } }
+        );
         console.log(`[Loyalty] Synced points for user ${req.userId}: ${user.loyaltyPoints} → ${computedPoints}`);
       }
 
