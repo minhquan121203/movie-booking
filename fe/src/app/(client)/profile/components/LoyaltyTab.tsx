@@ -1,19 +1,44 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Star, TrendingUp, TrendingDown, Clock, Award, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getLoyaltyHistory } from '@/lib/api/loyalty'
+import { Star, TrendingUp, TrendingDown, Clock, Award, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { getLoyaltyHistory, getLoyaltyMe } from '@/lib/api/loyalty'
 import { useUserStore } from '@/store/userStore'
 
 const ITEMS_PER_PAGE = 5
 
+interface LoyaltyData {
+    points: number
+    level: string
+    earnRate: number
+    redeemRate: number
+    nextLevel: string | null
+    pointsToNextLevel: number
+    progress: number
+}
+
 export function LoyaltyTab() {
     const { user, fetchUser } = useUserStore()
+    const [loyaltyData, setLoyaltyData] = useState<LoyaltyData | null>(null)
+    const [loyaltyLoading, setLoyaltyLoading] = useState(true)
     const [history, setHistory] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalItems, setTotalItems] = useState(0)
+
+    // Lấy dữ liệu loyalty realtime từ server (không dùng cache)
+    const fetchLoyalty = async () => {
+        setLoyaltyLoading(true)
+        try {
+            const res = await getLoyaltyMe()
+            setLoyaltyData(res.data)
+        } catch (error) {
+            console.error('Lỗi lấy loyalty:', error)
+        } finally {
+            setLoyaltyLoading(false)
+        }
+    }
 
     const fetchHistory = async (page: number) => {
         setLoading(true)
@@ -32,8 +57,9 @@ export function LoyaltyTab() {
         }
     }
 
-    // Fetch lại user mới nhất từ server khi mở tab (tránh hiện số điểm cũ từ cache)
+    // Fetch dữ liệu loyalty realtime + cập nhật userStore
     useEffect(() => {
+        fetchLoyalty()
         fetchUser()
     }, [])
 
@@ -52,6 +78,7 @@ export function LoyaltyTab() {
             {/* THẺ THÀNH VIÊN */}
             <div className="bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 -ml-6 -mb-6 w-24 h-24 rounded-full bg-white opacity-5 blur-xl"></div>
 
                 <div className="flex justify-between items-start relative z-10">
                     <div>
@@ -60,18 +87,48 @@ export function LoyaltyTab() {
                     </div>
                     <div className="bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2 backdrop-blur-sm border border-white/30">
                         <Award className="w-5 h-5 text-amber-100" />
-                        <span className="font-bold text-white uppercase">{user?.membershipLevel || 'Bạc'}</span>
+                        <span className="font-bold text-white uppercase">
+                            {loyaltyLoading ? '...' : (loyaltyData?.level || user?.membershipLevel || 'Bạc')}
+                        </span>
                     </div>
                 </div>
 
-                <div className="mt-8 flex items-end justify-between relative z-10">
-                    <div>
-                        <p className="text-amber-100 text-sm mb-1">Điểm khả dụng</p>
+                <div className="mt-8 relative z-10">
+                    <p className="text-amber-100 text-sm mb-1">Điểm khả dụng</p>
+                    {loyaltyLoading ? (
+                        <div className="flex items-center gap-3">
+                            <Loader2 className="w-6 h-6 animate-spin text-white/70" />
+                            <span className="text-lg font-medium text-white/70">Đang tải...</span>
+                        </div>
+                    ) : (
                         <div className="text-4xl font-black flex items-center gap-2 drop-shadow-md">
-                            {user?.loyaltyPoints?.toLocaleString('vi-VN') || 0}
+                            {(loyaltyData?.points ?? user?.loyaltyPoints ?? 0).toLocaleString('vi-VN')}
                             <Star className="w-7 h-7 fill-white" />
                         </div>
-                    </div>
+                    )}
+
+                    {/* Progress bar tới hạng tiếp theo */}
+                    {!loyaltyLoading && loyaltyData?.nextLevel && (
+                        <div className="mt-4">
+                            <div className="flex justify-between text-xs text-amber-100 mb-1.5">
+                                <span>Tiến trình lên hạng {loyaltyData.nextLevel}</span>
+                                <span>{loyaltyData.progress}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-white rounded-full transition-all duration-700 ease-out"
+                                    style={{ width: `${loyaltyData.progress}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-amber-100/80 mt-1.5">
+                                Cần thêm {loyaltyData.pointsToNextLevel.toLocaleString('vi-VN')} điểm
+                            </p>
+                        </div>
+                    )}
+
+                    {!loyaltyLoading && !loyaltyData?.nextLevel && (
+                        <p className="text-xs text-amber-100/80 mt-3 font-medium">✨ Bạn đã đạt hạng cao nhất!</p>
+                    )}
                 </div>
             </div>
 
