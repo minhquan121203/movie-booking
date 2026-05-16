@@ -1,13 +1,13 @@
 'use client'
 import { HeroSection } from '@/app/(client)/components/hero-section'
 import { GenreGrid } from '@/app/(client)/components/genre-grid'
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { ShowtimeSection } from '@/app/(client)/components/showtimeSection'
 import { ShowtimeSectionSkeleton } from '@/app/(client)/components/ShowtimeSectionSkeleton'
 import { useMovies } from '@/lib/api/movies'
 import { useTheaters } from '@/lib/api/theaters'
-import { useGenres } from '@/lib/api/genres'
-import { DEFAULT_THEATER_LIST, DEFAULT_GENRE_LIST } from '@/constants'
+import { DEFAULT_THEATER_LIST } from '@/constants'
+import type { Genre } from '@/types/genre'
 import { MovieCard } from '@/app/(client)/components/movie-card'
 import { Flame, Popcorn, CalendarClock, ArrowRight } from 'lucide-react'
 import { useSchedules } from '@/lib/api/schedules'
@@ -61,7 +61,20 @@ export default function HomePage() {
     order: 'asc',
   })
 
-  const { data: listGenres = DEFAULT_GENRE_LIST, isLoading: loadingGenres } = useGenres({})
+  // Extract genres from movies data (same source as movies filter page)
+  const moviesForGenres = nowShowingData?.movies || topMovieData?.movies || []
+  const movieGenres: Genre[] = useMemo(() => {
+    const genreMap = new Map<string, Genre>()
+    moviesForGenres.forEach((movie: any) => {
+      movie.genres?.forEach((g: any) => {
+        if (g._id && g.name && !genreMap.has(g._id)) {
+          genreMap.set(g._id, { _id: g._id, name: g.name, slug: g.name.toLowerCase(), description: '', displayOrder: 0, isActive: true } as Genre)
+        }
+      })
+    })
+    return Array.from(genreMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [moviesForGenres])
+  const loadingGenres = loadingNow && loadingTop
 
   const handleCityChange = (city: string) => {
     setSelectedCity(city)
@@ -167,7 +180,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <GenreGrid genres={listGenres.items} isLoading={loadingGenres} />
+        <GenreGrid genres={movieGenres} isLoading={loadingGenres} />
 
         {loadingTheater ? (
           <ShowtimeSectionSkeleton />

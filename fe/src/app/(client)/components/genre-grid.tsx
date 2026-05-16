@@ -23,6 +23,7 @@ const genreIconMap: Record<string, string> = {
   'hoạt hình': '🎨',
   'tài liệu': '📽️',
   'âm nhạc': '🎵',
+  'nhạc': '🎵',
   'hình sự': '🔍',
   'chiến tranh': '⚔️',
   'thể thao': '⚽',
@@ -31,8 +32,8 @@ const genreIconMap: Record<string, string> = {
   'chính kịch': '🎭',
   'gây cấn': '😱',
   'viễn tưởng': '🌌',
-  'phim gia đình': '🏠',
-  'phim hài': '🤣',
+  'giả tưởng': '🌌',
+  'chương trình truyền hình': '📺',
 }
 
 const genreColorMap: Record<string, string> = {
@@ -51,17 +52,29 @@ const genreColorMap: Record<string, string> = {
   'hình sự': 'from-zinc-500/20 to-zinc-900/10',
   'chính kịch': 'from-indigo-500/20 to-indigo-900/10',
   'gây cấn': 'from-rose-500/20 to-rose-900/10',
+  'giả tưởng': 'from-blue-500/20 to-blue-900/10',
+  'bí ẩn': 'from-teal-500/20 to-teal-900/10',
+  'lịch sử': 'from-amber-600/20 to-amber-900/10',
+  'nhạc': 'from-violet-500/20 to-violet-900/10',
+  'chiến tranh': 'from-stone-500/20 to-stone-900/10',
+  'chương trình truyền hình': 'from-sky-500/20 to-sky-900/10',
+}
+
+// Normalize genre name: remove "Phim" prefix for matching
+function normalizeGenreName(name: string): string {
+  return name.toLowerCase().replace(/^phim\s+/, '').trim()
 }
 
 function getGenreIcon(genre: Genre): string {
   if (genre.icon) return genre.icon
-  const key = genre.name.toLowerCase()
-  return genreIconMap[key] || '🎬'
+  const key = normalizeGenreName(genre.name)
+  // Try exact match first, then normalized
+  return genreIconMap[genre.name.toLowerCase()] || genreIconMap[key] || '🎬'
 }
 
 function getGenreGradient(genre: Genre): string {
-  const key = genre.name.toLowerCase()
-  return genreColorMap[key] || 'from-violet-500/20 to-violet-900/10'
+  const key = normalizeGenreName(genre.name)
+  return genreColorMap[genre.name.toLowerCase()] || genreColorMap[key] || 'from-violet-500/20 to-violet-900/10'
 }
 
 // Skeleton for individual genre card
