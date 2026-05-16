@@ -43,13 +43,25 @@ const loyaltyController = {
       if (!user) return errorResponse(res, "Không tìm thấy người dùng", 404);
 
       const level = user.membershipLevel || "Bạc";
-      const points = user.loyaltyPoints || 0;
 
       // Lấy thống kê (totalEarned, totalRedeemed, ...)
       const stats = await PointTransaction.getUserStats(req.userId);
       const totalEarned = (stats.totalEarned || 0) + (stats.totalBonus || 0) + (stats.totalRefunded || 0);
+      const totalRedeemed = stats.totalRedeemed || 0;
 
-      // Tính điểm cần để nâng hạng tiếp theo (dựa trên TỔNG ĐIỂM ĐÃ TÍCH, không phải điểm hiện tại)
+      // Tính điểm thực tế từ lịch sử giao dịch (source of truth)
+      const computedPoints = totalEarned - totalRedeemed;
+
+      // Nếu số điểm trong DB khác với tính toán từ giao dịch → sync lại DB
+      if (user.loyaltyPoints !== computedPoints && stats.transactionCount > 0) {
+        user.loyaltyPoints = computedPoints;
+        await user.save();
+        console.log(`[Loyalty] Synced points for user ${req.userId}: ${user.loyaltyPoints} → ${computedPoints}`);
+      }
+
+      const points = computedPoints;
+
+      // Tính điểm cần để nâng hạng tiếp theo (dựa trên TỔNG ĐIỂM ĐÃ TÍCH)
       let nextLevel = null;
       let pointsToNextLevel = 0;
       if (level === "Bạc") {
