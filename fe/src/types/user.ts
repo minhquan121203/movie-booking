@@ -31,7 +31,7 @@ export interface User {
   googleId?: string
   facebookId?: string
   loyaltyPoints: number
-  membershipLevel: 'Bạc' | 'Vàng' | 'Bạch kim'
+  membershipLevel: 'Bạc' | 'Vàng' | 'Kim Cương'
   permissions: string[]
   isActive: boolean
   isEmailVerified: boolean
