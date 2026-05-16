@@ -442,12 +442,12 @@ export default function ChatBot() {
                       )}
 
                       {/* Food/Product Cards */}
-                      {m.content?.type === 'food_list' && Array.isArray(m.content?.data) && m.content.data.length > 0 && (
+                      {(m.content?.type === 'food_list' || m.content?.type === 'product_list') && Array.isArray(m.content?.data) && m.content.data.length > 0 && (
                         <div className="px-3 pb-3">
                           <div className="flex items-center gap-1.5 mb-2.5 px-1">
                             <span className="text-xs">🍿</span>
                             <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider">
-                              Đồ ăn & Thức uống
+                              Menu bắp nước
                             </span>
                             <div className="flex-1 h-px bg-gradient-to-r from-[var(--primary)]/20 to-transparent ml-1" />
                           </div>
@@ -458,36 +458,43 @@ export default function ChatBot() {
                               const imageUrl = item.imageUrl || item.image || 'https://placehold.co/150x150?text=No+Image';
                               const price = item.price || 0;
                               const category = item.category || '';
+                              const size = item.size || '';
 
                               return (
                                 <div
                                   key={idx}
-                                  className="flex-none w-[130px] rounded-xl overflow-hidden snap-center flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-50 dark:bg-gray-700 border border-violet-500/12 dark:border-violet-400/20"
+                                  className="flex-none w-[140px] rounded-xl overflow-hidden snap-center flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-50 dark:bg-gray-700 border border-violet-500/12 dark:border-violet-400/20"
                                 >
                                   {/* Image */}
-                                  <div className="relative w-full h-[120px] overflow-hidden">
+                                  <div className="relative w-full h-[110px] overflow-hidden">
                                     <img
                                       src={imageUrl}
                                       alt={name}
                                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                                     {category && (
-                                      <div className="absolute top-2 left-2 bg-orange-500/90 backdrop-blur-sm rounded-full px-2 py-0.5">
-                                        <span className="text-white text-[9px] font-bold">{category}</span>
+                                      <div className="absolute top-1.5 left-1.5 bg-orange-500/90 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                                        <span className="text-white text-[8px] font-bold">{category}</span>
                                       </div>
                                     )}
-                                  </div>
-
-                                  {/* Info */}
-                                  <div className="p-2.5 flex flex-col flex-1">
-                                    <h4 className="font-bold text-[11px] text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug mb-1" title={name}>
-                                      {name}
-                                    </h4>
-                                    <div className="mt-auto flex items-center justify-between">
-                                      <span className="text-[11px] font-bold text-[var(--primary)]">
+                                    {size && (
+                                      <div className="absolute top-1.5 right-1.5 bg-violet-600/90 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                                        <span className="text-white text-[8px] font-bold">{size}</span>
+                                      </div>
+                                    )}
+                                    <div className="absolute bottom-1.5 right-1.5 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-0.5">
+                                      <span className="text-emerald-400 text-[10px] font-bold">
                                         {price.toLocaleString('vi-VN')}đ
                                       </span>
                                     </div>
+                                  </div>
+
+                                  {/* Info */}
+                                  <div className="p-2 flex flex-col flex-1">
+                                    <h4 className="font-bold text-[10px] text-gray-800 dark:text-gray-100 line-clamp-2 leading-snug" title={name}>
+                                      {name}
+                                    </h4>
                                   </div>
                                 </div>
                               );
