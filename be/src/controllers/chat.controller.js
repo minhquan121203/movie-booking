@@ -88,7 +88,7 @@ function buildSmartFallback(userMessage, contextData) {
     // Kiểm tra hỏi về phim
     const movieKeywords = ["phim", "xem gi", "xem gì", "dang chieu", "đang chiếu", "goi y", "gợi ý", "co phim", "có phim", "chieu gi", "chiếu gì"];
     if (movieKeywords.some(kw => msgOriginal.includes(kw) || msg.includes(kw))) {
-        const movies = (contextData.movies || []).slice(0, 6);
+        const movies = (contextData.movies || []).slice(0, 10);
         if (movies.length > 0) {
             const movieNames = movies.map(m => m.title).join(", ");
             return {
@@ -97,7 +97,8 @@ function buildSmartFallback(userMessage, contextData) {
                 data: movies.map(m => ({
                     _id: m._id,
                     title: m.title,
-                    poster: m.poster,
+                    poster: m.posterUrl,
+                    posterUrl: m.posterUrl,
                     genre: m.genres?.map(g => g.name).join(", ") || "Phim rạp",
                 })),
             };
@@ -108,9 +109,9 @@ function buildSmartFallback(userMessage, contextData) {
     // Kiểm tra hỏi về đồ ăn / bắp nước
     const productKeywords = ["bap", "bắp", "nuoc", "nước", "do an", "đồ ăn", "combo", "popcorn", "snack", "an gi", "ăn gì", "menu"];
     if (productKeywords.some(kw => msgOriginal.includes(kw) || msg.includes(kw))) {
-        const products = (contextData.products || []).slice(0, 6);
+        const products = (contextData.products || []);
         if (products.length > 0) {
-            const productList = products.map(p => `- ${p.name}: ${Number(p.price).toLocaleString("vi-VN")} VNĐ`).join("\n");
+            const productList = products.map(p => `- ${p.name} (${p.size || ''} - ${p.category || ''}): ${Number(p.price).toLocaleString("vi-VN")} VNĐ`).join("\n");
             return {
                 text: `🍿 Menu bắp nước tại CineBooking:\n${productList}\nBạn muốn đặt gì nhé?`,
                 type: "product_list",
@@ -118,7 +119,10 @@ function buildSmartFallback(userMessage, contextData) {
                     _id: p._id,
                     name: p.name,
                     price: p.price,
-                    image: p.image,
+                    imageUrl: p.imageUrl,
+                    image: p.imageUrl,
+                    category: p.category,
+                    size: p.size,
                 })),
             };
         }
@@ -233,13 +237,13 @@ export const handleChat = async (req, res) => {
         const systemPrompt = chatService.createSystemPrompt(userName, formattedText);
 
         const jsonFormat = `
-LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
-{
-  "response": "Câu trả lời thân thiện dựa trên DỮ LIỆU THỰC TẾ ở trên",
-  "action": "chat" hoặc "movie_list" hoặc "schedule" hoặc "product_list",
-  "phim": "Tên phim nếu có hoặc null",
-  "rap": "Tên rạp nếu có hoặc null"
-}`;
+        LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code block):
+        {
+        "response": "Câu trả lời thân thiện dựa trên DỮ LIỆU THỰC TẾ ở trên",
+        "action": "chat" hoặc "movie_list" hoặc "schedule" hoặc "product_list",
+        "phim": "Tên phim nếu có hoặc null",
+        "rap": "Tên rạp nếu có hoặc null"
+        }`;
 
         const prompt = `${systemPrompt}\n\n${jsonFormat}\n\nKhách nói: "${userMessage}"`;
 
@@ -291,10 +295,11 @@ LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code
                 .map((m) => ({
                     _id: m._id,
                     title: m.title,
-                    poster: m.poster,
+                    poster: m.posterUrl,
+                    posterUrl: m.posterUrl,
                     genre: m.genres?.map((g) => g.name).join(", ") || "Phim rạp",
                 }))
-                .slice(0, 6);
+                .slice(0, 10);
         }
 
         // Logic hiển thị sản phẩm (bắp nước)
@@ -305,9 +310,11 @@ LUÔN trả về JSON thuần túy theo format sau (KHÔNG markdown, KHÔNG code
                     _id: p._id,
                     name: p.name,
                     price: p.price,
-                    image: p.image,
-                }))
-                .slice(0, 6);
+                    imageUrl: p.imageUrl,
+                    image: p.imageUrl,
+                    category: p.category,
+                    size: p.size,
+                }));
         }
 
         // Logic hiển thị lịch chiếu

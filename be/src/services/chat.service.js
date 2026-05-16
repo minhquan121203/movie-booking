@@ -78,7 +78,7 @@ class ChatService {
                     .lean(),
                 "schedules"
             ),
-            safeQuery(Product.find().lean(), "products"),
+            safeQuery(Product.find({ isActive: true, isDeleted: { $ne: true } }).lean(), "products"),
             safeQuery(Voucher.find({ isActive: true }).lean(), "vouchers"),
         ]);
 
