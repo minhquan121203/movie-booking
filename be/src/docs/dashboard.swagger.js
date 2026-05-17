@@ -516,7 +516,7 @@
 
 /**
  * @swagger
- * /api/admin/statistics/movies/{movieId}/showtimes:
+ * /admin/statistics/movies/{movieId}/showtimes:
  *   get:
  *     summary: Thống kê khung giờ chiếu bán chạy nhất của 1 phim
  *     description: "Lấy danh sách các khung giờ chiếu của một bộ phim và đếm số lượng vé đã bán được (isBooked = true) ở mỗi khung giờ. Kết quả sắp xếp giảm dần theo số vé để vẽ biểu đồ."
