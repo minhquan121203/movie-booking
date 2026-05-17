@@ -121,6 +121,8 @@ const scheduleSchema = new Schema(
 scheduleSchema.index({ movie: 1, showDate: 1, startTime: 1 });
 scheduleSchema.index({ theater: 1, room: 1, showDate: 1 });
 scheduleSchema.index({ showDate: 1, status: 1 });
+scheduleSchema.index({ theater: 1, showDate: 1, status: 1 });
+scheduleSchema.index({ movie: 1, showDate: 1 });
 
 // === VIRTUAL FIELDS ===
 scheduleSchema.virtual("occupancyRate").get(function () {
