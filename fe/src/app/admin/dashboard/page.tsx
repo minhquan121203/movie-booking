@@ -6,6 +6,8 @@ import { KpiStats } from './components/KpiStats'
 import { HorizontalChartWrapper } from './components/HorizontalChartWrapper'
 import { UpcomingMoviesList } from './components/UpcomingMoviesList'
 import { RecentActivities } from './components/RecentActivities'
+import { ShowtimeStatsChart } from '@/app/admin/components/ShowtimeStatsChart'
+import { TheaterPerformanceChart } from '@/app/admin/components/TheaterPerformanceChart'
 import {
   useDashboardSummary,
   useTopMovies,
@@ -97,16 +99,18 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Lists Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-full">
-          <UpcomingMoviesList />
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
+        <div className="xl:col-span-1 h-full min-w-0">
+          <ShowtimeStatsChart />
         </div>
 
-        <div className="h-full">
-          <RecentActivities />
+        <div className="xl:col-span-2 h-full min-w-0">
+          <TheaterPerformanceChart />
         </div>
       </div>
+
     </div>
   )
 }
+
