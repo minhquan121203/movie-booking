@@ -620,7 +620,7 @@ export default function ChatBot() {
             {/* Quick Actions */}
             {messages.length <= 1 && (
               <div className="px-3 pb-2 flex gap-2 overflow-x-auto chatbot-movie-scroll">
-                {['Top nhưng phim đang hot', 'Phim đang chiếu?', 'Phim hay nhất?', 'Phim hành động?'].map((q, i) => (
+                {['Top những phim đang hot', 'Phim đang chiếu?', 'Phim hay nhất?', 'Phim hành động?'].map((q, i) => (
                   <button
                     key={i}
                     onClick={() => handleSend(q)}
