@@ -65,83 +65,6 @@ const getMovieRating = async (movieId) => {
     }
 };
 
-// 🖼️ Lấy poster với fallback
-const getMoviePoster = (movieData) => {
-    // 1️⃣ Ưu tiên poster_path
-    if (movieData.poster_path) {
-        return `https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
-    }
-
-    // 2️⃣ Fallback backdrop_path
-    if (movieData.backdrop_path) {
-        console.log(`📸 Phim ${movieData.id}: Dùng backdrop làm poster`);
-        return `https://image.tmdb.org/t/p/w500${movieData.backdrop_path}`;
-    }
-
-    // 3️⃣ Fallback placeholder cuối cùng
-    console.warn(`⚠️ Phim ${movieData.id} "${movieData.title}": Không có poster/backdrop`);
-    return "https://via.placeholder.com/500x750?text=No+Poster";
-};
-
-// 🎬 Lấy trailer với retry
-const getMovieTrailer = async (videoData, movieId) => {
-    // 1️⃣ Ưu tiên trailer Tiếng Việt
-    if (videoData?.results && videoData.results.length > 0) {
-        const vietnamTrailer = videoData.results.find(
-            v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "vi"
-        );
-        if (vietnamTrailer) {
-            console.log(`🎬 Phim ${movieId}: Trailer Tiếng Việt`);
-            return `https://www.youtube.com/embed/${vietnamTrailer.key}`;
-        }
-    }
-
-    // 2️⃣ Fallback trailer Tiếng Anh
-    if (videoData?.results && videoData.results.length > 0) {
-        const engTrailer = videoData.results.find(
-            v => v.site === "YouTube" && v.type === "Trailer" && v.iso_639_1 === "en"
-        );
-        if (engTrailer) {
-            console.log(`🎬 Phim ${movieId}: Trailer Tiếng Anh`);
-            return `https://www.youtube.com/embed/${engTrailer.key}`;
-        }
-    }
-
-    // 3️⃣ Fallback video YouTube bất kỳ
-    if (videoData?.results && videoData.results.length > 0) {
-        const anyTrailer = videoData.results.find(v => v.site === "YouTube" && v.type === "Trailer");
-        if (anyTrailer) {
-            console.log(`🎬 Phim ${movieId}: Trailer YouTube`);
-            return `https://www.youtube.com/embed/${anyTrailer.key}`;
-        }
-    }
-
-    // 4️⃣ Fallback video teaser
-    if (videoData?.results && videoData.results.length > 0) {
-        const teaser = videoData.results.find(v => v.site === "YouTube");
-        if (teaser) {
-            console.log(`🎬 Phim ${movieId}: Video teaser/clip`);
-            return `https://www.youtube.com/embed/${teaser.key}`;
-        }
-    }
-
-    console.warn(`⚠️ Phim ${movieId}: Không có trailer`);
-    return "";
-};
-
-// 🔍 Lấy videos TMDB nếu chưa có trong main request
-const getMovieVideos = async (movieId) => {
-    try {
-        const videosRes = await axios.get(
-            `${BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}&language=vi-VN`
-        );
-        return videosRes.data;
-    } catch (err) {
-        console.warn(`⚠️ Lỗi lấy videos phim ${movieId}: ${err.message}`);
-        return { results: [] };
-    }
-};
-
 
 export const autoSyncTMDB = async () => {
     try {
@@ -203,7 +126,11 @@ export const autoSyncTMDB = async () => {
                 const releaseDateObj = new Date(m.release_date || new Date());
                 const now = new Date();
                 const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
-                const posterLink = getMoviePoster(m);
+                let posterLink = m.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+                    : "https://via.placeholder.com/500x750?text=No+Poster";
+                // trailerLink defined here so both create & update branches can access
+                let trailerLink = "";
 
                 // 🎯 Xác định quốc gia gốc
                 let country = "Hoa Kỳ";
@@ -231,24 +158,43 @@ export const autoSyncTMDB = async () => {
 
                 if (!exists) {
                     let realDuration = 90;
-                    let trailerLink = "";
                     let directorName = "Đang cập nhật";
                     let actorsArray = [];
                     let genreIdsArray = [];
                     let movieRating = "C13"; // Default
 
-                    // 🎬 Lấy duration
+                    // 🎬 Lấy duration, trailer, director, actors
                     if (m.runtime && m.runtime > 0) realDuration = m.runtime;
 
                     // 📊 Lấy rating/certification từ TMDB
                     movieRating = await getMovieRating(movieId);
 
-                    // 🎥 Lấy trailer (từ append_to_response hoặc fetch riêng)
-                    let videoData = m.videos || {};
-                    if (!videoData.results || videoData.results.length === 0) {
-                        videoData = await getMovieVideos(movieId);
+                    // 🎞️ Trailer selection: prefer YouTube trailers (vi -> en -> any), then any YouTube video, then Teaser/Official
+                    if (m.videos?.results && m.videos.results.length > 0) {
+                        const videos = m.videos.results;
+                        const bySite = (site) => videos.filter(v => v.site === site);
+                        const yt = bySite("YouTube");
+
+                        const pick = (arr, predicates) => {
+                            for (const pred of predicates) {
+                                const found = arr.find(pred);
+                                if (found) return found;
+                            }
+                            return null;
+                        };
+
+                        const selectedVideo =
+                            pick(yt, [
+                                v => /Trailer/i.test(v.type) && v.iso_639_1 === 'vi',
+                                v => /Trailer/i.test(v.type) && v.iso_639_1 === 'en',
+                                v => /Trailer/i.test(v.type),
+                                v => /Official/i.test(v.name) && /Trailer/i.test(v.type),
+                                v => /Teaser/i.test(v.type),
+                                        () => true, // any YouTube video as last resort
+                            ]);
+
+                        if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
                     }
-                    trailerLink = await getMovieTrailer(videoData, movieId);
 
                     if (m.credits) {
                         const directorObj = m.credits.crew.find(c => c.job === "Director");
@@ -273,14 +219,19 @@ export const autoSyncTMDB = async () => {
                         }
                     }
 
-                    // ✅ Tạo phim mới
+                    // ✅ Tạo phim mới (đảm bảo luôn có posterUrl/trailerUrl - sử dụng backdrop nếu poster thiếu, placeholder nếu không có)
+                    const finalPoster = (!posterLink || posterLink.includes('placeholder')) && m.backdrop_path
+                        ? `https://image.tmdb.org/t/p/w500${m.backdrop_path}`
+                        : posterLink;
+                    const finalTrailer = trailerLink || m.homepage || "";
+
                     try {
                         await Movie.create({
                             title: m.title || m.original_title,
                             tmdbId: m.id,
                             description: m.overview,
-                            posterUrl: posterLink,
-                            trailerUrl: trailerLink,
+                            posterUrl: finalPoster,
+                            trailerUrl: finalTrailer,
                             releaseDate: releaseDateObj,
                             status: currentStatus,
                             country: country,
@@ -304,28 +255,6 @@ export const autoSyncTMDB = async () => {
                     // ♻️ Cập nhật phim đã có
                     let needsUpdate = false;
 
-                    // 🖼️ Cập nhật poster nếu thiếu
-                    if (!exists.posterUrl || exists.posterUrl.includes("placeholder")) {
-                        exists.posterUrl = getMoviePoster(m);
-                        needsUpdate = true;
-                        console.log(`🖼️ Cập nhật poster phim: "${exists.title}"`);
-                    }
-
-                    // 🎥 Cập nhật trailer nếu thiếu
-                    if (!exists.trailerUrl || exists.trailerUrl.trim() === "") {
-                        let videoData = m.videos || {};
-                        if (!videoData.results || videoData.results.length === 0) {
-                            videoData = await getMovieVideos(movieId);
-                        }
-                        const newTrailer = await getMovieTrailer(videoData, movieId);
-                        if (newTrailer) {
-                            exists.trailerUrl = newTrailer;
-                            needsUpdate = true;
-                            console.log(`🎥 Cập nhật trailer phim: "${exists.title}"`);
-                        }
-                    }
-
-                    // 👥 Cập nhật director & actors nếu thiếu
                     if (!exists.director || exists.director === "Đang cập nhật" || !exists.actors || exists.actors.length === 0) {
                         if (m.credits) {
                             const directorObj = m.credits.crew.find(c => c.job === "Director");
@@ -341,7 +270,6 @@ export const autoSyncTMDB = async () => {
                         }
                     }
 
-                    // 🏷️ Cập nhật thể loại nếu thiếu
                     if (!exists.genres || exists.genres.length === 0) {
                         if (m.genres && m.genres.length > 0) {
                             let genreIdsArray = [];
@@ -362,7 +290,7 @@ export const autoSyncTMDB = async () => {
                         }
                     }
 
-                    // 🌍 Cập nhật country & language nếu thiếu
+                    // 🔄 Cập nhật country & language nếu thiếu
                     if (!exists.country || exists.country === "Chưa cập nhật") {
                         exists.country = country;
                         needsUpdate = true;
@@ -376,6 +304,22 @@ export const autoSyncTMDB = async () => {
                     let newRating = await getMovieRating(movieId);
                     if (!exists.rating || exists.rating === "C13") {
                         exists.rating = newRating;
+                        needsUpdate = true;
+                    }
+
+                    // Fallback poster/trailer for updates as well (do not reassign original vars)
+                    const finalPosterUpdate = ((!posterLink || posterLink.includes('placeholder')) && m.backdrop_path)
+                        ? `https://image.tmdb.org/t/p/w500${m.backdrop_path}`
+                        : posterLink;
+                    const finalTrailerUpdate = trailerLink || m.homepage || "";
+
+                    // Always update poster/trailer if we found better ones
+                    if (finalPosterUpdate && finalPosterUpdate !== exists.posterUrl) {
+                        exists.posterUrl = finalPosterUpdate;
+                        needsUpdate = true;
+                    }
+                    if (finalTrailerUpdate && finalTrailerUpdate !== exists.trailerUrl) {
+                        exists.trailerUrl = finalTrailerUpdate;
                         needsUpdate = true;
                     }
 

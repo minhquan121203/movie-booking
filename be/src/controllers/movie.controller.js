@@ -4,6 +4,7 @@ import Genre from "../models/genre.model.js";
 import Movie from "../models/movie.model.js";
 import { getDeleteFilter } from "../utils/query.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import redisService from "../services/redis.service.js";
 
 const movieController = {
   // Lấy danh sách phim (có phân trang, filter, search)
@@ -232,12 +233,23 @@ const movieController = {
       // ===== Execute =====
       const skip = (pageNumber - 1) * limitNumber;
 
+      // Use request URL as cache key (includes query string). Short TTL for fresher data.
+      const cacheKey = `movies:all:${req.originalUrl}`;
+      try {
+        const cached = await redisService.get(cacheKey);
+        if (cached) {
+          return successResponse(res, cached);
+        }
+      } catch (e) {
+        // ignore redis errors, proceed to DB
+      }
+
       const [movies, total] = await Promise.all([
         Movie.find(query).populate("genres", "name").sort(sort).skip(skip).limit(limitNumber).lean(),
         Movie.countDocuments(query),
       ]);
 
-      return successResponse(res, {
+      const payload = {
         movies,
         pagination: {
           currentPage: pageNumber,
@@ -245,7 +257,14 @@ const movieController = {
           totalItems: total,
           itemsPerPage: limitNumber,
         },
-      });
+      };
+
+      try {
+        // cache small window to speed up repeated requests
+        await redisService.set(cacheKey, payload, 15);
+      } catch (e) {}
+
+      return successResponse(res, payload);
     } catch (error) {
       console.error("Get all movies error:", error);
       return errorResponse(res, "Lỗi server", 500);
@@ -257,11 +276,19 @@ const movieController = {
     try {
       const { id } = req.params;
 
+      const cacheKey = `movie:byId:${id}`;
+      try {
+        const cached = await redisService.get(cacheKey);
+        if (cached) return successResponse(res, cached);
+      } catch (e) {}
+
       const movie = await Movie.findById(id)
         .populate("genres", "name description")
         .populate("createdBy", "fullName email")
         .populate("updatedBy", "fullName email")
         .lean();
+
+      try { if (movie) await redisService.set(cacheKey, movie, 60 * 5); } catch (e) {}
 
       if (!movie) {
         return errorResponse(res, "Không tìm thấy phim", 404);
@@ -335,6 +362,7 @@ const movieController = {
 
       const populatedMovie = await Movie.findById(newMovie._id).populate("genres", "name");
 
+      try { await redisService.invalidateMovieCache(populatedMovie._id.toString()); } catch(e){}
       return successResponse(res, populatedMovie, "Tạo phim thành công", 201);
     } catch (error) {
       console.error("Create movie error:", error);
@@ -424,6 +452,7 @@ const movieController = {
         return errorResponse(res, "Không tìm thấy phim", 404);
       }
 
+      try { await redisService.invalidateMovieCache(id.toString()); } catch(e){}
       return successResponse(res, updatedMovie, "Cập nhật phim thành công");
     } catch (error) {
       console.error("Update movie error:", error);
@@ -482,6 +511,12 @@ const movieController = {
       const { page = 1, limit = 12 } = req.query;
       const skip = (page - 1) * limit;
 
+      const cacheKey = `movies:nowShowing:${page}:${limit}`;
+      try {
+        const cached = await redisService.get(cacheKey);
+        if (cached) return successResponse(res, cached);
+      } catch (e) {}
+
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Đang chiếu", ...getDeleteFilter(req.query) })
           .populate("genres", "name")
@@ -492,14 +527,16 @@ const movieController = {
         Movie.countDocuments({ status: "Đang chiếu", ...getDeleteFilter(req.query) }),
       ]);
 
-      return successResponse(res, {
+      const payload = {
         movies,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limit),
           totalItems: total,
         },
-      });
+      };
+      try { await redisService.set(cacheKey, payload, 20); } catch(e){}
+      return successResponse(res, payload);
     } catch (error) {
       console.error("Get now showing movies error:", error);
       return errorResponse(res, "Lỗi server", 500);
@@ -512,6 +549,9 @@ const movieController = {
       const { page = 1, limit = 12 } = req.query;
       const skip = (page - 1) * limit;
 
+      const cacheKey = `movies:upcoming:${page}:${limit}`;
+      try { const cached = await redisService.get(cacheKey); if (cached) return successResponse(res, cached); } catch(e){}
+
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Sắp chiếu", ...getDeleteFilter(req.query) })
           .populate("genres", "name")
@@ -522,14 +562,9 @@ const movieController = {
         Movie.countDocuments({ status: "Sắp chiếu", ...getDeleteFilter(req.query) }),
       ]);
 
-      return successResponse(res, {
-        movies,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
-          totalItems: total,
-        },
-      });
+      const payload = { movies, pagination: { currentPage: parseInt(page), totalPages: Math.ceil(total / limit), totalItems: total } };
+      try { await redisService.set(cacheKey, payload, 20); } catch(e){}
+      return successResponse(res, payload);
     } catch (error) {
       console.error("Get upcoming movies error:", error);
       return errorResponse(res, "Lỗi server", 500);

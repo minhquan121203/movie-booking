@@ -42,11 +42,13 @@ export const COUNTRIES = [
   "Việt Nam",
   "Hoa Kỳ",
   "Vương quốc Anh",
+  "Anh",
   "Pháp",
   "Đức",
   "Nhật Bản",
   "Hàn Quốc",
   "Trung Quốc",
+  "Hồng Kông",
   "Thái Lan",
   "Singapore",
   "Malaysia",
@@ -61,6 +63,7 @@ export const COUNTRIES = [
   "Brazil",
   "Mexico",
   "Hà Lan",
+  "Bỉ",
   "Thụy Sĩ",
   "Thụy Điển",
   "Na Uy",
@@ -69,6 +72,7 @@ export const COUNTRIES = [
   "Ba Lan",
   "Thổ Nhĩ Kỳ",
   "Argentina",
+  "Nam Phi",
   "Quốc gia khác",
 ];
 
@@ -180,6 +184,7 @@ export const LANGUAGES = [
   "Tiếng Na Uy",
   "Tiếng Đan Mạch",
   "Tiếng Phần Lan",
+  "Tiếng Malayalam",
   "Tiếng Czech",
   "Tiếng Hungary",
   "Tiếng Romania",
@@ -237,5 +242,6 @@ export const LANGUAGE_MAP = {
   "uk": "Tiếng Ukraina",
   "ca": "Tiếng Catalan",
   "cy": "Tiếng Wales",
+  "ml": "Tiếng Malayalam",
 };
 

@@ -347,33 +347,84 @@ export const handleChat = async (req, res) => {
 
         const prompt = `${systemPrompt}${historyText}\n\n${jsonFormat}\n\nKhách nói: "${userMessage}"`;
 
-        // 5. GỌI GEMINI
-        let result;
-        let useGeminiFailed = false;
+        // 5. GỌI GEMINI - nhưng để giảm độ trễ trả lời, race giữa Gemini và timeout ngắn.
+        // Nếu Gemini chưa trả lời sau TIMEOUT_MS, trả nhanh bằng fallback thông minh từ DB,
+        // đồng thời tiếp tục chờ Gemini nền và lưu kết quả đầy đủ vào DB để đảm bảo tính chính xác.
+        const TIMEOUT_MS = 1800; // 1.8s quick response threshold
 
-        try {
-            result = await callGeminiWithFullRetry(prompt);
-        } catch (geminiError) {
-            console.error("❌ Tất cả Gemini key/model đều thất bại:", geminiError.message);
-            useGeminiFailed = true;
-        }
+        const geminiPromise = callGeminiWithFullRetry(prompt).catch(err => ({ __geminiError: err }));
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), TIMEOUT_MS));
 
-        // 6. Nếu Gemini thất bại → dùng fallback
-        if (useGeminiFailed || !result) {
-            console.log("🔄 Dùng fallback thông minh từ dữ liệu DB");
+        const raceResult = await Promise.race([
+            geminiPromise.then(r => ({ result: r })),
+            timeoutPromise,
+        ]);
+
+        // If timed out -> return quick fallback while continuing to wait Gemini in background
+        if (raceResult && raceResult.timedOut) {
+            console.log(`⏱️ Gemini chưa kịp trả lời sau ${TIMEOUT_MS}ms, trả nhanh bằng fallback từ DB.`);
             const fallback = buildSmartFallback(userMessage, contextData);
 
+            // Save user + fallback bot quickly
             try {
                 await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
                 await chatService.saveChatMessage(sessionId, userId, userName, "bot", fallback.text, fallback.type, fallback.data);
             } catch (err) {
-                console.warn("⚠️ Lỗi lưu chat history:", err.message);
+                console.warn("⚠️ Lỗi lưu chat history (quick fallback):", err.message);
             }
+
+            // Keep listening to the full Gemini result and persist when available (no client push)
+            geminiPromise.then(async (fullResult) => {
+                try {
+                    if (fullResult && fullResult.__geminiError) {
+                        console.warn("⚠️ Gemini background error:", fullResult.__geminiError.message || fullResult.__geminiError);
+                        return;
+                    }
+
+                    const responseText = fullResult.response.text();
+                    let aiData;
+                    try {
+                        aiData = JSON.parse(responseText);
+                    } catch (e) {
+                        aiData = { response: responseText || "Tớ chưa hiểu ý bạn, bạn nói lại nhé!", action: "chat" };
+                    }
+
+                    // Build botResponse similar to main flow (simplified):
+                    let botResponse = { text: aiData.response, type: "text", data: [] };
+                    if (aiData.action === "movie_detail" && aiData.phim) {
+                        const movie = findMovieByName(aiData.phim, contextData.allMovies || contextData.movies);
+                        if (movie) {
+                            botResponse.type = "movie_detail";
+                            botResponse.data = buildMovieDetailData(movie);
+                        }
+                    }
+
+                    // Persist the Gemini bot message as a follow-up (so DB remains "correct")
+                    await chatService.saveChatMessage(sessionId, userId, userName, "bot", botResponse.text, botResponse.type, botResponse.data);
+                } catch (err) {
+                    console.warn("⚠️ Lỗi lưu Gemini background response:", err.message || err);
+                }
+            }).catch((e) => console.warn("⚠️ Gemini background unexpected error:", e.message || e));
 
             return res.json({ botMessage: fallback, sessionId });
         }
 
         // 7. XỬ LÝ RESPONSE TỪ GEMINI
+        const result = raceResult && raceResult.result ? raceResult.result : null;
+
+        if (!result || result.__geminiError) {
+            console.error("❌ Tất cả Gemini key/model đều thất bại:", (result && result.__geminiError && result.__geminiError.message) || "unknown");
+            // fallback
+            const fallback = buildSmartFallback(userMessage, contextData);
+            try {
+                await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+                await chatService.saveChatMessage(sessionId, userId, userName, "bot", fallback.text, fallback.type, fallback.data);
+            } catch (err) {
+                console.warn("⚠️ Lỗi lưu chat history (gemini failed):", err.message);
+            }
+            return res.json({ botMessage: fallback, sessionId });
+        }
+
         const responseText = result.response.text();
         console.log("📝 Gemini raw response:", responseText.substring(0, 300));
 

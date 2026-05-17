@@ -206,7 +206,15 @@ movieSchema.virtual("durationFormatted").get(function () {
 movieSchema.pre("save", function (next) {
   // Auto-generate slug using utility function
   if (this.isModified("title") && !this.slug) {
-    this.slug = generateSlug(this.title);
+    const baseSlug = generateSlug(this.title);
+    // Nếu slug rỗng do tiêu đề chứa ký tự không được slugify, fallback dùng tmdbId để tránh trùng lặp
+    if (baseSlug && baseSlug.length > 0) {
+      this.slug = baseSlug;
+    } else if (this.tmdbId) {
+      this.slug = `tmdb-${this.tmdbId}`;
+    } else {
+      this.slug = `movie-${Date.now()}`;
+    }
   }
 
   // Auto-update status based on release date
