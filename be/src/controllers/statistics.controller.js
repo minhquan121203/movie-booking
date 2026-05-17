@@ -354,38 +354,44 @@ const statisticsController = {
     }
   },
 
-  // Thống kê giờ chiếu bán chạy nhất của 1 phim
+  // Thống kê giờ chiếu bán chạy nhất của 1 phim trong ngày
   getShowtimeStats: async (req, res) => {
     try {
       const { movieId } = req.params;
+      const { date } = req.query; // Nhận thêm tham số ngày từ Frontend
 
       if (!movieId || !mongoose.Types.ObjectId.isValid(movieId)) {
         return errorResponse(res, "ID phim không hợp lệ", 400);
       }
 
+      // Xử lý Ngày cần thống kê (Mặc định là ngày hôm nay nếu FE không truyền)
+      const targetDate = date ? new Date(date) : new Date();
+      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+      const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+
       const stats = await Schedule.aggregate([
-        // 1. Chỉ lấy các suất chiếu của bộ phim này (bỏ qua lịch đã xóa/hủy)
+        // 1. Lọc theo Phim VÀ Ngày Chiếu
         {
           $match: {
             movie: new mongoose.Types.ObjectId(movieId),
             isDeleted: { $ne: true },
-            status: { $ne: "Đã hủy" }
+            status: { $ne: "Đã hủy" },
+            showDate: { $gte: startOfDay, $lte: endOfDay } // Bùa chú lọc theo ngày ở đây
           }
         },
 
-        // 2. Nhóm lại theo Giờ chiếu (startTime) và cộng dồn số vé đã bán (Dùng luôn field bookedSeatsCount)
-        // Kể cả bán được 0 vé nó vẫn giữ lại để vẽ biểu đồ!
+        // 2. Nhóm theo Giờ chiếu
         {
           $group: {
-            _id: "$startTime", // Nhóm theo "10:00", "20:00"...
+            _id: "$startTime",
             ticketsSold: { $sum: "$bookedSeatsCount" }
           }
         },
 
-        // 3. Sắp xếp số vé giảm dần (Giờ nào hot nhất lên đầu)
+        // 3. Sắp xếp
         { $sort: { ticketsSold: -1, _id: 1 } },
 
-        // 4. Đổi tên field cho Frontend dễ xài
+        // 4. Định dạng trả về
         {
           $project: {
             _id: 0,
