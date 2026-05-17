@@ -303,9 +303,10 @@ export const handleChat = async (req, res) => {
             contextData = { movies: [], allMovies: [], theaters: [], rawSchedules: [], products: [], vouchers: [] };
         }
 
-        // QUICK SERVER-SIDE INTENT: nếu user yêu cầu "phim" / "phim hay" / "có phim nào" → trả danh sách phim nhanh từ DB
+        // QUICK SERVER-SIDE INTENT: Cập nhật từ khóa Top/Hot để lấy rating
         try {
-            const movieListKeywords = ["phim nào", "phim hay", "gợi ý phim", "phim mới", "có phim", "recommend", "gợi ý", "phim gì", "phim đang chiếu"];
+            // Thêm các từ khóa "top", "hot", "thịnh hành"
+            const movieListKeywords = ["phim nào", "phim hay", "gợi ý phim", "phim mới", "có phim", "recommend", "gợi ý", "phim gì", "phim đang chiếu", "top", "hot", "thịnh hành"];
             const lowMsg = userMessage.toLowerCase();
 
             // Kiểm tra xem khách có đang hỏi chi tiết hoặc tìm tên phim cụ thể không
@@ -315,11 +316,17 @@ export const handleChat = async (req, res) => {
 
             // Chỉ block và trả list nhanh khi KHÔNG hỏi chi tiết và KHÔNG nói tên phim cụ thể
             if (!extractedName && !isAskingDetail && movieListKeywords.some(kw => lowMsg.includes(kw))) {
-                const moviesSource = (contextData.movies || []).filter(m => !m.isDeleted);
-                // ưu tiên 'Đang chiếu' trước
-                const nowShowing = moviesSource.filter(m => m.status === "Đang chiếu");
-                const upcoming = moviesSource.filter(m => m.status !== "Đang chiếu");
-                const pick = (nowShowing.length ? nowShowing : upcoming).slice(0, 8);
+
+                // Chỉ lấy phim đang chiếu
+                let moviesSource = (contextData.movies || []).filter(m => !m.isDeleted && m.status === "Đang chiếu");
+
+                // LOGIC TOP MOVIE: Sắp xếp theo rating giảm dần
+                if (lowMsg.includes("top") || lowMsg.includes("hot") || lowMsg.includes("hay") || lowMsg.includes("thịnh hành")) {
+                    moviesSource.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+                }
+
+                // Cắt lấy tối đa 8 phim xuất sắc nhất đưa lên UI
+                const pick = moviesSource.slice(0, 8);
 
                 const movieItems = pick.map(m => ({
                     _id: m._id,
@@ -331,7 +338,7 @@ export const handleChat = async (req, res) => {
                 }));
 
                 const botMsg = {
-                    text: `🎬 Dưới đây là một vài phim ${nowShowing.length ? 'đang chiếu' : 'mới'} bạn có thể quan tâm:`,
+                    text: `🎬 Dưới đây là các phim ${lowMsg.includes("top") || lowMsg.includes("hot") ? 'TOP thịnh hành' : 'đang chiếu'} bạn có thể quan tâm:`,
                     type: "movie_list",
                     data: movieItems,
                 };
