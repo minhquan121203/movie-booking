@@ -353,6 +353,59 @@ const statisticsController = {
     }
   },
 
+  // Thống kê giờ chiếu bán chạy nhất của 1 phim
+  getShowtimeStats: async (req, res) => {
+    try {
+      const { movieId } = req.params;
+
+      if (!movieId || !mongoose.Types.ObjectId.isValid(movieId)) {
+        return errorResponse(res, "ID phim không hợp lệ", 400);
+      }
+
+      const stats = await Schedule.aggregate([
+        // 1. Chỉ lấy các suất chiếu của bộ phim này (bỏ qua lịch đã xóa/hủy)
+        {
+          $match: {
+            movie: new mongoose.Types.ObjectId(movieId),
+            isDeleted: { $ne: true },
+            status: { $ne: "Đã hủy" }
+          }
+        },
+
+        // 2. Bung mảng ghế ngồi ra thành từng document riêng để đếm
+        { $unwind: "$seatAvailability" },
+
+        // 3. Chỉ lọc những ghế ĐÃ CÓ NGƯỜI MUA
+        { $match: { "seatAvailability.isBooked": true } },
+
+        // 4. Nhóm lại theo Giờ chiếu (startTime) và đếm tổng số vé
+        {
+          $group: {
+            _id: "$startTime", // Nhóm theo "10:00", "20:00"...
+            ticketsSold: { $sum: 1 } // Mỗi ghế isBooked = true cộng thêm 1
+          }
+        },
+
+        // 5. Sắp xếp số vé giảm dần (Giờ nào hot nhất lên đầu)
+        { $sort: { ticketsSold: -1 } },
+
+        // 6. Đổi tên field cho FE dễ xài
+        {
+          $project: {
+            _id: 0,
+            startTime: "$_id",
+            ticketsSold: 1
+          }
+        }
+      ]);
+
+      return successResponse(res, stats, "Lấy thống kê suất chiếu thành công");
+    } catch (error) {
+      console.error("Get showtime stats error:", error);
+      return errorResponse(res, "Lỗi server khi thống kê", 500);
+    }
+  },
+
   // Thống kê khách hàng
   getCustomerStats: async (req, res) => {
     try {

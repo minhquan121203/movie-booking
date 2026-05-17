@@ -514,4 +514,56 @@
  *                                 type: number
  */
 
+/**
+ * @swagger
+ * /api/admin/statistics/movies/{movieId}/showtimes:
+ *   get:
+ *     summary: Thống kê khung giờ chiếu bán chạy nhất của 1 phim
+ *     description: "Lấy danh sách các khung giờ chiếu của một bộ phim và đếm số lượng vé đã bán được (isBooked = true) ở mỗi khung giờ. Kết quả sắp xếp giảm dần theo số vé để vẽ biểu đồ."
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: movieId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID (ObjectID) của phim cần thống kê
+ *     responses:
+ *       200:
+ *         description: Lấy thống kê suất chiếu thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lấy thống kê suất chiếu thành công"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       startTime:
+ *                         type: string
+ *                         example: "20:00"
+ *                       ticketsSold:
+ *                         type: number
+ *                         example: 350
+ *       400:
+ *         description: ID phim không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập (Thiếu Token)
+ *       403:
+ *         description: Không có quyền truy cập (Chỉ Admin/Super Admin)
+ *       500:
+ *         description: Lỗi server
+ */
+
 export default {};

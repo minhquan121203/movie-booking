@@ -905,6 +905,12 @@ router.get(
   authorize("admin", "super-admin"),
   statisticsController.getMovieStats
 );
+router.get(
+    "/admin/statistics/movies/:movieId/showtimes",
+    authenticateToken,
+    authorize("admin", "super-admin"),
+    statisticsController.getShowtimeStats
+);
 
 // ============================================
 // PAYMENT ROUTES
