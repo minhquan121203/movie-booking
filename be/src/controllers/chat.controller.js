@@ -121,26 +121,26 @@ function findMovieByName(movieName, movies) {
 /**
  * Tạo data chi tiết cho 1 phim (dùng cho movie_detail action)
  */
-    function buildMovieDetailData(movie) {
-        return {
-            _id: movie._id,
-            title: movie.title,
-            poster: movie.posterUrl,
-            posterUrl: movie.posterUrl,
-            trailerUrl: movie.trailerUrl || "",
-            description: movie.description || "",
-            duration: movie.duration,
-            rating: movie.rating,
-            genre: movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật",
-            language: movie.language,
-            country: movie.country,
-            director: movie.director,
-            actors: movie.actors,
-            releaseDate: movie.releaseDate,
-            averageRating: movie.averageRating,
-            totalReviews: movie.totalReviews,
-        };
-    }
+function buildMovieDetailData(movie) {
+    return {
+        _id: movie._id,
+        title: movie.title,
+        poster: movie.posterUrl,
+        posterUrl: movie.posterUrl,
+        trailerUrl: movie.trailerUrl || "",
+        description: movie.description || "",
+        duration: movie.duration,
+        rating: movie.rating,
+        genre: movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật",
+        language: movie.language,
+        country: movie.country,
+        director: movie.director,
+        actors: movie.actors,
+        releaseDate: movie.releaseDate,
+        averageRating: movie.averageRating,
+        totalReviews: movie.totalReviews,
+    };
+}
 
 /**
  * Fallback thông minh: khi Gemini hoàn toàn không khả dụng
@@ -305,9 +305,16 @@ export const handleChat = async (req, res) => {
 
         // QUICK SERVER-SIDE INTENT: nếu user yêu cầu "phim" / "phim hay" / "có phim nào" → trả danh sách phim nhanh từ DB
         try {
-            const movieListKeywords = ["phim", "phim nào", "phim hay", "gợi ý phim", "phim mới", "có phim", "recommend", "gợi ý"];
+            const movieListKeywords = ["phim nào", "phim hay", "gợi ý phim", "phim mới", "có phim", "recommend", "gợi ý", "phim gì", "phim đang chiếu"];
             const lowMsg = userMessage.toLowerCase();
-            if (movieListKeywords.some(kw => lowMsg.includes(kw))) {
+
+            // Kiểm tra xem khách có đang hỏi chi tiết hoặc tìm tên phim cụ thể không
+            const extractedName = chatService.extractMovieName(userMessage);
+            const detailKeywords = ["thông tin", "chi tiết", "nội dung", "review", "review phim"];
+            const isAskingDetail = detailKeywords.some(kw => lowMsg.includes(kw));
+
+            // Chỉ block và trả list nhanh khi KHÔNG hỏi chi tiết và KHÔNG nói tên phim cụ thể
+            if (!extractedName && !isAskingDetail && movieListKeywords.some(kw => lowMsg.includes(kw))) {
                 const moviesSource = (contextData.movies || []).filter(m => !m.isDeleted);
                 // ưu tiên 'Đang chiếu' trước
                 const nowShowing = moviesSource.filter(m => m.status === "Đang chiếu");
