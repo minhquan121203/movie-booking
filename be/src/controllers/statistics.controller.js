@@ -372,24 +372,19 @@ const statisticsController = {
           }
         },
 
-        // 2. Bung mảng ghế ngồi ra thành từng document riêng để đếm
-        { $unwind: "$seatAvailability" },
-
-        // 3. Chỉ lọc những ghế ĐÃ CÓ NGƯỜI MUA
-        { $match: { "seatAvailability.isBooked": true } },
-
-        // 4. Nhóm lại theo Giờ chiếu (startTime) và đếm tổng số vé
+        // 2. Nhóm lại theo Giờ chiếu (startTime) và cộng dồn số vé đã bán (Dùng luôn field bookedSeatsCount)
+        // Kể cả bán được 0 vé nó vẫn giữ lại để vẽ biểu đồ!
         {
           $group: {
             _id: "$startTime", // Nhóm theo "10:00", "20:00"...
-            ticketsSold: { $sum: 1 } // Mỗi ghế isBooked = true cộng thêm 1
+            ticketsSold: { $sum: "$bookedSeatsCount" }
           }
         },
 
-        // 5. Sắp xếp số vé giảm dần (Giờ nào hot nhất lên đầu)
-        { $sort: { ticketsSold: -1 } },
+        // 3. Sắp xếp số vé giảm dần (Giờ nào hot nhất lên đầu)
+        { $sort: { ticketsSold: -1, _id: 1 } },
 
-        // 6. Đổi tên field cho FE dễ xài
+        // 4. Đổi tên field cho Frontend dễ xài
         {
           $project: {
             _id: 0,
