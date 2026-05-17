@@ -566,4 +566,78 @@
  *         description: Lỗi server
  */
 
+/**
+ * @swagger
+ * /api/admin/statistics/theaters/{theaterId}/performance:
+ *   get:
+ *     summary: Thống kê hiệu suất theo rạp (Top Phim & Thể Loại)
+ *     description: "Lấy danh sách Top 5 phim bán chạy nhất và tỷ trọng các thể loại phim được yêu thích tại một rạp cụ thể. Có hỗ trợ lọc theo ngày."
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: theaterId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của rạp chiếu cần thống kê
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: "Ngày cần thống kê (Định dạng YYYY-MM-DD). Mặc định nếu không truyền sẽ lấy toàn bộ thời gian."
+ *     responses:
+ *       200:
+ *         description: Lấy thống kê rạp thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lấy thống kê rạp thành công"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     topMovies:
+ *                       type: array
+ *                       description: Top 5 phim bán chạy nhất
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           title:
+ *                             type: string
+ *                             example: "Lật Mặt 7"
+ *                           ticketsSold:
+ *                             type: number
+ *                             example: 1250
+ *                     genreDistribution:
+ *                       type: array
+ *                       description: Tỉ trọng các thể loại phim
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             example: "Hành Động"
+ *                           value:
+ *                             type: number
+ *                             example: 450
+ *       400:
+ *         description: ID rạp không hợp lệ
+ *       401:
+ *         description: Chưa đăng nhập (Thiếu Token)
+ *       403:
+ *         description: Không có quyền truy cập
+ *       500:
+ *         description: Lỗi server
+ */
+
 export default {};

@@ -911,6 +911,12 @@ router.get(
     authorize("admin", "super-admin"),
     statisticsController.getShowtimeStats
 );
+router.get(
+    "/admin/statistics/theaters/:theaterId/performance",
+    authenticateToken,
+    authorize("admin", "super-admin"),
+    statisticsController.getTheaterMoviesPerformance
+);
 
 // ============================================
 // PAYMENT ROUTES

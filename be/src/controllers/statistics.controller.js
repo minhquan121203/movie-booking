@@ -408,6 +408,100 @@ const statisticsController = {
     }
   },
 
+  // THỐNG KÊ RẠP: Top Phim và Thể loại được mua nhiều nhất tại 1 Rạp
+  getTheaterMoviesPerformance: async (req, res) => {
+    try {
+      const { theaterId } = req.params;
+      const { date } = req.query; // Có thể lọc theo ngày nếu muốn
+
+      if (!theaterId || !mongoose.Types.ObjectId.isValid(theaterId)) {
+        return errorResponse(res, "ID Rạp không hợp lệ", 400);
+      }
+
+      const matchStage = {
+        theater: new mongoose.Types.ObjectId(theaterId),
+        isDeleted: { $ne: true },
+        status: { $ne: "Đã hủy" }
+      };
+
+      // Lọc theo ngày (nếu có truyền lên)
+      if (date) {
+        const targetDate = new Date(date);
+        matchStage.showDate = {
+          $gte: new Date(targetDate.setHours(0, 0, 0, 0)),
+          $lte: new Date(targetDate.setHours(23, 59, 59, 999))
+        };
+      }
+
+      // Query gom nhóm dữ liệu
+      const stats = await Schedule.aggregate([
+        { $match: matchStage },
+        // 1. Nhóm theo ID Phim, tính tổng vé
+        {
+          $group: {
+            _id: "$movie",
+            totalTickets: { $sum: "$bookedSeatsCount" }
+          }
+        },
+        // 2. Nối với bảng Movies để lấy Tên phim và mảng Thể loại (genres)
+        {
+          $lookup: {
+            from: "movies", // Tên collection trong MongoDB
+            localField: "_id",
+            foreignField: "_id",
+            as: "movieInfo"
+          }
+        },
+        { $unwind: "$movieInfo" },
+        // 3. Nối với bảng Genres để lấy tên Thể loại
+        {
+          $lookup: {
+            from: "genres",
+            localField: "movieInfo.genres",
+            foreignField: "_id",
+            as: "genreInfo"
+          }
+        }
+      ]);
+
+      // --- XỬ LÝ DATA BẰNG JAVASCRIPT CHO FRONTEND DỄ VẼ BIỂU ĐỒ ---
+
+      // 1. Lấy Top 5 Phim bán chạy nhất rạp
+      const topMovies = stats
+          .map(s => ({
+            title: s.movieInfo.title,
+            ticketsSold: s.totalTickets
+          }))
+          .sort((a, b) => b.ticketsSold - a.ticketsSold)
+          .slice(0, 5);
+
+      // 2. Tính Tỷ lệ Thể loại phim (Gom tất cả các phim lại)
+      const genreMap = {};
+      stats.forEach(s => {
+        // Lấy tên thể loại, nếu không có thì ghi "Khác"
+        const genres = s.genreInfo && s.genreInfo.length > 0
+            ? s.genreInfo.map(g => g.name)
+            : ["Khác"];
+
+        genres.forEach(g => {
+          if (!genreMap[g]) genreMap[g] = 0;
+          genreMap[g] += s.totalTickets; // Cộng dồn số vé cho thể loại này
+        });
+      });
+
+      // Format lại thành mảng cho Recharts vẽ PieChart
+      const genreDistribution = Object.keys(genreMap)
+          .map(key => ({ name: key, value: genreMap[key] }))
+          .sort((a, b) => b.value - a.value) // Thể loại hot nhất lên đầu
+          .filter(g => g.value > 0); // Bỏ mấy thể loại 0 vé đi
+
+      return successResponse(res, { topMovies, genreDistribution }, "Lấy thống kê rạp thành công");
+    } catch (error) {
+      console.error("Get theater performance error:", error);
+      return errorResponse(res, "Lỗi server khi thống kê rạp", 500);
+    }
+  },
+
   // Thống kê khách hàng
   getCustomerStats: async (req, res) => {
     try {
