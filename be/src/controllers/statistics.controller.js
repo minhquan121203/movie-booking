@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import Booking from "../models/booking.model.js";
