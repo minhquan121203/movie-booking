@@ -93,7 +93,7 @@ export function MovieSection({ title, movies, viewAllHref, isLoading = false }: 
             <MovieCard 
               movie={movie} 
               index={index} 
-              showBookButton={showBookBtn} 
+              showBookButton={movie.status === 'Đang chiếu'} 
             />
           </div>
         ))}

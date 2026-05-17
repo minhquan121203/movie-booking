@@ -152,6 +152,8 @@ export function TopMovieCarousel({ title, movies, isLoading = false }: MovieCaro
 }
 
 function MovieCard({ movie, index }: { movie: Movie; index: number }) {
+  const canBook = movie.status === 'Đang chiếu'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -171,8 +173,8 @@ function MovieCard({ movie, index }: { movie: Movie; index: number }) {
           {/* Overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <Button size="sm" className="w-full">
-                Đặt vé
+              <Button size="sm" className={`w-full ${canBook ? 'bg-violet-600 hover:bg-violet-700' : 'bg-gray-600 hover:bg-gray-700'}`}>
+                {canBook ? 'Đặt vé' : 'Chi tiết'}
               </Button>
             </div>
           </div>

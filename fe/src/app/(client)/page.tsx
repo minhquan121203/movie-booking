@@ -10,12 +10,11 @@ import { DEFAULT_THEATER_LIST } from '@/constants'
 import type { Genre } from '@/types/genre'
 import { MovieCard } from '@/app/(client)/components/movie-card'
 import { Flame, Popcorn, CalendarClock, ArrowRight } from 'lucide-react'
-import { useSchedules } from '@/lib/api/schedules'
 import Link from 'next/link'
 
 export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
-  
+
   const [activeTab, setActiveTab] = useState<'now' | 'coming' | 'top'>('now')
   const movieSectionRef = useRef<HTMLElement>(null)
 
@@ -27,31 +26,26 @@ export default function HomePage() {
     }, 100)
   }
 
-  // Fetch Top Movies
+  // Fetch Top Movies (Chỉ lấy phim Đang chiếu để luôn hiện nút MUA VÉ)
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
     limit: 12,
     sortBy: 'averageRating',
     order: 'desc',
+    status: 'Đang chiếu',
   })
 
   // Fetch Phim Đang Chiếu 
   const { data: nowShowingData, isLoading: loadingNow } = useMovies({
-    limit: 100,
-    status: 'Đang chiếu', 
+    limit: 60,
+    status: 'Đang chiếu',
   })
 
   // Fetch Phim Sắp Chiếu 
   const { data: comingSoonData, isLoading: loadingSoon } = useMovies({
-    limit: 100,
-    status: 'Sắp chiếu', 
+    limit: 60,
+    status: 'Sắp chiếu',
   })
 
-  const { data: allSchedulesData } = useSchedules({ limit: 1000 })
-  const allActiveSchedules = allSchedulesData?.schedules || []
-
-  const moviesWithSchedules = new Set(
-    allActiveSchedules.map((schedule: any) => schedule.movie?._id || schedule.movieId)
-  )
 
   const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
@@ -79,15 +73,15 @@ export default function HomePage() {
   const handleCityChange = (city: string) => {
     setSelectedCity(city)
   }
-  
+
   const heroMovies = topMovieData?.movies || []
 
   const TOP_MOVIE_LIMIT = 12
 
   const allMoviesForTab: any[] =
     activeTab === 'now' ? (nowShowingData?.movies || []) :
-    activeTab === 'coming' ? (comingSoonData?.movies || []) :
-    (topMovieData?.movies || [])
+      activeTab === 'coming' ? (comingSoonData?.movies || []) :
+        (topMovieData?.movies || [])
 
   // Đang chiếu & Sắp chiếu: hiện hết. Top Movies: giới hạn 12
   const displayMovies = activeTab === 'top' ? allMoviesForTab.slice(0, TOP_MOVIE_LIMIT) : allMoviesForTab
@@ -108,12 +102,11 @@ export default function HomePage() {
         <section ref={movieSectionRef} className="w-full scroll-mt-20">
           <div className="flex justify-center mb-8 w-full px-2">
             <div className="flex items-center bg-muted/50 p-1.5 rounded-2xl w-full max-w-md mx-auto shadow-inner">
-              
+
               <button
                 onClick={() => scrollToMovies('top')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
-                  activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${activeTab === 'top' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
               >
                 <Flame className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Top Movies</span>
@@ -121,9 +114,8 @@ export default function HomePage() {
 
               <button
                 onClick={() => scrollToMovies('now')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
-                  activeTab === 'now' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${activeTab === 'now' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
               >
                 <Popcorn className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Đang chiếu</span>
@@ -131,9 +123,8 @@ export default function HomePage() {
 
               <button
                 onClick={() => scrollToMovies('coming')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${
-                  activeTab === 'coming' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-2.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all duration-300 ${activeTab === 'coming' ? 'bg-violet-600 text-white shadow-md' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
               >
                 <CalendarClock className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap uppercase">Sắp chiếu</span>
@@ -148,7 +139,8 @@ export default function HomePage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
                 {displayMovies.map((movie, index) => {
-                  const canBook = moviesWithSchedules.has(movie._id)
+                  // Dùng movie.status từ DB — hiện ngay lập tức, không cần chờ API schedules
+                  const canBook = movie.status === 'Đang chiếu'
                   return (
                     <MovieCard
                       key={movie._id}

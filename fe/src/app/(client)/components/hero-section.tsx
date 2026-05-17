@@ -175,22 +175,30 @@ export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
                 transition={{ delay: 0.5 }}
                 className="flex flex-wrap gap-3"
               >
-                <Button
-                  size="lg"
-                  asChild
-                  className="bg-primary hover:bg-primary/90 text-white rounded-xl"
-                >
-                  <Link href={`/movies/${currentMovie._id}`}>
-                    <Play className="mr-2 h-5 w-5" />
-                    Đặt vé
-                  </Link>
-                </Button>
-                {/* <Button size="lg" variant="outline" asChild className="rounded-xl border-border">
-                  <Link href={`/movies/${currentMovie._id}`}>
-                    <Info className="mr-2 h-5 w-5" />
-                    Xem chi tiết
-                  </Link>
-                </Button> */}
+                {/* Dùng movie.status từ DB — hiện ngay lập tức */}
+                {currentMovie.status === 'Đang chiếu' ? (
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-primary hover:bg-primary/90 text-white rounded-xl"
+                  >
+                    <Link href={`/movies/${currentMovie._id}/booking-flow`}>
+                      <Play className="mr-2 h-5 w-5" />
+                      Đặt vé
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    asChild
+                    className="bg-primary hover:bg-primary/90 text-white rounded-xl"
+                  >
+                    <Link href={`/movies/${currentMovie._id}`}>
+                      <Play className="mr-2 h-5 w-5" />
+                      Xem chi tiết
+                    </Link>
+                  </Button>
+                )}
               </motion.div>
             </div>
           </div>

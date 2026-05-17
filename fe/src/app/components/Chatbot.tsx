@@ -111,12 +111,20 @@ export default function ChatBot() {
     setInput('');
     setIsLoading(true);
 
+    // Hiện tin nhắn "đang suy nghĩ" ngay lập tức
+    const thinkingMsg: ChatMessage = {
+      role: 'bot',
+      content: { text: '🤔 Đang tìm kiếm thông tin cho bạn...', type: 'text', data: [] }
+    };
+    setMessages(prev => [...prev, thinkingMsg]);
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       const endpoint = `${apiUrl}/chat`;
 
-      console.log('📤 Sending to:', endpoint);
-      console.log('📨 Payload:', { userMessage: msg, userName: 'bạn' });
+      // Timeout 30 giây - cho backend Gemini AI đủ thời gian xử lý
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -126,18 +134,21 @@ export default function ChatBot() {
           userName: "bạn",
           sessionId: sessionIdRef.current,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await res.json();
 
       if (!res.ok) {
-        console.error('❌ API Error:', data);
         throw new Error(data.botMessage?.text || 'API error');
       }
 
       const botResponse = data.botMessage;
 
-      setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
+      // Thay thế tin nhắn "đang suy nghĩ" bằng câu trả lời thật
+      setMessages(prev => [...prev.slice(0, -1), { role: 'bot', content: botResponse }]);
 
       if (botResponse.type === 'action_booking' && botResponse.data?.movieId) {
         setTimeout(() => {
@@ -146,10 +157,15 @@ export default function ChatBot() {
         }, 1500);
       }
     } catch (error: any) {
-      console.error('❌ Chat Error:', error);
+      const isTimeout = error?.name === 'AbortError';
+      const errorText = isTimeout
+        ? 'Hệ thống đang bận, bạn thử lại sau vài giây nhé! ⏳'
+        : `Oops! ${error?.message || 'Mạng không ổn, thử lại tí nhé!'} 😅`;
+
+      // Thay thế tin nhắn "đang suy nghĩ" bằng thông báo lỗi
       setMessages(prev => [
-        ...prev,
-        { role: 'bot', content: { text: `Oops! ${error?.message || 'Mạng không ổn, thử lại tí nhé!'} 😅`, type: 'text', data: [] } }
+        ...prev.slice(0, -1),
+        { role: 'bot', content: { text: errorText, type: 'text', data: [] } }
       ]);
     } finally {
       setIsLoading(false);
@@ -400,7 +416,7 @@ export default function ChatBot() {
                                     />
                                     {/* Gradient overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    
+
                                     {/* Rating badge */}
                                     {rating && (
                                       <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-0.5">
