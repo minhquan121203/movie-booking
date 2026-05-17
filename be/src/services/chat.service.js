@@ -188,13 +188,21 @@ QUY TẮC QUAN TRỌNG:
 ✅ Nếu hỏi ngoài phạm vi rạp phim → xin lỗi ngắn gọn và chuyển hướng`;
     }
 
-    // ✅ FIX: trả về null thật, không phải chuỗi "null"
     extractMovieName(userMessage) {
         const match = userMessage.match(/phim\s+["']?([^"'?!,.\n]{2,50})["']?/i);
         if (match?.[1]) {
-            const name = match[1].trim();
-            if (!["đó", "này", "nào", "gì", "hay"].includes(name.toLowerCase())) {
-                return name;
+            const name = match[1].trim().toLowerCase();
+
+            // Danh sách các từ khóa cấm nhận diện là tên phim
+            const ignoreWords = [
+                "đó", "này", "nào", "gì", "hay",
+                "đang chiếu", "sắp chiếu", "mới", "rạp", "chiếu rạp",
+                "kinh dị", "hành động", "tình cảm", "hoạt hình", "hài",
+                "bom tấn", "hot", "nay", "hôm nay", "ngày mai"
+            ];
+
+            if (!ignoreWords.includes(name)) {
+                return match[1].trim();
             }
         }
         return null;
