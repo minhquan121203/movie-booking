@@ -1,5 +1,5 @@
 import { TheaterListResponse } from '@/types/theater'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api/axios'
 import axios from 'axios' // Import axios để check isCancel
 import Cookies from 'js-cookie'
@@ -22,7 +22,7 @@ export async function getTheaters(params: GetTheatersParams = {}, signal?: Abort
       params: { ...params },
       signal, // 🟢 Truyền signal vào config axios
       headers: token ? {
-        Authorization: `Bearer ${token}` 
+        Authorization: `Bearer ${token}`
       } : undefined
     })
 
@@ -50,9 +50,11 @@ export async function getTheaters(params: GetTheatersParams = {}, signal?: Abort
 export function useTheaters(params: GetTheatersParams) {
   return useQuery({
     queryKey: ['theaters', params],
-    // 🟢 Lấy signal từ context
     queryFn: ({ signal }) => getTheaters(params, signal),
-    staleTime: 0,
+
+    staleTime: 5 * 60 * 1000, // Nhớ data trong 5 phút
+    refetchOnWindowFocus: false, // Tránh load lại khi khách chuyển tab trình duyệt
+    placeholderData: keepPreviousData, // Giữ list cũ trên màn hình trong lúc lấy list mới
     retry: 2,
   })
 }

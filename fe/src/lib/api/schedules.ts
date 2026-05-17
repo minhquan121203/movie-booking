@@ -1,5 +1,5 @@
 import { ScheduleListResponse } from '@/types/schedule'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api/axios'
 import axios from 'axios' // Import axios để check isCancel
 
@@ -94,9 +94,12 @@ export async function deleteSchedule(id: string) {
 export function useSchedules(params: GetScheduleParams = {}) {
   return useQuery({
     queryKey: ['schedules', params],
-    // 🟢 Lấy signal từ context
     queryFn: ({ signal }) => getSchedules(params, signal),
-    staleTime: 1000 * 60 * 10, // cache 10 phút
+
+    // THÊM BÙA CHÚ VÀO ĐÂY:
+    staleTime: 5 * 60 * 1000, // Sửa thành 5 phút cho đồng bộ
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData, // Chống chớp Skeleton khi khách bấm đổi ngày
     retry: 2,
   })
 }

@@ -1,69 +1,58 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import type { Theater } from '@/types/theater'
-import { useSchedules } from '@/lib/api/schedules'
+import { useState } from 'react'
+import { ShowtimeSection } from '@/app/(client)/components/showtimeSection'
+import { ShowtimeSectionSkeleton } from '@/app/(client)/components/ShowtimeSectionSkeleton'
 import { useTheaters } from '@/lib/api/theaters'
-import PageHeader from '@/app/(client)/showtimes/components/PageHeader'
-import FilterSidebar from '@/app/(client)/showtimes/components/FilterSidebar'
-import ShowtimeContent from '@/app/(client)/showtimes/components/ShowtimeContent'
 import { DEFAULT_THEATER_LIST } from '@/constants'
+import { CalendarDays } from 'lucide-react'
 
-export default function LichChieuHomNay() {
+export default function ShowtimesPage() {
+  // 1. Quản lý state thành phố y hệt trang chủ
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
-  // Để mặc định là undefined (hoặc ngày hôm nay nếu bạn muốn user vào thấy luôn)
-  // const [selectedDate, setSelectedDate] = useState<string | undefined>(new Date().toLocaleDateString('en-CA'))
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
-  const [manualCinema, setManualCinema] = useState<Theater | undefined>(undefined)
 
-  const { data: theaterData = DEFAULT_THEATER_LIST, isLoading: isLoadingTheaters } = useTheaters({
+  // 2. Gọi API lấy danh sách rạp theo thành phố y hệt trang chủ
+  const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
+    limit: 100,
+    isActive: 'true',
+    sortBy: 'name',
+    order: 'asc',
   })
 
-  const theaters: Theater[] = theaterData ? theaterData.theaters : []
-  const activeCinema = manualCinema || theaters[0] || null
-
-  const { data: scheduleData, isFetching: isSchedulesLoading } = useSchedules({
-    theaterId: activeCinema?._id,
-    showDate: selectedDate,
-  })
-  const schedules = useMemo(() => {
-    return scheduleData?.schedules || []
-  }, [scheduleData])
-  const handleSelectCity = (city: string) => {
+  const handleCityChange = (city: string) => {
     setSelectedCity(city)
-    setManualCinema(undefined)
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <PageHeader
-          title="📅 Lịch chiếu phim hôm nay"
-          subtitle="Xem lịch chiếu phim theo rạp, suất chiếu và định dạng phim"
-        />
+    <main className="w-full max-w-none px-[25px] md:px-[60px] xl:px-[86px] py-12 min-h-screen">
 
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr] gap-4 lg:gap-6">
-          <FilterSidebar
+      {/* Tiêu đề trang cho sang trọng */}
+      <div className="flex flex-col items-center justify-center mb-10 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4 text-primary">
+          <CalendarDays className="w-8 h-8" />
+        </div>
+        <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600 mb-3 tracking-tight">
+          Lịch Chiếu Phim
+        </h1>
+        <p className="text-muted-foreground font-medium max-w-lg">
+          Cập nhật lịch chiếu phim mới nhất tại các cụm rạp CineBooking trên toàn quốc
+        </p>
+      </div>
+
+      {/* Tái sử dụng nguyên xi Component Lịch chiếu cực đẹp từ trang chủ */}
+      {loadingTheater ? (
+        <ShowtimeSectionSkeleton />
+      ) : (
+        <div className="animate-in fade-in duration-700 delay-150">
+          <ShowtimeSection
+            cinemas={listTheater.theaters}
             selectedCity={selectedCity}
-            onSelectCity={handleSelectCity}
-            currentCinemas={theaters}
-            selectedCinema={activeCinema}
-            onSelectCinema={setManualCinema}
-            isLoading={isLoadingTheaters}
-          />
-
-          <ShowtimeContent
-            // Bỏ prop dates vì DateSelector tự lo
-            selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
-            selectedCinema={activeCinema}
-            schedules={schedules}
-            checkCinema={activeCinema !== null}
-            isLoading={isSchedulesLoading}
+            onCityChange={handleCityChange}
           />
         </div>
-      </div>
-    </div>
+      )}
+
+    </main>
   )
 }
