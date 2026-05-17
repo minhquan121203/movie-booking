@@ -70,6 +70,21 @@ async function callGeminiWithFullRetry(prompt) {
     throw lastError || new Error("ALL_KEYS_EXHAUSTED");
 }
 
+// Sanitize Gemini/text response to extract JSON block when model returns markdown or commentary
+function sanitizeJSONResponse(text) {
+    if (!text || typeof text !== 'string') return text;
+    // Remove markdown code fences
+    let t = text.replace(/```json\s*/g, '').replace(/```/g, '').trim();
+    // If the assistant prefixes with text before JSON, try to extract the first {...} block
+    const firstBrace = t.indexOf('{');
+    const lastBrace = t.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const candidate = t.substring(firstBrace, lastBrace + 1);
+        return candidate;
+    }
+    return t;
+}
+
 /**
  * Tìm phim trong DB bằng tên (fuzzy match)
  */
@@ -106,25 +121,26 @@ function findMovieByName(movieName, movies) {
 /**
  * Tạo data chi tiết cho 1 phim (dùng cho movie_detail action)
  */
-function buildMovieDetailData(movie) {
-    return {
-        _id: movie._id,
-        title: movie.title,
-        poster: movie.posterUrl,
-        posterUrl: movie.posterUrl,
-        description: movie.description || "",
-        duration: movie.duration,
-        rating: movie.rating,
-        genre: movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật",
-        language: movie.language,
-        country: movie.country,
-        director: movie.director,
-        actors: movie.actors,
-        releaseDate: movie.releaseDate,
-        averageRating: movie.averageRating,
-        totalReviews: movie.totalReviews,
-    };
-}
+    function buildMovieDetailData(movie) {
+        return {
+            _id: movie._id,
+            title: movie.title,
+            poster: movie.posterUrl,
+            posterUrl: movie.posterUrl,
+            trailerUrl: movie.trailerUrl || "",
+            description: movie.description || "",
+            duration: movie.duration,
+            rating: movie.rating,
+            genre: movie.genres?.map(g => g.name).join(", ") || "Đang cập nhật",
+            language: movie.language,
+            country: movie.country,
+            director: movie.director,
+            actors: movie.actors,
+            releaseDate: movie.releaseDate,
+            averageRating: movie.averageRating,
+            totalReviews: movie.totalReviews,
+        };
+    }
 
 /**
  * Fallback thông minh: khi Gemini hoàn toàn không khả dụng
@@ -287,6 +303,46 @@ export const handleChat = async (req, res) => {
             contextData = { movies: [], allMovies: [], theaters: [], rawSchedules: [], products: [], vouchers: [] };
         }
 
+        // QUICK SERVER-SIDE INTENT: nếu user yêu cầu "phim" / "phim hay" / "có phim nào" → trả danh sách phim nhanh từ DB
+        try {
+            const movieListKeywords = ["phim", "phim nào", "phim hay", "gợi ý phim", "phim mới", "có phim", "recommend", "gợi ý"];
+            const lowMsg = userMessage.toLowerCase();
+            if (movieListKeywords.some(kw => lowMsg.includes(kw))) {
+                const moviesSource = (contextData.movies || []).filter(m => !m.isDeleted);
+                // ưu tiên 'Đang chiếu' trước
+                const nowShowing = moviesSource.filter(m => m.status === "Đang chiếu");
+                const upcoming = moviesSource.filter(m => m.status !== "Đang chiếu");
+                const pick = (nowShowing.length ? nowShowing : upcoming).slice(0, 8);
+
+                const movieItems = pick.map(m => ({
+                    _id: m._id,
+                    title: m.title,
+                    posterUrl: m.posterUrl,
+                    trailerUrl: m.trailerUrl,
+                    genre: m.genres?.map(g => g.name).join(", ") || "Phim rạp",
+                    rating: m.rating,
+                }));
+
+                const botMsg = {
+                    text: `🎬 Dưới đây là một vài phim ${nowShowing.length ? 'đang chiếu' : 'mới'} bạn có thể quan tâm:`,
+                    type: "movie_list",
+                    data: movieItems,
+                };
+
+                // Save history
+                try {
+                    await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+                    await chatService.saveChatMessage(sessionId, userId, userName, "bot", botMsg.text, botMsg.type, botMsg.data);
+                } catch (e) {
+                    console.warn("⚠️ Lỗi lưu lịch sử khi trả movie_list quick:", e.message);
+                }
+
+                return res.json({ botMessage: botMsg, sessionId });
+            }
+        } catch (e) {
+            console.warn("⚠️ Lỗi xử lý quick intent phim:", e.message);
+        }
+
         // 2. Kiểm tra API Key
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey || !chatService.hasValidKeys()) {
@@ -384,7 +440,8 @@ export const handleChat = async (req, res) => {
                     const responseText = fullResult.response.text();
                     let aiData;
                     try {
-                        aiData = JSON.parse(responseText);
+                        const sanitized = sanitizeJSONResponse(responseText);
+                        aiData = JSON.parse(sanitized);
                     } catch (e) {
                         aiData = { response: responseText || "Tớ chưa hiểu ý bạn, bạn nói lại nhé!", action: "chat" };
                     }
@@ -430,7 +487,8 @@ export const handleChat = async (req, res) => {
 
         let aiData;
         try {
-            aiData = JSON.parse(responseText);
+            const sanitized = sanitizeJSONResponse(responseText);
+            aiData = JSON.parse(sanitized);
         } catch (e) {
             console.warn("⚠️ Gemini trả về không phải JSON:", responseText.substring(0, 200));
             aiData = { response: responseText || "Tớ chưa hiểu ý bạn, bạn nói lại nhé!", action: "chat" };
