@@ -24,6 +24,10 @@ const scheduleController = {
         page = 1, limit = 20,
       } = req.query;
 
+      const cacheKey = `schedules:all:${JSON.stringify(req.query)}`;
+      const cachedData = await redisService.get(cacheKey);
+      if (cachedData) return successResponse(res, cachedData, "Lấy từ Cache siêu tốc");
+
       const pageNumber = parseInt(page, 10) || 1;
       const limitNumber = parseInt(limit, 10) || 20;
       const skip = (pageNumber - 1) * limitNumber;
@@ -102,7 +106,11 @@ const scheduleController = {
       const schedules = result[0]?.data || [];
       const total = result[0]?.totalCount?.[0]?.count || 0;
 
-      return successResponse(res, { schedules, pagination: { currentPage: pageNumber, totalPages: Math.ceil(total / limitNumber), totalItems: total } });
+      const finalResult = { schedules, pagination: { currentPage: pageNumber, totalPages: Math.ceil(total / limitNumber), totalItems: total } };
+
+      await redisService.set(cacheKey, finalResult, 300);
+
+      return successResponse(res, finalResult);
     } catch (error) {
       console.error("Get all schedules error:", error);
       return errorResponse(res, "Lỗi server", 500);
@@ -113,6 +121,10 @@ const scheduleController = {
     try {
       const { movieId } = req.params;
       const { date } = req.query;
+
+      const cacheKey = `schedules:movie:${movieId}:date:${date || 'all'}:includePast:${req.query.includePast || false}`;
+      const cachedData = await redisService.get(cacheKey);
+      if (cachedData) return successResponse(res, cachedData, "Lấy từ Cache siêu tốc");
 
       const movie = await Movie.findById(movieId);
       if (!movie) return errorResponse(res, "Không tìm thấy phim", 404);
@@ -139,7 +151,6 @@ const scheduleController = {
         const [hours, minutes] = schedule.startTime.split(':').map(Number);
         const showDateTime = new Date(showDate.getFullYear(), showDate.getMonth(), showDate.getDate(), hours, minutes);
 
-        // Cho phép hiển thị nếu suất chiếu chưa vượt quá 30 phút so với hiện tại
         const cutoffTime = new Date(showDateTime.getTime() + 30 * 60000);
         return cutoffTime > currentTime;
       });
@@ -151,10 +162,14 @@ const scheduleController = {
         return acc;
       }, {});
 
-      return successResponse(res, {
+      const finalResult = {
         movie: { id: movie._id, title: movie.title, posterUrl: movie.posterUrl, duration: movie.duration },
         theaters: Object.values(groupedByTheater),
-      });
+      };
+
+      await redisService.set(cacheKey, finalResult, 300);
+
+      return successResponse(res, finalResult);
     } catch (error) {
       console.error("Get schedules by movie error:", error);
       return errorResponse(res, "Lỗi server", 500);
@@ -165,6 +180,10 @@ const scheduleController = {
     try {
       const { theaterId } = req.params;
       const { date } = req.query;
+
+      const cacheKey = `schedules:theater:${theaterId}:date:${date || 'all'}:includePast:${req.query.includePast || false}`;
+      const cachedData = await redisService.get(cacheKey);
+      if (cachedData) return successResponse(res, cachedData, "Lấy từ Cache siêu tốc");
 
       const theater = await Theater.findById(theaterId);
       if (!theater) return errorResponse(res, "Không tìm thấy rạp", 404);
@@ -202,10 +221,14 @@ const scheduleController = {
         return acc;
       }, {});
 
-      return successResponse(res, {
+      const finalResult = {
         theater: { id: theater._id, name: theater.name, address: theater.address, city: theater.city },
         movies: Object.values(groupedByMovie),
-      });
+      };
+
+      await redisService.set(cacheKey, finalResult, 300);
+
+      return successResponse(res, finalResult);
     } catch (error) {
       console.error("Get schedules by theater error:", error);
       return errorResponse(res, "Lỗi server", 500);
@@ -261,6 +284,9 @@ const scheduleController = {
 
       await newSchedule.save();
       const populatedSchedule = await Schedule.findById(newSchedule._id).populate("movie", "title posterUrl").populate("theater", "name address");
+
+      redisService.delPattern(`schedules:*`).catch(() => {});
+
       return successResponse(res, populatedSchedule, "Tạo lịch chiếu thành công", 201);
     } catch (error) {
       console.error("Create schedule error:", error);
@@ -290,6 +316,8 @@ const scheduleController = {
       }
 
       const updatedSchedule = await Schedule.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate("movie", "title posterUrl").populate("theater", "name address").select("-seatAvailability").lean();
+
+      redisService.delPattern(`schedules:*`).catch(() => {});
       return successResponse(res, updatedSchedule, "Cập nhật lịch chiếu thành công");
     } catch (error) {
       console.error("Update schedule error:", error);
@@ -380,12 +408,14 @@ const scheduleController = {
             schedule.status = "Đã hủy"; schedule.updatedBy = req.userId; await schedule.save({ session });
             websocketService.emitToSchedule(id.toString(), "schedule-cancelled", { scheduleId: id, reason: reason });
             redisService.invalidateScheduleCache(id.toString()).catch(() => {});
+            redisService.delPattern(`schedules:*`).catch(() => {}); // Xóa cache
           });
 
           return successResponse(res, { cancelledBookings: allBookings.length, refundedCount, cancelledCount, failedRefunds: failedRefunds.length > 0 ? failedRefunds : undefined }, `Hủy lịch chiếu thành công. Đã hủy ${allBookings.length} đơn đặt vé${failedRefunds.length > 0 ? `. ${failedRefunds.length} đơn cần xử lý hoàn tiền thủ công.` : ""}`);
         } else {
           schedule.status = "Đã hủy"; schedule.updatedBy = req.userId; await schedule.save({ session });
           redisService.invalidateScheduleCache(id.toString()).catch(() => {});
+          redisService.delPattern(`schedules:*`).catch(() => {}); // Xóa cache
           return successResponse(res, { reason }, "Hủy lịch chiếu thành công");
         }
       } finally { await session.endSession(); }
@@ -401,6 +431,7 @@ const scheduleController = {
 
       schedule.isDeleted = true; schedule.updatedBy = req.userId; await schedule.save();
       redisService.invalidateScheduleCache(id.toString()).catch(() => {});
+      redisService.delPattern(`schedules:*`).catch(() => {});
       return successResponse(res, {}, "Xóa lịch chiếu thành công");
     } catch (error) { console.error("Delete schedule error:", error); return errorResponse(res, "Lỗi server", 500); }
   },
