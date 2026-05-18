@@ -51,6 +51,19 @@ const scheduleController = {
         if (endDate) query.showDate.$lte = new Date(endDate);
       }
 
+      // Ẩn các lịch chiếu cũ đối với Client (Chỉ Admin mới có thể gửi includePast=true)
+      if (!req.query.includePast) {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        
+        // Chỉ ghi đè nếu query.showDate chưa có giới hạn $gte từ trước
+        if (!query.showDate) {
+          query.showDate = { $gte: startOfToday };
+        } else if (!query.showDate.$gte) {
+          query.showDate.$gte = startOfToday;
+        }
+      }
+
       // Cấu hình Sort dữ liệu
       const sort = { [sortBy]: order === "asc" ? 1 : -1 };
 
