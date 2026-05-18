@@ -20,97 +20,74 @@ const scheduleController = {
     try {
       const {
         movieId, theaterId, date, startDate, endDate, status, country,
-        movieStatus, rating, genres, language, subtitle, year, minYear, maxYear, sortBy,
+        movieStatus, rating, genres, language, subtitle, year, minYear, maxYear,
+        sortBy = "showDate", order = "asc", // Mặc định sắp xếp theo ngày chiếu gần nhất
         page = 1, limit = 20,
       } = req.query;
-
-      const cacheKey = `schedules:all:${JSON.stringify(req.query)}`;
-      const cachedData = await redisService.get(cacheKey);
-      if (cachedData) return successResponse(res, cachedData, "Lấy từ Cache siêu tốc");
 
       const pageNumber = parseInt(page, 10) || 1;
       const limitNumber = parseInt(limit, 10) || 20;
       const skip = (pageNumber - 1) * limitNumber;
 
-      const scheduleMatch = { ...getDeleteFilter(req.query) };
+      // 1. Xây dựng bộ lọc Query tương tự như cũ của fen
+      const query = {
+        ...getDeleteFilter(req.query),
+      };
 
-      if (movieId && mongoose.Types.ObjectId.isValid(movieId)) scheduleMatch.movie = new mongoose.Types.ObjectId(movieId);
-      if (theaterId && mongoose.Types.ObjectId.isValid(theaterId)) scheduleMatch.theater = new mongoose.Types.ObjectId(theaterId);
-      if (status) scheduleMatch.status = status;
+      if (movieId) query.movie = movieId;
+      if (theaterId) query.theater = theaterId;
+      if (status) query.status = status;
 
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      if (!date && !startDate && !endDate && !req.query.includePast) {
-        scheduleMatch.showDate = { $gte: startOfToday };
-      }
-
+      // Xử lý khoảng ngày chiếu (Nếu có)
       if (date) {
-        const d = new Date(date);
-        const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-        const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-        scheduleMatch.showDate = { $gte: startOfDay, $lt: endOfDay };
-      } else if (startDate && endDate) {
-        scheduleMatch.showDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        const startOfDate = new Date(date);
+        startOfDate.setHours(0, 0, 0, 0);
+        const endOfDate = new Date(date);
+        endOfDate.setHours(23, 59, 59, 999);
+        query.showDate = { $gte: startOfDate, $lte: endOfDate };
+      } else if (startDate || endDate) {
+        query.showDate = {};
+        if (startDate) query.showDate.$gte = new Date(startDate);
+        if (endDate) query.showDate.$lte = new Date(endDate);
       }
 
-      if (language) scheduleMatch.language = language;
-      if (subtitle) scheduleMatch.subtitles = { $in: [subtitle] };
+      // Cấu hình Sort dữ liệu
+      const sort = { [sortBy]: order === "asc" ? 1 : -1 };
 
-      const movieMatch = { "movie.isDeleted": { $ne: true } };
+      // Cache Key dựa trên URL request
+      const cacheKey = `schedules:all:${JSON.stringify(req.query)}:${pageNumber}:${limitNumber}`;
+      try {
+        const cachedData = await redisService.get(cacheKey);
+        if (cachedData) return successResponse(res, cachedData, "Lấy lịch chiếu từ Cache thành công");
+      } catch (e) {}
 
-      if (country) {
-        const countries = Array.isArray(country) ? country : country.split(",").map((c) => c.trim()).filter(Boolean);
-        if (countries.length) movieMatch["movie.country"] = { $in: countries };
-      }
-      if (movieStatus) movieMatch["movie.status"] = movieStatus;
-      if (rating) movieMatch["movie.rating"] = rating;
-      if (genres) {
-        const genreIds = (Array.isArray(genres) ? genres : genres.split(",")).map((g) => g.trim()).filter((g) => mongoose.Types.ObjectId.isValid(g)).map((g) => new mongoose.Types.ObjectId(g));
-        if (genreIds.length) movieMatch["movie.genres"] = { $in: genreIds };
-      }
-      const yearNumber = year ? parseInt(year, 10) : null;
-      const minYearNumber = minYear ? parseInt(minYear, 10) : null;
-      const maxYearNumber = maxYear ? parseInt(maxYear, 10) : null;
+      // 2. THỰC THI TRUY VẤN: Thêm chặn skip và limit để phân trang
+      const [schedules, total] = await Promise.all([
+        Schedule.find(query)
+            .populate("movie", "title poster rating duration ageRestriction")
+            .populate("theater", "name")
+            .populate("room", "name")
+            .sort(sort)
+            .skip(skip)
+            .limit(limitNumber)
+            .lean(),
+        Schedule.countDocuments(query), // Đếm tổng số lịch chiếu khớp bộ lọc
+      ]);
 
-      if (yearNumber) {
-        const startOfYear = new Date(yearNumber, 0, 1);
-        const endOfYear = new Date(yearNumber + 1, 0, 1);
-        movieMatch["movie.releaseDate"] = { $gte: startOfYear, $lt: endOfYear };
-      } else if (minYearNumber || maxYearNumber) {
-        movieMatch["movie.releaseDate"] = {};
-        if (minYearNumber) movieMatch["movie.releaseDate"].$gte = new Date(minYearNumber, 0, 1);
-        if (maxYearNumber) movieMatch["movie.releaseDate"].$lt = new Date(maxYearNumber + 1, 0, 1);
-      }
+      // 3. Đóng gói Payload trả về cấu trúc phân trang chuẩn hóa
+      const payload = {
+        schedules,
+        pagination: {
+          currentPage: pageNumber,
+          totalPages: Math.ceil(total / limitNumber),
+          totalItems: total,
+          itemsPerPage: limitNumber,
+        },
+      };
 
-      let sortStage = { showDate: 1, startTime: 1 };
-      switch (sortBy) {
-        case "latest": sortStage = { "movie.releaseDate": -1, showDate: 1, startTime: 1 }; break;
-        case "updated": sortStage = { updatedAt: -1 }; break;
-        case "rating": sortStage = { "movie.averageRating": -1, "movie.totalReviews": -1, showDate: 1 }; break;
-        case "views": sortStage = { "movie.viewCount": -1, showDate: 1 }; break;
-      }
+      try { await redisService.set(cacheKey, payload, 15); } catch (e) {}
 
-      const pipeline = [
-        { $match: scheduleMatch },
-        { $lookup: { from: "movies", localField: "movie", foreignField: "_id", as: "movie" } },
-        { $unwind: "$movie" },
-        { $lookup: { from: "theaters", localField: "theater", foreignField: "_id", as: "theater" } },
-        { $unwind: "$theater" },
-        { $match: movieMatch },
-        { $sort: sortStage },
-        { $facet: { data: [{ $skip: skip }, { $limit: limitNumber }], totalCount: [{ $count: "count" }] } },
-      ];
-
-      const result = await Schedule.aggregate(pipeline);
-      const schedules = result[0]?.data || [];
-      const total = result[0]?.totalCount?.[0]?.count || 0;
-
-      const finalResult = { schedules, pagination: { currentPage: pageNumber, totalPages: Math.ceil(total / limitNumber), totalItems: total } };
-
-      await redisService.set(cacheKey, finalResult, 300);
-
-      return successResponse(res, finalResult);
+      return successResponse(res, payload, "Lấy danh sách lịch chiếu thành công");
     } catch (error) {
       console.error("Get all schedules error:", error);
       return errorResponse(res, "Lỗi server", 500);
