@@ -67,11 +67,11 @@ const movieController = {
           genreTokens.push(...genre);
         } else {
           genre
-            .toString()
-            .split(",")
-            .map((g) => g.trim())
-            .filter(Boolean)
-            .forEach((g) => genreTokens.push(g));
+              .toString()
+              .split(",")
+              .map((g) => g.trim())
+              .filter(Boolean)
+              .forEach((g) => genreTokens.push(g));
         }
       }
 
@@ -81,11 +81,11 @@ const movieController = {
           genreTokens.push(...genres);
         } else {
           genres
-            .toString()
-            .split(",")
-            .map((g) => g.trim())
-            .filter(Boolean)
-            .forEach((g) => genreTokens.push(g));
+              .toString()
+              .split(",")
+              .map((g) => g.trim())
+              .filter(Boolean)
+              .forEach((g) => genreTokens.push(g));
         }
       }
 
@@ -104,7 +104,6 @@ const movieController = {
         // Nếu có tên → tìm Genre theo name
         if (nameTokens.length > 0) {
           const genreDocs = await Genre.find({ name: { $in: nameTokens } }, "_id").lean();
-
           genreDocs.forEach((g) => objectIdTokens.push(g._id));
         }
 
@@ -128,11 +127,11 @@ const movieController = {
       if (country) {
         // có thể truyền: "Mỹ" hoặc "Mỹ,Hàn Quốc"
         const countries = Array.isArray(country)
-          ? country
-          : country
-              .split(",")
-              .map((c) => c.trim())
-              .filter(Boolean);
+            ? country
+            : country
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean);
         if (countries.length) {
           query.country = { $in: countries };
         }
@@ -141,11 +140,11 @@ const movieController = {
       if (rating) {
         // P,C13,C16,C18 hoặc 1 giá trị
         const ratings = Array.isArray(rating)
-          ? rating
-          : rating
-              .split(",")
-              .map((r) => r.trim())
-              .filter(Boolean);
+            ? rating
+            : rating
+                .split(",")
+                .map((r) => r.trim())
+                .filter(Boolean);
         if (ratings.length === 1) {
           query.rating = ratings[0];
         } else if (ratings.length > 1) {
@@ -158,7 +157,6 @@ const movieController = {
       }
 
       if (subtitle) {
-        // subtitles là array
         query.subtitles = { $in: [subtitle] };
       }
 
@@ -233,16 +231,13 @@ const movieController = {
       // ===== Execute =====
       const skip = (pageNumber - 1) * limitNumber;
 
-      // Use request URL as cache key (includes query string). Short TTL for fresher data.
       const cacheKey = `movies:all:${req.originalUrl}`;
       try {
         const cached = await redisService.get(cacheKey);
         if (cached) {
           return successResponse(res, cached);
         }
-      } catch (e) {
-        // ignore redis errors, proceed to DB
-      }
+      } catch (e) {}
 
       const [movies, total] = await Promise.all([
         Movie.find(query).populate("genres", "name").sort(sort).skip(skip).limit(limitNumber).lean(),
@@ -260,7 +255,6 @@ const movieController = {
       };
 
       try {
-        // cache small window to speed up repeated requests
         await redisService.set(cacheKey, payload, 15);
       } catch (e) {}
 
@@ -283,10 +277,10 @@ const movieController = {
       } catch (e) {}
 
       const movie = await Movie.findById(id)
-        .populate("genres", "name description")
-        .populate("createdBy", "fullName email")
-        .populate("updatedBy", "fullName email")
-        .lean();
+          .populate("genres", "name description")
+          .populate("createdBy", "fullName email")
+          .populate("updatedBy", "fullName email")
+          .lean();
 
       try { if (movie) await redisService.set(cacheKey, movie, 60 * 5); } catch (e) {}
 
@@ -304,11 +298,9 @@ const movieController = {
   // Tạo phim mới (Admin)
   createMovie: async (req, res) => {
     try {
-      console.log("Create movie - Body:", req.body);
       const movieData = req.body;
       movieData.createdBy = req.userId;
 
-      // Fix Swagger array issue - convert object to array if needed
       if (movieData.actors && typeof movieData.actors === "object" && !Array.isArray(movieData.actors)) {
         movieData.actors = Object.values(movieData.actors);
       }
@@ -321,42 +313,36 @@ const movieController = {
       if (movieData.metaKeywords && typeof movieData.metaKeywords === "object" && !Array.isArray(movieData.metaKeywords)) {
         movieData.metaKeywords = Object.values(movieData.metaKeywords);
       }
-      // Handle case where metaKeywords might be stringified JSON or weird format from Swagger
       if (movieData.metaKeywords) {
-          if (typeof movieData.metaKeywords === "string") {
-              try {
-                  const parsed = JSON.parse(movieData.metaKeywords);
-                  if (Array.isArray(parsed)) movieData.metaKeywords = parsed;
-                  else movieData.metaKeywords = [movieData.metaKeywords];
-              } catch (e) {
-                  movieData.metaKeywords = [movieData.metaKeywords];
-              }
+        if (typeof movieData.metaKeywords === "string") {
+          try {
+            const parsed = JSON.parse(movieData.metaKeywords);
+            if (Array.isArray(parsed)) movieData.metaKeywords = parsed;
+            else movieData.metaKeywords = [movieData.metaKeywords];
+          } catch (e) {
+            movieData.metaKeywords = [movieData.metaKeywords];
           }
-          if (Array.isArray(movieData.metaKeywords)) {
-              // Filter out objects or meaningless strings
-              movieData.metaKeywords = movieData.metaKeywords
-                  .filter(k => typeof k === 'string' && k.trim() !== '' && k !== '[{}]' && k !== '{}');
-          }
+        }
+        if (Array.isArray(movieData.metaKeywords)) {
+          movieData.metaKeywords = movieData.metaKeywords
+              .filter(k => typeof k === 'string' && k.trim() !== '' && k !== '[{}]' && k !== '{}');
+        }
       }
 
       if (movieData.trailerUrl) {
         movieData.trailerUrl = normalizeYoutubeTrailerUrl(movieData.trailerUrl);
       }
 
-      // Validate genres
       if (movieData.genres && movieData.genres.length > 0) {
-        console.log("Validating genres:", movieData.genres);
         const validGenres = await Genre.find({
           _id: { $in: movieData.genres },
         });
-        console.log("Valid genres found:", validGenres.length);
 
         if (validGenres.length !== movieData.genres.length) {
           return errorResponse(res, "Một số thể loại không tồn tại", 400);
         }
       }
 
-      console.log("Creating movie with data:", movieData);
       const newMovie = new Movie(movieData);
       await newMovie.save();
 
@@ -366,8 +352,6 @@ const movieController = {
       return successResponse(res, populatedMovie, "Tạo phim thành công", 201);
     } catch (error) {
       console.error("Create movie error:", error);
-      console.error("Error details:", error.message);
-      console.error("Error stack:", error.stack);
       return errorResponse(res, error.message || "Lỗi server", 500);
     }
   },
@@ -379,10 +363,6 @@ const movieController = {
       const updateData = req.body;
       updateData.updatedBy = req.userId;
 
-      console.log("Update movie - ID:", id);
-      console.log("Update movie - Body:", updateData);
-
-      // Fix Swagger array issue - convert object to array if needed
       if (updateData.actors && typeof updateData.actors === "object" && !Array.isArray(updateData.actors)) {
         updateData.actors = Object.values(updateData.actors);
       }
@@ -395,33 +375,28 @@ const movieController = {
       if (updateData.metaKeywords && typeof updateData.metaKeywords === "object" && !Array.isArray(updateData.metaKeywords)) {
         updateData.metaKeywords = Object.values(updateData.metaKeywords);
       }
-      // Handle case where metaKeywords might be stringified JSON or weird format from Swagger
       if (updateData.metaKeywords) {
-          if (typeof updateData.metaKeywords === "string") {
-              try {
-                  const parsed = JSON.parse(updateData.metaKeywords);
-                  if (Array.isArray(parsed)) updateData.metaKeywords = parsed;
-                  else updateData.metaKeywords = [updateData.metaKeywords];
-              } catch (e) {
-                  updateData.metaKeywords = [updateData.metaKeywords];
-              }
+        if (typeof updateData.metaKeywords === "string") {
+          try {
+            const parsed = JSON.parse(updateData.metaKeywords);
+            if (Array.isArray(parsed)) updateData.metaKeywords = parsed;
+            else updateData.metaKeywords = [updateData.metaKeywords];
+          } catch (e) {
+            updateData.metaKeywords = [updateData.metaKeywords];
           }
-          if (Array.isArray(updateData.metaKeywords)) {
-              // Filter out objects or meaningless strings
-              updateData.metaKeywords = updateData.metaKeywords
-                  .filter(k => typeof k === 'string' && k.trim() !== '' && k !== '[{}]' && k !== '{}');
-          }
-      }
-
-      // Extract genre IDs if genres are objects
-      if (updateData.genres && Array.isArray(updateData.genres) && updateData.genres.length > 0) {
-        if (typeof updateData.genres[0] === "object" && updateData.genres[0]._id) {
-          updateData.genres = updateData.genres.map((g) => g._id);
-          console.log("Extracted genre IDs:", updateData.genres);
+        }
+        if (Array.isArray(updateData.metaKeywords)) {
+          updateData.metaKeywords = updateData.metaKeywords
+              .filter(k => typeof k === 'string' && k.trim() !== '' && k !== '[{}]' && k !== '{}');
         }
       }
 
-      // Extract actor names if actors are objects
+      if (updateData.genres && Array.isArray(updateData.genres) && updateData.genres.length > 0) {
+        if (typeof updateData.genres[0] === "object" && updateData.genres[0]._id) {
+          updateData.genres = updateData.genres.map((g) => g._id);
+        }
+      }
+
       if (updateData.actors && Array.isArray(updateData.actors) && updateData.actors.length > 0) {
         if (typeof updateData.actors[0] === "object" && updateData.actors[0].name) {
           updateData.actors = updateData.actors.map((a) => a.name);
@@ -432,7 +407,6 @@ const movieController = {
         updateData.trailerUrl = normalizeYoutubeTrailerUrl(updateData.trailerUrl);
       }
 
-      // Validate genres nếu có
       if (updateData.genres && updateData.genres.length > 0) {
         const validGenres = await Genre.find({
           _id: { $in: updateData.genres },
@@ -444,8 +418,8 @@ const movieController = {
       }
 
       const updatedMovie = await Movie.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate(
-        "genres",
-        "name"
+          "genres",
+          "name"
       );
 
       if (!updatedMovie) {
@@ -456,7 +430,6 @@ const movieController = {
       return successResponse(res, updatedMovie, "Cập nhật phim thành công");
     } catch (error) {
       console.error("Update movie error:", error);
-      console.error("Error message:", error.message);
       return errorResponse(res, error.message || "Lỗi server", 500);
     }
   },
@@ -471,7 +444,6 @@ const movieController = {
         return errorResponse(res, "Không tìm thấy phim", 404);
       }
 
-      //  FIX: Kiểm tra xem phim có lịch chiếu trong tương lai không
       const Schedule = (await import("../models/schedule.model.js")).default;
       const now = new Date();
       const futureSchedules = await Schedule.countDocuments({
@@ -482,19 +454,17 @@ const movieController = {
 
       if (futureSchedules > 0) {
         return errorResponse(
-          res,
-          `Không thể xóa phim. Phim còn ${futureSchedules} suất chiếu trong tương lai. Vui lòng hủy tất cả lịch chiếu trước khi xóa phim.`,
-          400
+            res,
+            `Không thể xóa phim. Phim còn ${futureSchedules} suất chiếu trong tương lai. Vui lòng hủy tất cả lịch chiếu trước khi xóa phim.`,
+            400
         );
       }
 
-      //  FIX: Soft delete thay vì hard delete để giữ lại dữ liệu lịch sử
       movie.isDeleted = true;
       movie.status = "Ngừng chiếu";
       movie.updatedBy = req.userId;
       await movie.save();
 
-      // Xóa cache
       const redisService = (await import("../services/redis.service.js")).default;
       redisService.invalidateMovieCache(id.toString()).catch(() => {});
 
@@ -509,9 +479,11 @@ const movieController = {
   getNowShowingMovies: async (req, res) => {
     try {
       const { page = 1, limit = 12 } = req.query;
-      const skip = (page - 1) * limit;
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 12;
+      const skip = (pageNumber - 1) * limitNumber;
 
-      const cacheKey = `movies:nowShowing:${page}:${limit}`;
+      const cacheKey = `movies:nowShowing:${pageNumber}:${limitNumber}`;
       try {
         const cached = await redisService.get(cacheKey);
         if (cached) return successResponse(res, cached);
@@ -519,20 +491,21 @@ const movieController = {
 
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Đang chiếu", ...getDeleteFilter(req.query) })
-          .populate("genres", "name")
-          .sort({ releaseDate: -1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .lean(),
+            .populate("genres", "name")
+            .sort({ releaseDate: -1 })
+            .skip(skip)
+            .limit(limitNumber)
+            .lean(),
         Movie.countDocuments({ status: "Đang chiếu", ...getDeleteFilter(req.query) }),
       ]);
 
       const payload = {
         movies,
         pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
+          currentPage: pageNumber,
+          totalPages: Math.ceil(total / limitNumber),
           totalItems: total,
+          itemsPerPage: limitNumber,
         },
       };
       try { await redisService.set(cacheKey, payload, 20); } catch(e){}
@@ -547,22 +520,35 @@ const movieController = {
   getUpcomingMovies: async (req, res) => {
     try {
       const { page = 1, limit = 12 } = req.query;
-      const skip = (page - 1) * limit;
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 12;
+      const skip = (pageNumber - 1) * limitNumber;
 
-      const cacheKey = `movies:upcoming:${page}:${limit}`;
-      try { const cached = await redisService.get(cacheKey); if (cached) return successResponse(res, cached); } catch(e){}
+      const cacheKey = `movies:upcoming:${pageNumber}:${limitNumber}`;
+      try {
+        const cached = await redisService.get(cacheKey);
+        if (cached) return successResponse(res, cached);
+      } catch(e){}
 
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Sắp chiếu", ...getDeleteFilter(req.query) })
-          .populate("genres", "name")
-          .sort({ releaseDate: 1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .lean(),
+            .populate("genres", "name")
+            .sort({ releaseDate: 1 })
+            .skip(skip)
+            .limit(limitNumber)
+            .lean(),
         Movie.countDocuments({ status: "Sắp chiếu", ...getDeleteFilter(req.query) }),
       ]);
 
-      const payload = { movies, pagination: { currentPage: parseInt(page), totalPages: Math.ceil(total / limit), totalItems: total } };
+      const payload = {
+        movies,
+        pagination: {
+          currentPage: pageNumber,
+          totalPages: Math.ceil(total / limitNumber),
+          totalItems: total,
+          itemsPerPage: limitNumber
+        }
+      };
       try { await redisService.set(cacheKey, payload, 20); } catch(e){}
       return successResponse(res, payload);
     } catch (error) {
@@ -576,7 +562,9 @@ const movieController = {
     try {
       const { genreId } = req.params;
       const { page = 1, limit = 12 } = req.query;
-      const skip = (page - 1) * limit;
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 12;
+      const skip = (pageNumber - 1) * limitNumber;
 
       // Kiểm tra genre tồn tại
       const genre = await Genre.findById(genreId);
@@ -586,11 +574,11 @@ const movieController = {
 
       const [movies, total] = await Promise.all([
         Movie.find({ genres: genreId, ...getDeleteFilter(req.query) })
-          .populate("genres", "name")
-          .sort({ releaseDate: -1 })
-          .skip(skip)
-          .limit(parseInt(limit))
-          .lean(),
+            .populate("genres", "name")
+            .sort({ releaseDate: -1 })
+            .skip(skip)
+            .limit(limitNumber)
+            .lean(),
         Movie.countDocuments({ genres: genreId, ...getDeleteFilter(req.query) }),
       ]);
 
@@ -598,9 +586,10 @@ const movieController = {
         genre: genre.name,
         movies,
         pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / limit),
+          currentPage: pageNumber,
+          totalPages: Math.ceil(total / limitNumber),
           totalItems: total,
+          itemsPerPage: limitNumber
         },
       });
     } catch (error) {
