@@ -138,7 +138,7 @@ export default function ShowtimeClient({
   // 3. Gọi API (Sẽ tự động trigger vì selectedCinemaId đã có giá trị ngay lập tức)
   const { data: scheduleData, isFetching: isLoadingSchedules } = useSchedules({
     theaterId: selectedCinemaId,
-    showDate: selectedDate, // YYYY-MM-DD
+    date: selectedDate, // Backend dùng param 'date' chứ không phải 'showDate'
     limit: 500 // Bắt buộc lấy tất cả các suất chiếu trong MỘT NGÀY
   })
 
@@ -151,9 +151,13 @@ export default function ShowtimeClient({
     const groups: Record<string, GroupedMovieSchedule> = {}
 
     schedules.forEach(schedule => {
-      const dateKey = schedule.showDate.split('T')[0]
-      const movieId = schedule.movie._id
-      const uniqueKey = `${movieId}_${dateKey}`
+      // Bỏ qua các suất chiếu "ma" (rác dữ liệu) mà phim đã bị xóa khỏi database
+      if (!schedule.movie || !schedule.movie._id) return
+
+      // Dùng chung selectedDate để đảm bảo không bị tách biệt do sai lệch múi giờ trong DB
+      const dateKey = selectedDate
+      const movieKey = schedule.movie._id // Dùng _id chuẩn, nếu trùng _id mà tách thì do dateKey sai
+      const uniqueKey = `${movieKey}_${dateKey}`
 
       if (!groups[uniqueKey]) {
         groups[uniqueKey] = {
@@ -166,13 +170,14 @@ export default function ShowtimeClient({
       groups[uniqueKey].schedules.push(schedule)
     })
 
-    return Object.values(groups).sort((a, b) => {
-      if (a.date !== b.date) {
-        return a.date.localeCompare(b.date)
-      }
-      return a.movie.title.localeCompare(b.movie.title)
-    })
-  }, [schedules])
+    // Sắp xếp các nhóm phim theo tên, và bên trong sắp xếp giờ chiếu từ sớm đến muộn
+    return Object.values(groups)
+      .sort((a, b) => a.movie.title.localeCompare(b.movie.title))
+      .map(group => {
+        group.schedules.sort((s1, s2) => s1.startTime.localeCompare(s2.startTime))
+        return group
+      })
+  }, [schedules, selectedDate])
 
   // Reset trang khi đổi rạp hoặc ngày
   useEffect(() => {

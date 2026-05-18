@@ -46,8 +46,15 @@ export interface GetScheduleParams {
 // Thêm signal
 export async function getSchedules(params: GetScheduleParams = {}, signal?: AbortSignal) {
   try {
+    // Backend controller mong đợi tham số 'date' thay vì 'showDate'
+    const finalParams = { ...params }
+    if (finalParams.showDate && !finalParams.date) {
+      finalParams.date = finalParams.showDate
+      delete finalParams.showDate
+    }
+
     const res = await api.get<ScheduleListResponse>('/schedules', {
-      params, // axios tự build query string
+      params: finalParams, // axios tự build query string
       signal, // 🟢 Truyền signal
     })
 

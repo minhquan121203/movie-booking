@@ -10,8 +10,18 @@ interface ShowtimeSectionProps {
 }
 
 export function ShowtimeSection({ movieId }: ShowtimeSectionProps) {
-  const { data = DEFAULT_SCHEDULE_LIST } = useSchedules({ movieId: movieId ?? '' })
-  const showtimes = data.schedules || []
+  const { data = DEFAULT_SCHEDULE_LIST } = useSchedules({ movieId: movieId ?? '', limit: 500 }) // Nên lấy nhiều để đảm bảo đủ suất chiếu
+  
+  // Lọc bỏ những suất chiếu đã trôi qua (cả ngày cũ lẫn giờ đã chiếu xong hôm nay)
+  const showtimes = (data.schedules || []).filter(show => {
+    const showDate = new Date(show.showDate)
+    const [hours, minutes] = show.startTime.split(':').map(Number)
+    const showDateTime = new Date(showDate.getFullYear(), showDate.getMonth(), showDate.getDate(), hours, minutes)
+    
+    // Thêm 30 phút bù giờ cho phép vào muộn
+    const cutoffTime = new Date(showDateTime.getTime() + 30 * 60000)
+    return cutoffTime > new Date()
+  })
   if (showtimes.length === 0) {
     return (
       <section className="py-6">
