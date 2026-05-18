@@ -64,7 +64,7 @@ const scheduleController = {
       // 2. THỰC THI TRUY VẤN: Thêm chặn skip và limit để phân trang
       const [schedules, total] = await Promise.all([
         Schedule.find(query)
-            .populate("movie", "title poster rating duration ageRestriction")
+            .populate("movie", "title posterUrl rating duration ageRestriction")
             .populate("theater", "name")
             .populate("room", "name")
             .sort(sort)
