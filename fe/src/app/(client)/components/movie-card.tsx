@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Ticket, Info, Star } from 'lucide-react'
 import type { Movie } from '@/types/movie'
+import { useSchedules } from '@/lib/api/schedules'
 
 interface MovieCardProps {
   movie: Movie
@@ -16,7 +17,19 @@ const ageRatingColors: Record<string, string> = {
   'C18': 'bg-red-600',
 }
 
-export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
+export function MovieCard({ movie, showBookButton }: MovieCardProps) {
+  // Chỉ fetch lịch chiếu MỘT bộ phim này nếu prop showBookButton KHÔNG được truyền vào
+  const { data: scheduleData, isLoading } = useSchedules(
+    { movieId: movie._id, limit: 1, includePast: false },
+    { enabled: showBookButton === undefined }
+  )
+
+  // Nếu có truyền prop, ưu tiên dùng prop (như ở HeroSection).
+  // Nếu không, tự quyết định: đang tải -> movie.status, tải xong -> dựa vào mảng schedules
+  const finalShowBookButton = showBookButton !== undefined 
+    ? showBookButton 
+    : (isLoading ? movie.status === 'Đang chiếu' : (scheduleData?.schedules?.length || 0) > 0)
+
   const imageUrl = movie.posterUrl || "https://placehold.co/400x600?text=No+Poster"
   
   const genresText = movie.genres && movie.genres.length > 0 
@@ -68,7 +81,7 @@ export function MovieCard({ movie, showBookButton = true }: MovieCardProps) {
 
         {/* BUTTONS */}
         <div className="mt-auto pt-3">
-          {showBookButton ? (
+          {finalShowBookButton ? (
             <Button asChild className="w-full bg-violet-600 hover:bg-violet-700 text-white border-0 font-bold rounded h-8 sm:h-9 text-[11px] sm:text-sm px-2 shadow-md">
               <Link href={`/movies/${movie._id}`}>
                 <Ticket className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />

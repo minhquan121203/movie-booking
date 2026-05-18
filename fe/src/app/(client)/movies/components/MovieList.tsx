@@ -22,7 +22,7 @@ export function MovieList({ title, movies, viewAllHref }: MovieSectionProps) {
 
       {/* Movie Grid */}
       <div className={`grid gap-6 grid-cols-2 md:grid-cols-3 xl:grid-cols-5`}>
-        {movies.map((movie, index) => (
+        {(movies || []).map((movie, index) => (
           <MovieCard key={movie._id} movie={movie} index={index} />
         ))}
       </div>

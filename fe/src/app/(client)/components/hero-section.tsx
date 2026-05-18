@@ -11,6 +11,7 @@ import Image from 'next/image'
 interface MovieSectionProps {
   movies: Movie[]
   isLoading?: boolean
+  moviesWithSchedules?: Set<string>
 }
 
 // Skeleton Component
@@ -75,7 +76,7 @@ function HeroSkeleton() {
   )
 }
 
-export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
+export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: MovieSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
@@ -106,13 +107,13 @@ export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
           className="absolute inset-0"
         >
           {/* Background */}
-          <div className="absolute inset-0 overflow-hidden"> 
+          <div className="absolute inset-0 overflow-hidden">
             {/* Next.js Image as background */}
             <Image
               src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
               alt={currentMovie.title || 'Movie poster'}
               fill
-              className="object-fill" 
+              className="object-fill"
               priority
               quality={100}
               sizes="100vw"
@@ -175,8 +176,11 @@ export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
                 transition={{ delay: 0.5 }}
                 className="flex flex-wrap gap-3"
               >
-                {/* Dùng movie.status từ DB — hiện ngay lập tức */}
-                {currentMovie.status === 'Đang chiếu' ? (
+                {/* Nếu truyền moviesWithSchedules -> dùng logic lịch chiếu thật. Nếu chưa, fallback dùng movie.status */}
+                {(moviesWithSchedules
+                  ? moviesWithSchedules.has(currentMovie._id)
+                  : currentMovie.status === 'Đang chiếu'
+                ) ? (
                   <Button
                     size="lg"
                     asChild
@@ -231,9 +235,8 @@ export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
-            className={`h-1 rounded-full transition-all ${
-              index === currentIndex ? 'w-8 bg-[hsl(var(--primary))]' : 'w-4 bg-muted-foreground/50'
-            }`}
+            className={`h-1 rounded-full transition-all ${index === currentIndex ? 'w-8 bg-[hsl(var(--primary))]' : 'w-4 bg-muted-foreground/50'
+              }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}

@@ -25,6 +25,7 @@ import type { Movie } from '@/types/movie'
 import { useSchedules } from '@/lib/api/schedules'
 import { VIETNAM_CITIES } from '@/constants/location'
 import { useDebounce } from '@/hooks/useDebounce'
+import { CustomPagination } from '@/app/components/shared/custom-pagination'
 
 interface ShowtimeClientProps {
   cinemas: Theater[]
@@ -46,12 +47,22 @@ export default function ShowtimeClient({
 }: ShowtimeClientProps) {
   const [searchCinema, setSearchCinema] = useState('')
   const debouncedSearchCinema = useDebounce(searchCinema, 300)
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
+
+  // Mặc định chọn Hôm nay để tải siêu nhanh thay vì tải Toàn bộ các ngày
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date()
+    // Convert to local YYYY-MM-DD
+    return new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  })
 
   const dateScrollRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
+
+  // Frontend Pagination State
+  const [page, setPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
 
   // 1. Lọc rạp theo Thành phố và Từ khóa
   const filteredCinemas = useMemo(() => {
@@ -97,7 +108,7 @@ export default function ShowtimeClient({
     setSelectedCinemaId(id)
   }, [])
 
-  const handleDateSelect = useCallback((dateValue: string | undefined) => {
+  const handleDateSelect = useCallback((dateValue: string) => {
     setSelectedDate(dateValue)
   }, [])
 
@@ -128,6 +139,7 @@ export default function ShowtimeClient({
   const { data: scheduleData, isFetching: isLoadingSchedules } = useSchedules({
     theaterId: selectedCinemaId,
     showDate: selectedDate, // YYYY-MM-DD
+    limit: 500 // Bắt buộc lấy tất cả các suất chiếu trong MỘT NGÀY
   })
 
   const schedules = useMemo(() => {
@@ -162,17 +174,27 @@ export default function ShowtimeClient({
     })
   }, [schedules])
 
+  // Reset trang khi đổi rạp hoặc ngày
+  useEffect(() => {
+    setPage(1)
+  }, [selectedCinemaId, selectedDate])
+
+  // Phân trang danh sách phim (Frontend Pagination)
+  const totalPages = Math.ceil(groupedData.length / ITEMS_PER_PAGE)
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE
+    return groupedData.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [groupedData, page, ITEMS_PER_PAGE])
+
   // Generate dates
   const dates = useMemo(() => {
     const days = []
     const today = new Date()
 
-    days.push({ label: 'Tất cả', displayDate: 'All', value: undefined })
-
     for (let i = 0; i < 12; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
-      const value = date.toISOString().split('T')[0] // YYYY-MM-DD
+      const value = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0] // YYYY-MM-DD
       const label =
         i === 0 ? 'Hôm nay' : new Intl.DateTimeFormat('vi-VN', { weekday: 'short' }).format(date)
       const displayDate = new Intl.DateTimeFormat('vi-VN', {
@@ -291,7 +313,7 @@ export default function ShowtimeClient({
           >
             {dates.map(date => (
               <button
-                key={date.value || 'all'}
+                key={date.value}
                 onClick={() => handleDateSelect(date.value)}
                 className={`flex-shrink-0 w-16 sm:w-20 py-2 sm:py-3 rounded-xl text-center transition-all border ${selectedDate === date.value
                   ? 'bg-primary text-primary-foreground border-primary shadow'
@@ -338,29 +360,19 @@ export default function ShowtimeClient({
                   <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
                   <p className="font-medium">Đang tìm suất chiếu đẹp nhất...</p>
                 </div>
-              ) : groupedData.length > 0 ? (
+              ) : paginatedData.length > 0 ? (
                 <div className="space-y-5">
-                  {groupedData.map(({ uniqueKey, movie, schedules, date }, index) => {
+                  {paginatedData.map(({ uniqueKey, movie, schedules, date }, index) => {
                     // Cờ kiểm tra: Hiện Ngày nếu là phim đầu tiên hoặc phim này khác ngày với phim trước đó
-                    const showDateHeader = !selectedDate && (index === 0 || groupedData[index - 1].date !== date);
-
+                    const showDateHeader = !selectedDate && (index === 0 || paginatedData[index - 1].date !== date);
                     return (
                       <div key={uniqueKey} className="flex flex-col gap-2">
-                        {showDateHeader && (
-                          <div className="mt-4 mb-1 first:mt-0">
-                            <span className="text-base font-black text-primary flex items-center gap-2 border-b border-border/50 pb-2">
-                              <CalendarDays className="w-5 h-5" />
-                              Ngày: {new Date(date).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                        )}
-
                         {/* GIAO DIỆN: 1 PHIM - NHIỀU KHUNG GIỜ CHIẾU */}
                         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-5 bg-background border border-border/80 rounded-2xl hover:border-primary/50 transition-colors shadow-sm">
                           {/* Cột 1: Poster */}
                           <div className="w-[100px] sm:w-[130px] aspect-[2/3] shrink-0 rounded-xl overflow-hidden relative bg-muted shadow-md">
                             <img
-                              src={movie.posterUrl || '/placeholder-movie.png'}
+                              src={movie.posterUrl || (movie as any).poster || 'https://placehold.co/400x600?text=No+Poster'}
                               alt={movie.title}
                               className="w-full h-full object-cover"
                             />
@@ -412,6 +424,18 @@ export default function ShowtimeClient({
                   <p className="text-muted-foreground font-medium">
                     Rạp này chưa có suất chiếu nào vào ngày này.
                   </p>
+                </div>
+              )}
+
+              {/* Giao diện Phân trang */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center w-full">
+                  <CustomPagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    showPageNumbers={5}
+                  />
                 </div>
               )}
             </div>

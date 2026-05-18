@@ -11,6 +11,7 @@ import type { Genre } from '@/types/genre'
 import { MovieCard } from '@/app/(client)/components/movie-card'
 import { Flame, Popcorn, CalendarClock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { CustomPagination } from '@/app/components/shared/custom-pagination'
 
 export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState('Hà Nội')
@@ -26,6 +27,10 @@ export default function HomePage() {
     }, 100)
   }
 
+  const [pageNow, setPageNow] = useState(1)
+  const [pageSoon, setPageSoon] = useState(1)
+  const ITEMS_PER_PAGE = 12
+
   // Fetch Top Movies (Chỉ lấy phim Đang chiếu để luôn hiện nút MUA VÉ)
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
     limit: 12,
@@ -36,16 +41,17 @@ export default function HomePage() {
 
   // Fetch Phim Đang Chiếu 
   const { data: nowShowingData, isLoading: loadingNow } = useMovies({
-    limit: 60,
+    page: pageNow,
+    limit: ITEMS_PER_PAGE,
     status: 'Đang chiếu',
   })
 
   // Fetch Phim Sắp Chiếu 
   const { data: comingSoonData, isLoading: loadingSoon } = useMovies({
-    limit: 60,
+    page: pageSoon,
+    limit: ITEMS_PER_PAGE,
     status: 'Sắp chiếu',
   })
-
 
   const { data: listTheater = DEFAULT_THEATER_LIST, isLoading: loadingTheater } = useTheaters({
     city: selectedCity,
@@ -83,9 +89,22 @@ export default function HomePage() {
       activeTab === 'coming' ? (comingSoonData?.movies || []) :
         (topMovieData?.movies || [])
 
-  // Đang chiếu & Sắp chiếu: hiện hết. Top Movies: giới hạn 12
-  const displayMovies = activeTab === 'top' ? allMoviesForTab.slice(0, TOP_MOVIE_LIMIT) : allMoviesForTab
-  const hasMore = activeTab === 'top' && allMoviesForTab.length > TOP_MOVIE_LIMIT
+  const currentPagination = 
+    activeTab === 'now' ? nowShowingData?.pagination :
+    activeTab === 'coming' ? comingSoonData?.pagination : null
+
+  // Top Movies: giới hạn 12. Đang chiếu & Sắp chiếu: dùng API phân trang.
+  const displayMovies = allMoviesForTab
+  const hasMoreTopMovies = activeTab === 'top' && (topMovieData?.movies?.length || 0) > TOP_MOVIE_LIMIT
+
+  const handlePageChange = (page: number) => {
+    if (activeTab === 'now') setPageNow(page)
+    if (activeTab === 'coming') setPageSoon(page)
+    // Scroll back to movies section
+    setTimeout(() => {
+      movieSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
 
 
   return (
@@ -139,27 +158,37 @@ export default function HomePage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-500">
                 {displayMovies.map((movie, index) => {
-                  // Dùng movie.status từ DB — hiện ngay lập tức, không cần chờ API schedules
-                  const canBook = movie.status === 'Đang chiếu'
+                  // KHÔNG truyền showBookButton nữa -> MovieCard sẽ tự gọi API check lịch chiếu của riêng nó!
                   return (
                     <MovieCard
                       key={movie._id}
                       movie={movie}
                       index={index}
-                      showBookButton={canBook}
                     />
                   )
                 })}
               </div>
 
-              {/* Xem tất cả button */}
-              {hasMore && (
+              {/* Phân trang cho Đang chiếu & Sắp chiếu */}
+              {(activeTab === 'now' || activeTab === 'coming') && currentPagination && currentPagination.totalPages > 1 && (
+                <div className="mt-10 flex justify-center w-full">
+                  <CustomPagination
+                    currentPage={currentPagination.currentPage}
+                    totalPages={currentPagination.totalPages}
+                    onPageChange={handlePageChange}
+                    showPageNumbers={5}
+                  />
+                </div>
+              )}
+
+              {/* Xem tất cả button (Chỉ dành cho Top Movies) */}
+              {hasMoreTopMovies && (
                 <div className="flex justify-center mt-8">
                   <Link
                     href="/movies"
                     className="group inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:shadow-violet-500/25 hover:scale-105"
                   >
-                    Xem tất cả {allMoviesForTab.length} phim
+                    Xem tất cả phim
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>

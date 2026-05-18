@@ -1,5 +1,5 @@
-import { ScheduleListResponse } from '@/types/schedule'
-import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { ScheduleListResponse, PaginatedScheduleData } from '@/types/schedule'
+import { useQuery, keepPreviousData, UseQueryOptions } from '@tanstack/react-query'
 import { api } from '@/lib/api/axios'
 import axios from 'axios' // Import axios để check isCancel
 
@@ -91,15 +91,17 @@ export async function deleteSchedule(id: string) {
 
 // --- Hooks ---
 
-export function useSchedules(params: GetScheduleParams = {}) {
-  return useQuery({
+export function useSchedules(
+  params: GetScheduleParams = {},
+  options?: Omit<UseQueryOptions<PaginatedScheduleData, Error, PaginatedScheduleData, any>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery<PaginatedScheduleData, Error, PaginatedScheduleData, any>({
     queryKey: ['schedules', params],
     queryFn: ({ signal }) => getSchedules(params, signal),
-
-    // THÊM BÙA CHÚ VÀO ĐÂY:
     staleTime: 5 * 60 * 1000, // Sửa thành 5 phút cho đồng bộ
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData, // Chống chớp Skeleton khi khách bấm đổi ngày
     retry: 2,
+    ...(options as any),
   })
 }
