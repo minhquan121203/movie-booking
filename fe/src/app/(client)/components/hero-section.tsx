@@ -106,33 +106,59 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          {/* Blurred Background for cinematic feel */}
+          {/* Full-width Background Poster */}
           <div className="absolute inset-0 overflow-hidden">
             <Image
               src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
-              alt=""
+              alt={currentMovie.title || 'Movie poster'}
               fill
-              className="object-cover scale-110 blur-2xl opacity-40"
-              priority={false}
-              quality={30}
+              className="object-cover object-[center_20%]"
+              priority
+              quality={90}
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-background/70" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+
+            {/* Gradient overlays for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-transparent" />
           </div>
 
-          {/* Split Layout: Info Left + Poster Right */}
-          <div className="relative flex h-full items-center">
-            <div className="w-full flex flex-col md:flex-row items-center gap-6 md:gap-10 lg:gap-16 px-[25px] md:px-[60px] xl:px-[86px]">
+          {/* Content with poster card */}
+          <div className="relative flex h-full items-end md:items-center pb-16 md:pb-0">
+            <div className="px-[25px] md:px-[60px] xl:px-[86px] flex items-end md:items-center gap-6 lg:gap-10">
 
-              {/* Left: Movie Info */}
-              <div className="flex-1 space-y-5 max-w-[600px] order-2 md:order-1">
+              {/* Small poster card - visible on md+ */}
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="hidden md:block shrink-0"
+              >
+                <div className="relative group">
+                  <div className="absolute -inset-2 bg-primary/20 rounded-2xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative w-[180px] h-[270px] lg:w-[220px] lg:h-[330px] rounded-xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/10">
+                    <Image
+                      src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
+                      alt={currentMovie.title || 'Movie poster'}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      priority
+                      quality={85}
+                      sizes="220px"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Movie info */}
+              <div className="max-w-[600px] space-y-4 md:space-y-5">
                 {/* Title */}
                 <motion.h1
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-foreground"
+                  className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-foreground drop-shadow-lg"
                 >
                   {currentMovie.title}
                 </motion.h1>
@@ -164,7 +190,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-4"
+                  className="text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-3"
                 >
                   {currentMovie.description}
                 </motion.p>
@@ -174,7 +200,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="flex flex-wrap gap-3"
+                  className="flex flex-wrap gap-3 pt-1"
                 >
                   {(moviesWithSchedules
                     ? moviesWithSchedules.has(currentMovie._id)
@@ -204,30 +230,6 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   )}
                 </motion.div>
               </div>
-
-              {/* Right: Full Poster */}
-              <motion.div
-                initial={{ x: 40, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="order-1 md:order-2 shrink-0"
-              >
-                <div className="relative group">
-                  {/* Glow effect behind poster */}
-                  <div className="absolute -inset-3 bg-primary/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative w-[160px] h-[240px] sm:w-[200px] sm:h-[300px] md:w-[240px] md:h-[360px] lg:w-[280px] lg:h-[420px] rounded-xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/10">
-                    <Image
-                      src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
-                      alt={currentMovie.title || 'Movie poster'}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      priority
-                      quality={90}
-                      sizes="(max-width: 768px) 200px, 280px"
-                    />
-                  </div>
-                </div>
-              </motion.div>
 
             </div>
           </div>
