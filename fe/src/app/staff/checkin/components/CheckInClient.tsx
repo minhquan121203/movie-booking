@@ -185,7 +185,7 @@ export function CheckInClient() {
   }
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Test Mode Banner */}
       {/* {TEST_MODE && (
         <div className="bg-yellow-500/20 border-2 border-yellow-500 rounded-xl p-4">
@@ -200,8 +200,8 @@ export function CheckInClient() {
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Check-in Ca Làm Việc</h1>
-        <p className="text-muted-foreground">Điểm danh và quản lý thời gian làm việc của bạn</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Check-in Ca Làm Việc</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Điểm danh và quản lý thời gian làm việc của bạn</p>
       </div>
 
       {/* Current Time & Location */}
@@ -318,7 +318,7 @@ export function CheckInClient() {
       <section>
         <h2 className="text-2xl font-semibold text-foreground mb-4">Lịch Làm Việc Tuần Này</h2>
         {categorizedAssignments.allShifts.length > 0 ? (
-          <div className="space-y-4 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {categorizedAssignments.allShifts.map(assignment => (
               <ShiftCard
                 key={assignment._id}

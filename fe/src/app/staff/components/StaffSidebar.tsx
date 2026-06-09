@@ -1,9 +1,11 @@
 'use client'
-import { Ticket, ShieldCheck, Users, Hamburger, Film, Clock } from 'lucide-react'
+import { Ticket, ShieldCheck, Users, Hamburger, Film, Clock, X, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 export function StaffSidebar() {
+  const [isOpen, setIsOpen] = useState(false)
   const menuItems = [
     { id: 'ban-ve', label: 'Bán vé', icon: Ticket, path: '/staff/sell' },
     { id: 'xac-nhan-ve', label: 'Xác nhận vé', icon: ShieldCheck, path: '/staff/confirm-tickets' },
@@ -12,55 +14,106 @@ export function StaffSidebar() {
     { id: 'khach-hang', label: 'Khách hàng', icon: Users, path: '/staff/customers' },
   ]
   const pathname = usePathname()
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [])
+
   return (
-    <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
-      {/* Logo */}
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-[10px] flex items-center justify-center shadow-sm">
-            <Film className="w-6 h-6 text-primary-foreground" />
+    <>
+      {/* Mobile hamburger button - visible only on small screens */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed top-3 left-3 z-50 md:hidden bg-white border border-gray-200 rounded-lg p-2 shadow-md"
+        aria-label="Mở menu"
+      >
+        <Menu className="w-5 h-5 text-gray-700" />
+      </button>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed md:static inset-y-0 left-0 z-50
+          w-64 bg-sidebar border-r border-sidebar-border flex flex-col
+          transform transition-transform duration-200 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
+        {/* Logo + Close button */}
+        <div className="p-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-[10px] flex items-center justify-center shadow-sm">
+              <Film className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h2 className="text-foreground font-semibold">CineBooking</h2>
+              <p className="text-xs text-muted-foreground">Staff Portal</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-foreground font-semibold">CineBooking</h2>
-            <p className="text-xs text-muted-foreground">Staff Portal</p>
-          </div>
+          {/* Close button - mobile only */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="md:hidden p-1 rounded-lg hover:bg-gray-100"
+            aria-label="Đóng menu"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-      </div>
 
-      {/* Menu */}
-      <nav className="flex-1 px-3">
-        <ul className="space-y-1">
-          {menuItems.map(item => {
-            const Icon = item.icon
-            const isActive =
-              item.path === '/staff/sell'
-                ? pathname === '/staff/sell'
-                : pathname?.startsWith(item.path)
+        {/* Menu */}
+        <nav className="flex-1 px-3">
+          <ul className="space-y-1">
+            {menuItems.map(item => {
+              const Icon = item.icon
+              const isActive =
+                item.path === '/staff/sell'
+                  ? pathname === '/staff/sell'
+                  : pathname?.startsWith(item.path)
 
-            return (
-              <li key={item.id}>
-                <Link
-                  href={item.path}
-                  suppressHydrationWarning
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                    isActive
-                      ? 'bg-[#6C63FF] text-white shadow-md shadow-[#6c63ff]/20'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-[#6C63FF]'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={item.path}
+                    suppressHydrationWarning
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+                      isActive
+                        ? 'bg-[#6C63FF] text-white shadow-md shadow-[#6c63ff]/20'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-[#6C63FF]'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <p className="text-xs text-muted-foreground text-center">© 2025 CineBooking</p>
-      </div>
-    </aside>
+        {/* Footer */}
+        <div className="p-4 border-t border-sidebar-border">
+          <p className="text-xs text-muted-foreground text-center">© 2025 CineBooking</p>
+        </div>
+      </aside>
+    </>
   )
 }

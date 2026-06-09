@@ -65,13 +65,13 @@ export default function CustomersPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h2 className="text-foreground">Quản lý khách hàng</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-foreground">Quản lý khách hàng</h2>
         <p className="text-muted-foreground mt-1">Hỗ trợ và ghi nhận khiếu nại từ khách hàng</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form khiếu nại - Col span 2 */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <ComplaintForm staffId={user._id} />
         </div>
 
