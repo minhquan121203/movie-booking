@@ -76,8 +76,26 @@ function HeroSkeleton() {
   )
 }
 
-export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: MovieSectionProps) {
+export function HeroSection({ movies, isLoading = false }: MovieSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const currentMovie = movies[currentIndex] || null
+
+  // Fetch schedules for the current movie (MUST BE BEFORE EARLY RETURN)
+  const { data: scheduleData, isLoading: isLoadingSchedules } = useSchedules(
+    { movieId: currentMovie?._id, limit: 100, includePast: false },
+    { enabled: !!currentMovie }
+  )
+
+  const hasValidSchedules = (scheduleData?.schedules || []).some((show: any) => {
+    if (!show.showDate || !show.startTime) return false;
+    const showDate = new Date(show.showDate)
+    const [hours, minutes] = show.startTime.split(':').map(Number)
+    const showDateTime = new Date(showDate.getFullYear(), showDate.getMonth(), showDate.getDate(), hours, minutes)
+    const cutoffTime = new Date(showDateTime.getTime() + 30 * 60000)
+    return cutoffTime > new Date()
+  })
+
+  const canBook = isLoadingSchedules ? currentMovie?.status === 'Đang chiếu' : hasValidSchedules
 
   useEffect(() => {
     if (movies.length === 0) return
@@ -89,11 +107,9 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
   }, [movies.length])
 
   // Show skeleton while loading
-  if (isLoading || movies.length === 0) {
+  if (isLoading || movies.length === 0 || !currentMovie) {
     return <HeroSkeleton />
   }
-
-  const currentMovie = movies[currentIndex]
 
   return (
     <section className="relative h-[70vh] md:h-[80vh] overflow-hidden">
