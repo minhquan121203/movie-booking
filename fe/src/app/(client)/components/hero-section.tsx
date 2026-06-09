@@ -119,9 +119,8 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
             />
 
             {/* Gradient overlays for cinematic effect and text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
-            <div className="absolute inset-0 bg-background/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/10" />
           </div>
 
           {/* Content with poster card */}
