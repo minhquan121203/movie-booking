@@ -106,104 +106,129 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          {/* Background */}
+          {/* Blurred Background for cinematic feel */}
           <div className="absolute inset-0 overflow-hidden">
-            {/* Next.js Image as background */}
             <Image
               src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
-              alt={currentMovie.title || 'Movie poster'}
+              alt=""
               fill
-              className="object-cover object-top"
-              priority
-              quality={90}
+              className="object-cover scale-110 blur-2xl opacity-40"
+              priority={false}
+              quality={30}
               sizes="100vw"
             />
-
-            {/* Overlay gradients giữ nguyên */}
-            <div className="absolute inset-0 bg-linear-to-r from-background via-background/85 to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-t from-background/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-background/70" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
           </div>
 
-          {/* Content */}
+          {/* Split Layout: Info Left + Poster Right */}
           <div className="relative flex h-full items-center">
-            <div className="px-[25px] md:px-[60px] xl:px-[86px] max-w-[680px] space-y-6">
-              {/* Title */}
-              <motion.h1
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-4xl md:text-6xl font-bold leading-tight text-foreground"
-              >
-                {currentMovie.title}
-              </motion.h1>
+            <div className="w-full flex flex-col md:flex-row items-center gap-6 md:gap-10 lg:gap-16 px-[25px] md:px-[60px] xl:px-[86px]">
 
-              {/* Metadata */}
+              {/* Left: Movie Info */}
+              <div className="flex-1 space-y-5 max-w-[600px] order-2 md:order-1">
+                {/* Title */}
+                <motion.h1
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-foreground"
+                >
+                  {currentMovie.title}
+                </motion.h1>
+
+                {/* Metadata */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground"
+                >
+                  <span className="uppercase tracking-wide font-semibold">
+                    Đạo diễn:&nbsp;
+                    <span className="text-foreground">{currentMovie.director}</span>
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="uppercase">Thời lượng</span>
+                  <span className="text-foreground">{currentMovie.duration} phút</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="uppercase">Đánh giá</span>
+                  <span className="flex items-center gap-1 text-[hsl(var(--accent))] font-semibold">
+                    <Star className="h-4 w-4 fill-[hsl(var(--accent))]" />
+                    {currentMovie.averageRating}/5
+                  </span>
+                </motion.div>
+
+                {/* Description */}
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-4"
+                >
+                  {currentMovie.description}
+                </motion.p>
+
+                {/* Buttons */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex flex-wrap gap-3"
+                >
+                  {(moviesWithSchedules
+                    ? moviesWithSchedules.has(currentMovie._id)
+                    : currentMovie.status === 'Đang chiếu'
+                  ) ? (
+                    <Button
+                      size="lg"
+                      asChild
+                      className="bg-primary hover:bg-primary/90 text-white rounded-xl"
+                    >
+                      <Link href={`/movies/${currentMovie._id}/booking-flow`}>
+                        <Play className="mr-2 h-5 w-5" />
+                        Đặt vé
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      size="lg"
+                      asChild
+                      className="bg-primary hover:bg-primary/90 text-white rounded-xl"
+                    >
+                      <Link href={`/movies/${currentMovie._id}`}>
+                        <Play className="mr-2 h-5 w-5" />
+                        Xem chi tiết
+                      </Link>
+                    </Button>
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Right: Full Poster */}
               <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground"
+                initial={{ x: 40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="order-1 md:order-2 shrink-0"
               >
-                <span className="uppercase tracking-wide font-semibold">
-                  Đạo diễn:&nbsp;
-                  <span className="text-foreground">{currentMovie.director}</span>
-                </span>
-                <span className="text-muted-foreground">•</span>
-                <span className="uppercase">Thời lượng</span>
-                <span className="text-foreground">{currentMovie.duration} phút</span>
-                <span className="text-muted-foreground">•</span>
-                <span className="uppercase">Đánh giá</span>
-                <span className="flex items-center gap-1 text-[hsl(var(--accent))] font-semibold">
-                  <Star className="h-4 w-4 fill-[hsl(var(--accent))]" />
-                  {currentMovie.averageRating}/5
-                </span>
+                <div className="relative group">
+                  {/* Glow effect behind poster */}
+                  <div className="absolute -inset-3 bg-primary/20 rounded-2xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative w-[160px] h-[240px] sm:w-[200px] sm:h-[300px] md:w-[240px] md:h-[360px] lg:w-[280px] lg:h-[420px] rounded-xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/10">
+                    <Image
+                      src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
+                      alt={currentMovie.title || 'Movie poster'}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      priority
+                      quality={90}
+                      sizes="(max-width: 768px) 200px, 280px"
+                    />
+                  </div>
+                </div>
               </motion.div>
 
-              {/* Description */}
-              <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-[600px]"
-              >
-                {currentMovie.description}
-              </motion.p>
-
-              {/* Buttons */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="flex flex-wrap gap-3"
-              >
-                {/* Nếu truyền moviesWithSchedules -> dùng logic lịch chiếu thật. Nếu chưa, fallback dùng movie.status */}
-                {(moviesWithSchedules
-                  ? moviesWithSchedules.has(currentMovie._id)
-                  : currentMovie.status === 'Đang chiếu'
-                ) ? (
-                  <Button
-                    size="lg"
-                    asChild
-                    className="bg-primary hover:bg-primary/90 text-white rounded-xl"
-                  >
-                    <Link href={`/movies/${currentMovie._id}/booking-flow`}>
-                      <Play className="mr-2 h-5 w-5" />
-                      Đặt vé
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    asChild
-                    className="bg-primary hover:bg-primary/90 text-white rounded-xl"
-                  >
-                    <Link href={`/movies/${currentMovie._id}`}>
-                      <Play className="mr-2 h-5 w-5" />
-                      Xem chi tiết
-                    </Link>
-                  </Button>
-                )}
-              </motion.div>
             </div>
           </div>
         </motion.div>
