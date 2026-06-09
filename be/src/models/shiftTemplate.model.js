@@ -17,6 +17,6 @@ const ShiftTemplateSchema = new Schema(
   { timestamps: true }
 );
 
-ShiftTemplateSchema.index({ code: 1 });
+// ShiftTemplateSchema.index({ code: 1 }); // unique: true đã tạo index
 
 export default mongoose.model("ShiftTemplate", ShiftTemplateSchema);

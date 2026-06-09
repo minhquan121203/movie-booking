@@ -194,7 +194,7 @@ const bookingSchema = new Schema(
 // === INDEXES ===
 bookingSchema.index({ customer: 1, createdAt: -1 }); // Query history
 bookingSchema.index({ schedule: 1, status: 1 }); // Check ghế available
-bookingSchema.index({ bookingCode: 1 }); // Tìm vé nhanh
+// bookingSchema.index({ bookingCode: 1 }); // Tìm vé nhanh (đã được đánh index ở trường dữ liệu)
 bookingSchema.index({ "paymentDetails.transactionId": 1 }); // Verify payment
 
 // === VIRTUAL FIELDS ===

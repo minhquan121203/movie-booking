@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback'
 import type { Movie } from '@/types/movie'
+import { useSchedules } from '@/lib/api/schedules'
 
 // Embla (shadcn)
 import {
@@ -152,7 +153,17 @@ export function TopMovieCarousel({ title, movies, isLoading = false }: MovieCaro
 }
 
 function MovieCard({ movie, index }: { movie: Movie; index: number }) {
-  const canBook = movie.status === 'Đang chiếu'
+  const { data: scheduleData, isLoading } = useSchedules({ movieId: movie._id, limit: 100, includePast: false })
+  
+  const hasValidSchedules = (scheduleData?.schedules || []).some((show: any) => {
+    const showDate = new Date(show.showDate)
+    const [hours, minutes] = show.startTime.split(':').map(Number)
+    const showDateTime = new Date(showDate.getFullYear(), showDate.getMonth(), showDate.getDate(), hours, minutes)
+    const cutoffTime = new Date(showDateTime.getTime() + 30 * 60000)
+    return cutoffTime > new Date()
+  })
+
+  const canBook = isLoading ? movie.status === 'Đang chiếu' : hasValidSchedules
 
   return (
     <motion.div

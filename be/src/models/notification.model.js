@@ -75,7 +75,7 @@ const notificationSchema = new Schema(
       },
       expiresAt: {
         type: Date,
-        index: true,
+        // index: true, // Trùng với index TTL bên dưới
       },
       channels: {
         inApp: { type: Boolean, default: true },

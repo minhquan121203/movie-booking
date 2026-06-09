@@ -20,15 +20,23 @@ const ageRatingColors: Record<string, string> = {
 export function MovieCard({ movie, showBookButton }: MovieCardProps) {
   // Chỉ fetch lịch chiếu MỘT bộ phim này nếu prop showBookButton KHÔNG được truyền vào
   const { data: scheduleData, isLoading } = useSchedules(
-    { movieId: movie._id, limit: 1, includePast: false },
+    { movieId: movie._id, limit: 100, includePast: false },
     { enabled: showBookButton === undefined }
   )
+
+  const hasValidSchedules = (scheduleData?.schedules || []).some((show: any) => {
+    const showDate = new Date(show.showDate)
+    const [hours, minutes] = show.startTime.split(':').map(Number)
+    const showDateTime = new Date(showDate.getFullYear(), showDate.getMonth(), showDate.getDate(), hours, minutes)
+    const cutoffTime = new Date(showDateTime.getTime() + 30 * 60000)
+    return cutoffTime > new Date()
+  })
 
   // Nếu có truyền prop, ưu tiên dùng prop (như ở HeroSection).
   // Nếu không, tự quyết định: đang tải -> movie.status, tải xong -> dựa vào mảng schedules
   const finalShowBookButton = showBookButton !== undefined 
     ? showBookButton 
-    : (isLoading ? movie.status === 'Đang chiếu' : (scheduleData?.schedules?.length || 0) > 0)
+    : (isLoading ? movie.status === 'Đang chiếu' : hasValidSchedules)
 
   const imageUrl = movie.posterUrl || "https://placehold.co/400x600?text=No+Poster"
   

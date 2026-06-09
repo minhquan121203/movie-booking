@@ -12,7 +12,7 @@ const voucherSchema = new Schema(
       minlength: [3, "Mã voucher phải có ít nhất 3 ký tự"],
       maxlength: [20, "Mã voucher không được quá 20 ký tự"],
       match: [/^[A-Z0-9]+$/, "Mã voucher chỉ chứa chữ in hoa và số"],
-      index: true,
+      // index: true, // unique: true đã tự tạo index
     },
     description: {
       type: String,

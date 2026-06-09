@@ -7,11 +7,11 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Movie } from '@/types/movie'
 import Image from 'next/image'
+import { useSchedules } from '@/lib/api/schedules'
 
 interface MovieSectionProps {
   movies: Movie[]
   isLoading?: boolean
-  moviesWithSchedules?: Set<string>
 }
 
 // Skeleton Component
@@ -180,11 +180,10 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   <span className="uppercase">Đánh giá</span>
                   <span className="flex items-center gap-1 text-amber-500 font-semibold drop-shadow-sm">
                     <Star className="h-4 w-4 fill-amber-500" />
-                    {currentMovie.averageRating}/5
+                    {currentMovie.averageRating || 0}/5
                   </span>
                 </motion.div>
 
-                {/* Description */}
                 <motion.p
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -201,10 +200,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   transition={{ delay: 0.5 }}
                   className="flex flex-wrap gap-3 pt-1"
                 >
-                  {(moviesWithSchedules
-                    ? moviesWithSchedules.has(currentMovie._id)
-                    : currentMovie.status === 'Đang chiếu'
-                  ) ? (
+                  {canBook ? (
                     <Button
                       size="lg"
                       asChild

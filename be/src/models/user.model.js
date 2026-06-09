@@ -224,7 +224,7 @@ const userSchema = new Schema(
 );
 
 // === INDEXES ===
-userSchema.index({ isDeleted: 1 });
+// userSchema.index({ isDeleted: 1 }); // Đã đánh index ở field
 userSchema.index({ email: 1, authProviders: 1 });
 userSchema.index({ role: 1, isActive: 1 });
 userSchema.index({ loyaltyPoints: -1 });
