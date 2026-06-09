@@ -113,9 +113,9 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
               src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
               alt={currentMovie.title || 'Movie poster'}
               fill
-              className="object-fill"
+              className="object-cover object-top"
               priority
-              quality={100}
+              quality={90}
               sizes="100vw"
             />
 
