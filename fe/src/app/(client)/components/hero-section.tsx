@@ -119,9 +119,9 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
             />
 
             {/* Gradient overlays for cinematic effect and text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/20" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50" />
-            <div className="absolute inset-0 bg-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
+            <div className="absolute inset-0 bg-background/20" />
           </div>
 
           {/* Content with poster card */}
@@ -137,7 +137,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
               >
                 <div className="relative group">
                   <div className="absolute -inset-2 bg-primary/20 rounded-2xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative w-[180px] h-[270px] lg:w-[220px] lg:h-[330px] rounded-xl overflow-hidden shadow-2xl shadow-black/80 ring-1 ring-white/20">
+                  <div className="relative w-[180px] h-[270px] lg:w-[220px] lg:h-[330px] rounded-xl overflow-hidden shadow-2xl ring-1 ring-foreground/10">
                     <Image
                       src={currentMovie.posterUrl || '/placeholder-poster.jpg'}
                       alt={currentMovie.title || 'Movie poster'}
@@ -158,7 +158,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
-                  className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-white drop-shadow-lg"
+                  className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight text-foreground drop-shadow-sm"
                 >
                   {currentMovie.title}
                 </motion.h1>
@@ -168,19 +168,19 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="flex flex-wrap items-center gap-3 text-sm text-gray-300"
+                  className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground"
                 >
                   <span className="uppercase tracking-wide font-semibold">
                     Đạo diễn:&nbsp;
-                    <span className="text-white">{currentMovie.director}</span>
+                    <span className="text-foreground">{currentMovie.director}</span>
                   </span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-muted-foreground">•</span>
                   <span className="uppercase">Thời lượng</span>
-                  <span className="text-white">{currentMovie.duration} phút</span>
-                  <span className="text-gray-400">•</span>
+                  <span className="text-foreground">{currentMovie.duration} phút</span>
+                  <span className="text-muted-foreground">•</span>
                   <span className="uppercase">Đánh giá</span>
-                  <span className="flex items-center gap-1 text-amber-400 font-semibold drop-shadow-md">
-                    <Star className="h-4 w-4 fill-amber-400" />
+                  <span className="flex items-center gap-1 text-amber-500 font-semibold drop-shadow-sm">
+                    <Star className="h-4 w-4 fill-amber-500" />
                     {currentMovie.averageRating}/5
                   </span>
                 </motion.div>
@@ -190,7 +190,7 @@ export function HeroSection({ movies, isLoading = false, moviesWithSchedules }: 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="text-base md:text-lg text-gray-300 leading-relaxed line-clamp-3"
+                  className="text-base md:text-lg text-muted-foreground leading-relaxed line-clamp-3"
                 >
                   {currentMovie.description}
                 </motion.p>
