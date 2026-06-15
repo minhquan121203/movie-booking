@@ -492,7 +492,7 @@ const movieController = {
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Đang chiếu", ...getDeleteFilter(req.query) })
             .populate("genres", "name")
-            .sort({ releaseDate: -1 })
+            .sort({ releaseDate: -1, _id: 1 })
             .skip(skip)
             .limit(limitNumber)
             .lean(),
@@ -533,7 +533,7 @@ const movieController = {
       const [movies, total] = await Promise.all([
         Movie.find({ status: "Sắp chiếu", ...getDeleteFilter(req.query) })
             .populate("genres", "name")
-            .sort({ releaseDate: 1 })
+            .sort({ releaseDate: 1, _id: 1 })
             .skip(skip)
             .limit(limitNumber)
             .lean(),
@@ -575,7 +575,7 @@ const movieController = {
       const [movies, total] = await Promise.all([
         Movie.find({ genres: genreId, ...getDeleteFilter(req.query) })
             .populate("genres", "name")
-            .sort({ releaseDate: -1 })
+            .sort({ releaseDate: -1, _id: 1 })
             .skip(skip)
             .limit(limitNumber)
             .lean(),
