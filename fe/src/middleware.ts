@@ -65,7 +65,7 @@ function logoutAndRedirect(request: NextRequest, callbackUrl?: string): NextResp
 
 // 3. Hàm điều hướng dựa trên Role (khi user đã login mà vào trang public)
 function getRedirectByRole(role: string, request: NextRequest): NextResponse {
-  if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url))
+  if (role === 'admin' || role === 'super-admin') return NextResponse.redirect(new URL('/admin', request.url))
   if (role === 'staff') return NextResponse.redirect(new URL('/staff', request.url))
   return NextResponse.redirect(new URL('/', request.url))
 }
@@ -76,8 +76,8 @@ function checkRoleAccess(
   pathname: string,
   request: NextRequest
 ): NextResponse | null {
-  // Admin không được vào trang Staff hoặc trang Customer
-  if (role === 'admin') {
+  // Admin và Super-Admin không được vào trang Staff hoặc trang Customer
+  if (role === 'admin' || role === 'super-admin') {
     if (
       STAFF_PATHS.some(path => pathname.startsWith(path)) ||
       isCustomerPath(pathname) ||
