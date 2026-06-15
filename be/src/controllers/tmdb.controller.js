@@ -209,9 +209,9 @@ export const autoSyncTMDB = async () => {
                         if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
                     }
 
-                    // 🚫 Bỏ qua phim không có poster thật HOẶC không có trailer YouTube
-                    if (!posterLink || !trailerLink) {
-                        console.log(`⏭️ Bỏ qua phim "${m.title}" - Thiếu ${!posterLink ? 'poster' : 'trailer'}`);
+                    // 🚫 Bỏ qua phim không có poster thật
+                    if (!posterLink) {
+                        console.log(`⏭️ Bỏ qua phim "${m.title}" - Thiếu poster`);
                         processedCount++;
                         continue;
                     }

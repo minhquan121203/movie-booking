@@ -226,7 +226,7 @@ const movieController = {
       ];
 
       const sortField = allowedSortFields.includes(sortBy) ? sortBy : "releaseDate";
-      const sort = { [sortField]: order === "asc" ? 1 : -1 };
+      const sort = { [sortField]: order === "asc" ? 1 : -1, _id: 1 }; // _id tiebreaker đảm bảo phân trang không trùng
 
       // ===== Execute =====
       const skip = (pageNumber - 1) * limitNumber;
