@@ -1,7 +1,7 @@
 /**
- * Script dọn dẹp phim không có poster thật HOẶC không có trailer
+ * Script dọn dẹp phim không có poster thật HOẶC không có trailer YouTube
  * Soft-delete (isDeleted: true) các phim "rác"
- * Trailer chấp nhận bất kỳ link nào (YouTube, Netflix, v.v.) - miễn là CÓ
+ * CHỈ chấp nhận trailer YouTube (youtube.com hoặc youtu.be)
  * 
  * Chạy: node scripts/cleanup-bad-movies.js
  */
@@ -18,7 +18,7 @@ async function cleanup() {
 
     const Movie = mongoose.connection.collection("movies");
 
-    // Tìm phim chưa bị xóa mà thiếu poster HOẶC thiếu trailer
+    // Tìm phim chưa bị xóa mà thiếu poster HOẶC trailer không phải YouTube
     const combinedFilter = {
       isDeleted: { $ne: true },
       $or: [
@@ -27,10 +27,19 @@ async function cleanup() {
         { posterUrl: null },
         { posterUrl: "" },
         { posterUrl: { $regex: /placeholder/i } },
-        // Không có trailer (bất kỳ link nào)
+        // Không có trailer
         { trailerUrl: { $exists: false } },
         { trailerUrl: null },
         { trailerUrl: "" },
+        // Trailer không phải YouTube
+        {
+          trailerUrl: {
+            $exists: true,
+            $ne: null,
+            $ne: "",
+            $not: { $regex: /youtube\.com|youtu\.be/i },
+          },
+        },
       ],
     };
 
@@ -41,25 +50,28 @@ async function cleanup() {
 
     const noPoster = badMovies.filter(m => !m.posterUrl || (m.posterUrl && m.posterUrl.includes('placeholder')));
     const noTrailer = badMovies.filter(m => !m.trailerUrl);
+    const nonYtTrailer = badMovies.filter(m => m.trailerUrl && !m.trailerUrl.match(/youtube\.com|youtu\.be/i));
 
     console.log(`🖼️ Không có poster: ${noPoster.length} phim`);
-    noPoster.slice(0, 10).forEach((m) => console.log(`  ❌ "${m.title}"`));
-    if (noPoster.length > 10) console.log(`  ... và ${noPoster.length - 10} phim khác`);
+    noPoster.slice(0, 5).forEach((m) => console.log(`  ❌ "${m.title}"`));
 
     console.log(`\n🎬 Không có trailer: ${noTrailer.length} phim`);
-    noTrailer.slice(0, 20).forEach((m) => console.log(`  ❌ "${m.title}"`));
-    if (noTrailer.length > 20) console.log(`  ... và ${noTrailer.length - 20} phim khác`);
+    noTrailer.slice(0, 10).forEach((m) => console.log(`  ❌ "${m.title}"`));
+    if (noTrailer.length > 10) console.log(`  ... và ${noTrailer.length - 10} phim khác`);
+
+    console.log(`\n🚫 Trailer không phải YouTube: ${nonYtTrailer.length} phim`);
+    nonYtTrailer.forEach((m) => console.log(`  ❌ "${m.title}" → ${m.trailerUrl}`));
 
     // Soft-delete
     const result = await Movie.updateMany(combinedFilter, {
       $set: { isDeleted: true },
     });
 
-    console.log(`\n✅ Đã soft-delete ${result.modifiedCount} phim "rác" (không có poster hoặc trailer)`);
+    console.log(`\n✅ Đã soft-delete ${result.modifiedCount} phim`);
 
     // Thống kê còn lại
     const remaining = await Movie.countDocuments({ isDeleted: { $ne: true } });
-    console.log(`📊 Còn lại ${remaining} phim hợp lệ trên web`);
+    console.log(`📊 Còn lại ${remaining} phim hợp lệ trên web (có poster + trailer YouTube)`);
 
     await mongoose.disconnect();
     console.log("🔌 Đã ngắt kết nối MongoDB");
