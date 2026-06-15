@@ -31,10 +31,6 @@ export const validateBookingInput = (req, res, next) => {
     return errorResponse(res, "Phải chọn ít nhất 1 ghế", 400);
   }
 
-  if (seats.length > 10) {
-    return errorResponse(res, "Không thể đặt quá 10 ghế cùng lúc", 400);
-  }
-
   // Validate seat structure
   for (const seat of seats) {
     if (!seat.seatNumber || typeof seat.seatNumber !== "string") {
