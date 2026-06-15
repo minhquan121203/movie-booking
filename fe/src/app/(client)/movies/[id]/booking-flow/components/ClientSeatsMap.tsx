@@ -2,6 +2,7 @@ import type { Schedule, SeatAvailability } from '@/types/schedule'
 import type { BookedSeat } from '@/types/booking'
 import type { Seat } from '@/types/theater'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 interface SeatMapsProps {
   selectedSeats: BookedSeat[]
@@ -125,6 +126,63 @@ export function SeatMaps({
   }
 
   const handleSeatClick = (seat: MergedSeat) => {
+    // ---- CHECK: Không cho phép để trống 1 ghế đơn lẻ ----
+    const rowLabel = seat.seatNumber.charAt(0)
+    const row = rows.find(r => r.rowLabel === rowLabel)
+    
+    if (row) {
+      const isCurrentlySelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
+      
+      const simulatedStates = row.seats.map(s => {
+        const realTimeSeat1 = realTimeSeats?.get(s.seatNumber)
+        const realTimeSeat2 = s.pairedSeat ? realTimeSeats?.get(s.pairedSeat.seatNumber) : null
+        
+        if (s.isBooked || realTimeSeat1?.isBooked || s.pairedSeat?.isBooked || realTimeSeat2?.isBooked) return 'X'
+        if (realTimeSeat1?.holdUntil || realTimeSeat2?.holdUntil) return 'X'
+        if (isSeatAvailable && !isSeatAvailable(s as unknown as Seat)) return 'X'
+
+        let isSelected = selectedSeats.some(bk => bk.seatNumber === s.seatNumber) || 
+                         (s.pairedSeat ? selectedSeats.some(bk => bk.seatNumber === s.pairedSeat?.seatNumber) : false)
+
+        if (s.seatNumber === seat.seatNumber || s.pairedSeat?.seatNumber === seat.seatNumber ||
+            seat.pairedSeat?.seatNumber === s.seatNumber) {
+          isSelected = !isCurrentlySelected
+        }
+
+        return isSelected ? 'X' : 'O'
+      })
+
+      const currentStates = row.seats.map(s => {
+        const st = getSeatStatus(s)
+        return (st === 'booked' || st === 'held' || st === 'selected') ? 'X' : 'O'
+      })
+
+      let hasNewIsolated = false
+      for (let i = 0; i < simulatedStates.length; i++) {
+        if (simulatedStates[i] === 'O') {
+          const leftIsX = i === 0 || simulatedStates[i - 1] === 'X'
+          const rightIsX = i === simulatedStates.length - 1 || simulatedStates[i + 1] === 'X'
+          
+          if (leftIsX && rightIsX) {
+            const leftWasX = i === 0 || currentStates[i - 1] === 'X'
+            const rightWasX = i === currentStates.length - 1 || currentStates[i + 1] === 'X'
+            const wasIsolated = currentStates[i] === 'O' && leftWasX && rightWasX
+            
+            if (!wasIsolated) {
+              hasNewIsolated = true
+              break
+            }
+          }
+        }
+      }
+
+      if (hasNewIsolated) {
+        toast.warning('Không được để trống 1 ghế ở giữa hoặc ở rìa!', { duration: 3000 })
+        return
+      }
+    }
+    // ---- KẾT THÚC CHECK ----
+
     onSeatClick(seat as unknown as Seat)
     if (seat.isMergedPair && seat.pairedSeat) {
       onSeatClick(seat.pairedSeat as unknown as Seat)

@@ -24,6 +24,20 @@ function MoviesContent() {
   const genreFromUrl = searchParams.get('genre') || ''
   const itemsPerPage = 15
 
+  // Đồng bộ URL với SessionStorage (để nút Quay lại luôn nhớ trang)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedPage = sessionStorage.getItem('lastMoviesPage')
+      if (!searchParams.has('page') && savedPage && savedPage !== '1') {
+        const newSearchParams = new URLSearchParams(searchParams.toString())
+        newSearchParams.set('page', savedPage)
+        router.replace(`?${newSearchParams.toString()}`, { scroll: false })
+      } else {
+        sessionStorage.setItem('lastMoviesPage', pageFromUrl.toString())
+      }
+    }
+  }, [pageFromUrl, searchParams, router])
+
   // --- 1. DRAFT STATE ---
   const [showFilters, setShowFilters] = useState(!genreFromUrl)
   const [selectedCountry, setSelectedCountry] = useState('Tất cả')

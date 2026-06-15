@@ -2,6 +2,7 @@ import type { Schedule, SeatAvailability } from '@/types/schedule'
 import type { BookedSeat } from '@/types/booking'
 import type { Seat } from '@/types/theater'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 
 interface SeatMapsProps {
   selectedSeats: BookedSeat[]
@@ -117,6 +118,56 @@ export function SeatMaps({ selectedSeats, schedule, onSeatClick }: SeatMapsProps
                       key={primary.seatNumber}
                       disabled={status === 'booked'}
                       onClick={() => {
+                        // ---- CHECK: Không cho phép để trống 1 ghế đơn lẻ ----
+                        const isCurrentlySelected = selectedSeats.some(s => s.seatNumber === primary.seatNumber)
+                        
+                        const simulatedStates = seats.map(s => {
+                          const isB = s.primary.isBooked || (s.secondary && s.secondary.isBooked)
+                          if (isB) return 'X'
+                          
+                          let isS = selectedSeats.some(bk => bk.seatNumber === s.primary.seatNumber) || 
+                                    (s.secondary ? selectedSeats.some(bk => bk.seatNumber === s.secondary?.seatNumber) : false)
+                                    
+                          if (s.primary.seatNumber === primary.seatNumber) {
+                            isS = !isCurrentlySelected
+                          }
+                          
+                          return isS ? 'X' : 'O'
+                        })
+
+                        const currentStates = seats.map(s => {
+                          const isB = s.primary.isBooked || (s.secondary && s.secondary.isBooked)
+                          if (isB) return 'X'
+                          const isS = selectedSeats.some(bk => bk.seatNumber === s.primary.seatNumber) || 
+                                      (s.secondary ? selectedSeats.some(bk => bk.seatNumber === s.secondary?.seatNumber) : false)
+                          return isS ? 'X' : 'O'
+                        })
+
+                        let hasNewIsolated = false
+                        for (let i = 0; i < simulatedStates.length; i++) {
+                          if (simulatedStates[i] === 'O') {
+                            const leftIsX = i === 0 || simulatedStates[i - 1] === 'X'
+                            const rightIsX = i === simulatedStates.length - 1 || simulatedStates[i + 1] === 'X'
+                            
+                            if (leftIsX && rightIsX) {
+                              const leftWasX = i === 0 || currentStates[i - 1] === 'X'
+                              const rightWasX = i === currentStates.length - 1 || currentStates[i + 1] === 'X'
+                              const wasIsolated = currentStates[i] === 'O' && leftWasX && rightWasX
+                              
+                              if (!wasIsolated) {
+                                hasNewIsolated = true
+                                break
+                              }
+                            }
+                          }
+                        }
+
+                        if (hasNewIsolated) {
+                          toast.warning('Không được để trống 1 ghế ở giữa hoặc ở rìa!', { duration: 3000 })
+                          return
+                        }
+                        // ---- KẾT THÚC CHECK ----
+
                         onSeatClick(primary as unknown as Seat)
                         if (isMerged && secondary) {
                           setTimeout(() => onSeatClick(secondary as unknown as Seat), 10)
