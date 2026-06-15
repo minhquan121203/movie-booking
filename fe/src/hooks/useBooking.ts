@@ -29,7 +29,7 @@ export const STEPS = [
   { number: 5, label: 'Xác nhận' },
 ]
 
-export const MAX_SEATS = 10
+export const MAX_SEATS = 200
 export const MAX_PRODUCTS = 20
 
 interface UseBookingProps {

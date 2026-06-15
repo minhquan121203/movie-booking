@@ -36,9 +36,7 @@ const bookingController = {
       return errorResponse(res, "Phải chọn ít nhất 1 ghế", 400);
     }
 
-    if (seats.length > 10) {
-      return errorResponse(res, "Không thể đặt quá 10 ghế cùng lúc", 400);
-    }
+    // Bỏ giới hạn 10 ghế để có thể đặt full phòng
 
     // Validate seat structure
     for (const seat of seats) {
