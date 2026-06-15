@@ -41,6 +41,8 @@ export function MovieFormDialog({ open, onOpenChange, movieToEdit }: MovieFormDi
 
   const isEditMode = !!movieToEdit
 
+  const todayDateStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+
   const { register, handleSubmit, reset, setValue, watch, getValues } = useForm<MovieFormValues>({
     defaultValues: {
       title: '',
@@ -287,7 +289,7 @@ export function MovieFormDialog({ open, onOpenChange, movieToEdit }: MovieFormDi
                 </div>
                 <div>
                   <Label>Ngày phát hành</Label>
-                  <Input type="date" {...register('releaseDate')} />
+                  <Input type="date" min={todayDateStr} {...register('releaseDate')} />
                 </div>
               </div>
 
@@ -334,7 +336,7 @@ export function MovieFormDialog({ open, onOpenChange, movieToEdit }: MovieFormDi
               <div>
                 <Label className="mb-2 block">Thể loại</Label>
                 <div className="border rounded-md p-3 h-40 overflow-y-auto grid grid-cols-2 gap-2 bg-gray-50/50">
-                  {genreData?.items?.map(genre => {
+                  {genreData?.items?.map((genre: any) => {
                     const isSelected = watchedGenres?.includes(genre._id)
                     return (
                       <div

@@ -44,6 +44,8 @@ export function ScheduleFormDialog({
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
 
+  const todayDateStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+
   // --- Country filter state ---
   const [selectedCountry, setSelectedCountry] = useState<string>('all')
 
@@ -275,7 +277,7 @@ export function ScheduleFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Ngày Chiếu</Label>
-                <Input type="date" {...register('showDate')} />
+                <Input type="date" min={todayDateStr} {...register('showDate')} />
               </div>
               <div className="space-y-2">
                 <Label>Giờ Bắt Đầu</Label>
