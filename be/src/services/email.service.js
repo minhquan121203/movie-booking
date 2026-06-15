@@ -55,6 +55,26 @@ class EmailService {
         }
       }
 
+      if (!user || !user.email) {
+        console.log(`[Đặt vé] Bỏ qua gửi email vì user không có email.`);
+        return;
+      }
+
+      const attachments = [];
+      let qrImgTag = "";
+
+      if (booking.qrCode && typeof booking.qrCode === 'string' && booking.qrCode.includes("base64,")) {
+        attachments.push({
+          content: booking.qrCode.split("base64,")[1],
+          filename: 'ticket-qr.png',
+          type: 'image/png',
+          disposition: 'inline',
+          content_id: 'ticket_qr'
+        });
+        qrImgTag = `<p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
+                    <img src="cid:ticket_qr" style="width: 180px; height: 180px; border: 1px solid #eee;" alt="QR Code"/>`;
+      }
+
       const msg = {
         to: user.email,
         from: this.getSender(),
@@ -95,8 +115,7 @@ class EmailService {
               </div>
 
               <div style="background-color: #ffffff; padding: 25px; border-radius: 15px; text-align: center; color: #111827;">
-                <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
-                <img src="cid:ticket_qr" style="width: 180px; height: 180px; border: 1px solid #eee;" alt="QR Code"/>
+                ${qrImgTag}
                 <p style="color: #6b7280; font-size: 11px; margin-top: 10px;">Mã vé: <b>${booking.bookingCode}</b></p>
               </div>
             </div>
@@ -105,13 +124,7 @@ class EmailService {
             </div>
           </div>
         `,
-        attachments: [{
-          content: booking.qrCode.split("base64,")[1],
-          filename: 'ticket-qr.png',
-          type: 'image/png',
-          disposition: 'inline',
-          content_id: 'ticket_qr'
-        }]
+        attachments: attachments.length > 0 ? attachments : undefined
       };
 
       await sgMail.send(msg);
