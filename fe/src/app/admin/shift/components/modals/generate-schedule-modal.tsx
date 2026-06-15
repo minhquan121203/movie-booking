@@ -63,9 +63,11 @@ export default function GenerateScheduleModal({
   defaultFromDate,
   defaultToDate,
 }: GenerateScheduleModalProps) {
+  const todayDateStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+
   // --- API Hooks ---
   const { data: templatesData, isLoading: isLoadingTemplates } = useShiftTemplates({
-    isActive: true,
+    active: true,
   })
   const { data: theatersData, isLoading: isLoadingTheaters } = useTheaters({ limit: 100 })
   const { generate } = useWorkScheduleMutations()
@@ -208,6 +210,7 @@ export default function GenerateScheduleModal({
                       {...field}
                       id="fromDate"
                       type="date"
+                      min={todayDateStr}
                       className={errors.fromDate ? 'border-red-500' : ''}
                     />
                   )}
@@ -232,6 +235,7 @@ export default function GenerateScheduleModal({
                       {...field}
                       id="toDate"
                       type="date"
+                      min={watch('fromDate') || todayDateStr}
                       className={errors.toDate ? 'border-red-500' : ''}
                     />
                   )}

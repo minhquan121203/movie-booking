@@ -145,6 +145,7 @@ function ScheduleManagementContent() {
               mode="single"
               selected={date}
               onSelect={handleDateChange}
+              disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
               className="rounded-md border border-gray-100 w-full bg-gray-50 text-gray-950"
             />
           </Card>
