@@ -11,7 +11,6 @@ import {
   Armchair,
   Calendar,
   Ticket,
-  Settings,
   Clock,
   Hamburger,
   MessageSquareWarning,
@@ -39,7 +38,6 @@ export function Sidebar() {
     { icon: Tag, label: 'Quản Lý Thể Loại', path: '/admin/genres' },
     { icon: Star, label: 'Danh Sách Đánh Giá', path: '/admin/reviews' },
     { icon: MessageSquareWarning, label: 'Báo Cáo Phản Hồi', path: '/admin/complaints' },
-    { icon: Settings, label: 'Cấu Hình Hệ Thống', path: '/admin/settings' },
   ]
 
   return (
