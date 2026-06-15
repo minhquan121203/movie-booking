@@ -70,6 +70,7 @@ export const autoSyncTMDB = async () => {
     try {
         let newCount = 0;
         let updateCount = 0;
+        let skippedNoPoster = 0;
         const allMovies = new Set();
 
         // 🎭 Ưu tiên 1: Phim Việt Nam
@@ -79,7 +80,13 @@ export const autoSyncTMDB = async () => {
                 const vietnamRes = await axios.get(
                     `${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=vi-VN&region=VN&with_original_language=vi&sort_by=release_date.desc&page=${page}`
                 );
-                vietnamRes.data.results.forEach(m => allMovies.add(m.id));
+                vietnamRes.data.results.forEach(m => {
+                    if (m.poster_path) {
+                        allMovies.add(m.id);
+                    } else {
+                        skippedNoPoster++;
+                    }
+                });
             }
         } catch (err) {
             console.warn("⚠️ Lỗi cào phim Việt Nam:", err.message);
@@ -100,14 +107,20 @@ export const autoSyncTMDB = async () => {
                     const movieRes = await axios.get(
                         `${BASE_URL}/movie/${cat.name}?api_key=${TMDB_API_KEY}&language=vi-VN&page=${page}`
                     );
-                    movieRes.data.results.forEach(m => allMovies.add(m.id));
+                    movieRes.data.results.forEach(m => {
+                        if (m.poster_path) {
+                            allMovies.add(m.id);
+                        } else {
+                            skippedNoPoster++;
+                        }
+                    });
                 } catch (err) {
                     console.warn(`⚠️ Lỗi cào ${cat.name} page ${page}:`, err.message);
                 }
             }
         }
 
-        console.log(`📊 Tổng cộng ${allMovies.size} phim cần xử lý...`);
+        console.log(`📊 Tổng cộng ${allMovies.size} phim cần xử lý (đã bỏ qua ${skippedNoPoster} phim không có poster)...`);
         let processedCount = 0;
 
         // 🔄 Xử lý từng phim
@@ -128,7 +141,7 @@ export const autoSyncTMDB = async () => {
                 const currentStatus = releaseDateObj <= now ? "Đang chiếu" : "Sắp chiếu";
                 let posterLink = m.poster_path
                     ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
-                    : "https://via.placeholder.com/500x750?text=No+Poster";
+                    : (m.backdrop_path ? `https://image.tmdb.org/t/p/w500${m.backdrop_path}` : "");
                 // trailerLink defined here so both create & update branches can access
                 let trailerLink = "";
 
@@ -196,6 +209,13 @@ export const autoSyncTMDB = async () => {
                         if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
                     }
 
+                    // 🚫 Bỏ qua phim không có poster thật HOẶC không có trailer YouTube
+                    if (!posterLink || !trailerLink) {
+                        console.log(`⏭️ Bỏ qua phim "${m.title}" - Thiếu ${!posterLink ? 'poster' : 'trailer'}`);
+                        processedCount++;
+                        continue;
+                    }
+
                     if (m.credits) {
                         const directorObj = m.credits.crew.find(c => c.job === "Director");
                         if (directorObj) directorName = directorObj.name;
@@ -219,11 +239,9 @@ export const autoSyncTMDB = async () => {
                         }
                     }
 
-                    // ✅ Tạo phim mới (đảm bảo luôn có posterUrl/trailerUrl - sử dụng backdrop nếu poster thiếu, placeholder nếu không có)
-                    const finalPoster = (!posterLink || posterLink.includes('placeholder')) && m.backdrop_path
-                        ? `https://image.tmdb.org/t/p/w500${m.backdrop_path}`
-                        : posterLink;
-                    const finalTrailer = trailerLink || m.homepage || "";
+                    // ✅ Tạo phim mới (poster và trailer đã được xác minh ở trên)
+                    const finalPoster = posterLink;
+                    const finalTrailer = trailerLink;
 
                     try {
                         await Movie.create({
@@ -307,19 +325,14 @@ export const autoSyncTMDB = async () => {
                         needsUpdate = true;
                     }
 
-                    // Fallback poster/trailer for updates as well (do not reassign original vars)
-                    const finalPosterUpdate = ((!posterLink || posterLink.includes('placeholder')) && m.backdrop_path)
-                        ? `https://image.tmdb.org/t/p/w500${m.backdrop_path}`
-                        : posterLink;
-                    const finalTrailerUpdate = trailerLink || m.homepage || "";
-
+                    // Chỉ cập nhật poster/trailer nếu có dữ liệu thật từ TMDB
                     // Always update poster/trailer if we found better ones
-                    if (finalPosterUpdate && finalPosterUpdate !== exists.posterUrl) {
-                        exists.posterUrl = finalPosterUpdate;
+                    if (posterLink && posterLink !== exists.posterUrl) {
+                        exists.posterUrl = posterLink;
                         needsUpdate = true;
                     }
-                    if (finalTrailerUpdate && finalTrailerUpdate !== exists.trailerUrl) {
-                        exists.trailerUrl = finalTrailerUpdate;
+                    if (trailerLink && trailerLink !== exists.trailerUrl) {
+                        exists.trailerUrl = trailerLink;
                         needsUpdate = true;
                     }
 
