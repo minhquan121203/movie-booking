@@ -645,6 +645,13 @@ const bookingController = {
 
           if (!finalizedSchedule) throw new Error("Giao dịch thất bại. Một số ghế đã bị người khác mua ngay trước khi bạn thanh toán.");
 
+          // Tăng số lượng vé (viewCount) cho phim
+          await mongoose.model("Movie").findByIdAndUpdate(
+            finalizedSchedule.movie,
+            { $inc: { viewCount: seatNumbers.length } },
+            { session }
+          );
+
           websocketService.emitToSchedule(booking.schedule.toString(), "seats-status-changed", {
             scheduleId: booking.schedule,
             seatAvailability: finalizedSchedule.seatAvailability,

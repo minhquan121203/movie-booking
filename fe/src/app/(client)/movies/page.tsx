@@ -99,7 +99,7 @@ function MoviesContent() {
     const params: GetMoviesParams = {
       page: 1,
       limit: itemsPerPage,
-      sortBy: selectedSort === 'Mới nhất' ? 'releaseDate' : 'view_count',
+      sortBy: selectedSort === 'Mới nhất' ? 'releaseDate' : 'viewCount',
       order: 'desc',
 
       rating: selectedRating === 'P' ? undefined : selectedRating,
@@ -131,7 +131,7 @@ function MoviesContent() {
         params.order = 'desc'
         break
       case 'Lượt xem':
-        params.sortBy = 'view_count'
+        params.sortBy = 'viewCount'
         params.order = 'desc'
         break
       default:

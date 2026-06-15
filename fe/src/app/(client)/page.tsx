@@ -34,7 +34,7 @@ export default function HomePage() {
   // Fetch Top Movies (Chỉ lấy phim Đang chiếu để luôn hiện nút MUA VÉ)
   const { data: topMovieData, isLoading: loadingTop } = useMovies({
     limit: 12,
-    sortBy: 'averageRating',
+    sortBy: 'viewCount',
     order: 'desc',
     status: 'Đang chiếu',
   })
