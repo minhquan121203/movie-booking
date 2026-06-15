@@ -169,6 +169,39 @@ export const autoSyncTMDB = async () => {
                     }
                 }
 
+                // 🎞️ Trailer selection: prefer YouTube trailers (vi -> en -> any), then any YouTube video, then Teaser/Official
+                if (m.videos?.results && m.videos.results.length > 0) {
+                    const videos = m.videos.results;
+                    const bySite = (site) => videos.filter(v => v.site === site);
+                    const yt = bySite("YouTube");
+
+                    const pick = (arr, predicates) => {
+                        for (const pred of predicates) {
+                            const found = arr.find(pred);
+                            if (found) return found;
+                        }
+                        return null;
+                    };
+
+                    const selectedVideo = pick(yt, [
+                        v => /Trailer/i.test(v.type) && v.iso_639_1 === 'vi',
+                        v => /Trailer/i.test(v.type) && v.iso_639_1 === 'en',
+                        v => /Trailer/i.test(v.type),
+                        v => /Official/i.test(v.name) && /Trailer/i.test(v.type),
+                        v => /Teaser/i.test(v.type),
+                        () => true, // any YouTube video as last resort
+                    ]);
+
+                    if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
+                }
+
+                // 🚫 Bỏ qua phim không có poster thật HOẶC không có trailer
+                if (!posterLink || !trailerLink) {
+                    console.log(`⏭️ Bỏ qua phim "${m.title}" - Thiếu ${!posterLink ? 'poster' : 'trailer'}`);
+                    processedCount++;
+                    continue;
+                }
+
                 if (!exists) {
                     let realDuration = 90;
                     let directorName = "Đang cập nhật";
@@ -181,40 +214,6 @@ export const autoSyncTMDB = async () => {
 
                     // 📊 Lấy rating/certification từ TMDB
                     movieRating = await getMovieRating(movieId);
-
-                    // 🎞️ Trailer selection: prefer YouTube trailers (vi -> en -> any), then any YouTube video, then Teaser/Official
-                    if (m.videos?.results && m.videos.results.length > 0) {
-                        const videos = m.videos.results;
-                        const bySite = (site) => videos.filter(v => v.site === site);
-                        const yt = bySite("YouTube");
-
-                        const pick = (arr, predicates) => {
-                            for (const pred of predicates) {
-                                const found = arr.find(pred);
-                                if (found) return found;
-                            }
-                            return null;
-                        };
-
-                        const selectedVideo =
-                            pick(yt, [
-                                v => /Trailer/i.test(v.type) && v.iso_639_1 === 'vi',
-                                v => /Trailer/i.test(v.type) && v.iso_639_1 === 'en',
-                                v => /Trailer/i.test(v.type),
-                                v => /Official/i.test(v.name) && /Trailer/i.test(v.type),
-                                v => /Teaser/i.test(v.type),
-                                        () => true, // any YouTube video as last resort
-                            ]);
-
-                        if (selectedVideo) trailerLink = `https://www.youtube.com/embed/${selectedVideo.key}`;
-                    }
-
-                    // 🚫 Bỏ qua phim không có poster thật HOẶC không có trailer
-                    if (!posterLink || !trailerLink) {
-                        console.log(`⏭️ Bỏ qua phim "${m.title}" - Thiếu ${!posterLink ? 'poster' : 'trailer'}`);
-                        processedCount++;
-                        continue;
-                    }
 
                     if (m.credits) {
                         const directorObj = m.credits.crew.find(c => c.job === "Director");
