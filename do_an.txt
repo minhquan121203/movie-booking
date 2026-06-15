@@ -1,0 +1,4397 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ĐẠI HỌC CÔNG NGHỆ GIAO THÔNG VẬN TẢI
+
+KHOA CÔNG NGHỆ THÔNG TIN
+
+-----🙞🕮🙜-----
+
+
+
+
+
+
+
+Kiều Minh Quân
+
+
+
+
+
+
+
+
+      XÂY DỰNG WEBSITE ĐẶT VÉ XEM PHIM TRỰC TUYẾN CHO RẠP CINEBOOKING
+
+
+
+
+
+
+
+ĐỒ ÁN TỐT NGHIỆP ĐẠI HỌC CHÍNH QUY
+
+Ngành: Công nghệ thông tin
+
+
+
+
+
+
+
+
+
+
+
+
+
+HÀ NỘI - 2026
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ĐẠI HỌC CÔNG NGHỆ GIAO THÔNG VẬN TẢI
+
+KHOA CÔNG NGHỆ THÔNG TIN
+
+-----🙞🕮🙜-----
+
+
+
+Kiều Minh Quân
+
+
+
+
+
+
+
+
+      XÂY DỰNG WEBSITE ĐẶT VÉ XEM PHIM TRỰC TUYẾN CHO RẠP CINEBOOKING
+
+
+
+
+
+
+
+ĐỒ ÁN TỐT NGHIỆP ĐẠI HỌC CHÍNH QUY
+
+Ngành: Công nghệ thông tin
+
+
+
+
+
+
+
+Cán bộ hướng dẫn: Th.S Nguyễn Văn Cường
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+HÀ NỘI - 2026
+
+
+LỜI CẢM ƠN
+
+
+Trong suốt quá trình học tập, nghiên cứu và rèn luyện tại trường Đại học Công nghệ Giao thông Vận tải, em đã nhận được sự dạy dỗ, chỉ bảo tận tình của các thầy cô giáo trong Khoa Công nghệ thông tin để tích lũy kiến thức nền tảng vững chắc, tạo tiền đề cho việc hoàn thiện dự án tốt nghiệp này.
+
+
+Trước hết, em xin bày tỏ lòng biết ơn sâu sắc và chân thành nhất tới thầy giáo ThS. Nguyễn Văn Cường. Thầy đã trực tiếp hướng dẫn, định hướng đề tài, tận tình chỉ bảo và đưa ra những nhận xét, đóng góp quý báu trong suốt quá trình em triển khai phân tích hệ thống, xây dựng cơ sở dữ liệu và hoàn thiện mã nguồn cho website CINEBOOKING. Những lời khuyên kỹ thuật và sự nghiêm túc trong khoa học của thầy đã giúp em vượt qua nhiều khó khăn trong khâu tối ưu hóa hệ thống.
+
+
+Em cũng xin gửi lời cảm ơn đến Ban Giám hiệu nhà trường, Ban lãnh đạo Khoa Công nghệ thông tin cùng toàn thể các thầy cô giáo đã tạo điều kiện cơ sở vật chất tốt nhất cho chúng em học tập và nghiên cứu.
+
+
+Cuối cùng, em xin kính chúc các thầy cô giáo trong Khoa Công nghệ thông tin luôn mạnh khỏe, hạnh phúc và gặt hái được nhiều thành công trong sự nghiệp trồng người cao quý. Do kiến thức và thời gian thực hiện đề tài có hạn, đồ án không tránh khỏi những thiếu sót, em rất mong nhận được những ý kiến đóng góp, chỉ bảo của các thầy cô trong Hội đồng để sản phẩm của em được hoàn thiện hơn.
+
+
+Em xin chân thành cảm ơn!
+
+
+
+
+TÓM TẮT
+
+
+Đồ án tốt nghiệp tập trung vào nghiên cứu, thiết kế và xây dựng hệ thống website đặt vé xem phim trực tuyến mang tên CINEBOOKING dành cho cụm rạp CineBooking. Đề tài giải quyết triệt để bài toán số hóa quy trình thương mại điện tử trong ngành công nghiệp điện ảnh thông qua việc tối ưu hóa trải nghiệm đặt vé, xử lý tranh chấp ghế ngồi khi chịu tải lớn và cung cấp bộ công cụ phân tích dữ liệu chuyên sâu cho nhà quản trị.
+
+
+Hệ thống được phát triển dựa trên kiến trúc phân lớp hiện đại với cấu trúc Stack công nghệ mạnh mẽ bao gồm: Framework Next.js kết hợp Tailwind CSS ở tầng giao diện (Frontend), Node.js cùng framework Express.js ở tầng xử lý nghiệp vụ (Backend), và hệ quản trị cơ sở dữ liệu NoSQL MongoDB phối hợp cùng giải pháp bộ nhớ đệm Redis nhằm tối ưu hóa hiệu năng truyền tải.
+
+
+Sản phẩm hoàn thiện cung cấp đầy đủ 3 phân hệ chức năng đồng bộ:
+
+
+1. Phân hệ Khách hàng: Cho phép tra cứu lịch chiếu theo ngày và cụm rạp, đặt vé và sản phẩm combo trực quan, tích hợp cổng thanh toán trực tuyến MoMo và VNPay, nhận vé điện tử định dạng mã QR Code. Hệ thống tích hợp kỹ thuật phân trang (Pagination) mượt mà giúp tối ưu hóa thời gian tải trang danh sách phim.
+
+
+2. Phân hệ Nhân viên: Hỗ trợ soát vé thông minh tại cửa phòng chiếu thông qua công nghệ quét mã QR Code trên thiết bị di động, tự động đồng bộ và cập nhật trạng thái vé sang "Đã check-in" trên cơ sở dữ liệu.
+
+
+3. Phân hệ Quản trị (Admin): Tích hợp tài liệu hóa API bằng công cụ Swagger UI hỗ trợ cơ chế xác thực bảo mật Bearer Authorization. Đồng thời, hệ thống cung cấp một Dashboard quản trị thông minh sử dụng thư viện Recharts để trực quan hóa dữ liệu thống kê doanh thu, khung giờ vàng bán chạy và tỷ trọng thể loại phim được yêu thích theo thời gian thực (Real-time) dựa trên các thuật toán tối ưu hóa truy vấn MongoDB Aggregation Pipeline.
+
+
+Kết quả kiểm thử cho thấy hệ thống vận hành ổn định, cơ chế Hold Seat sử dụng Redis TTL xử lý hiệu quả bài toán đồng thời, ngăn chặn lỗi trùng ghế ngồi khi nhiều người dùng cùng đặt vé. Tốc độ phản hồi API trên các endpoint tra cứu phim và lịch chiếu được cải thiện đáng kể nhờ kết hợp Redis Cache và Pagination. Hệ thống đáp ứng các yêu cầu cơ bản của một nền tảng đặt vé xem phim trực tuyến hiện đại.
+
+
+
+
+LỜI CAM ĐOAN
+
+
+Em xin cam đoan đề tài Đồ án tốt nghiệp: "Xây dựng website đặt vé xem phim trực tuyến cho rạp CineBooking" là công trình nghiên cứu, phân tích hệ thống và lập trình thực tế do bản thân em tự thực hiện dưới sự hướng dẫn trực tiếp của thầy giáo ThS. Nguyễn Văn Cường.
+
+
+Toàn bộ nội dung phân tích nghiệp vụ, các sơ đồ đặc tả yêu cầu, kiến trúc thiết kế cơ sở dữ liệu và mã nguồn chương trình được trình bày trong cuốn đồ án này đều do em tự tìm hiểu, nghiên cứu và cài đặt hệ thống, không sao chép trái phép từ bất kỳ công trình hoặc mã nguồn có sẵn nào của tác giả khác. Các số liệu thống kê doanh thu, kịch bản kiểm thử, hình ảnh giao diện Dashboard quản trị và minh chứng phân trang thực nghiệm trong đồ án là hoàn toàn trung thực, phản ánh chính xác kết quả vận hành thực tế của hệ thống phần mềm tại thời điểm triển khai.
+
+
+Nếu có bất kỳ sự gian lận, sao chép không hợp lệ hoặc sai lệch sự thật nào, em xin hoàn toàn chịu trách nhiệm trước Hội đồng chấm tốt nghiệp và kỷ luật của Nhà trường theo các quy định hiện hành.
+
+
+
+
+Hà Nội, ngày … tháng … năm 2026
+
+    Sinh viên thực hiện
+
+
+
+
+
+       Kiều Minh Quân
+
+
+
+
+
+
+MỤC LỤC
+
+
+ TOC \o "1-3" \h \z \u LỜI CẢM ƠN PAGEREF _Toc231652729 \h I
+
+
+TÓM TẮT PAGEREF _Toc231652730 \h II
+
+
+LỜI CAM ĐOAN PAGEREF _Toc231652731 \h III
+
+
+MỤC LỤC PAGEREF _Toc231652732 \h IV
+
+
+DANH MỤC HÌNH ẢNH PAGEREF _Toc231652733 \h VI
+
+
+DANH MỤC BẢNG PAGEREF _Toc231652734 \h VIII
+
+
+DANH MỤC VIẾT TẮT PAGEREF _Toc231652735 \h X
+
+
+LỜI MỞ ĐẦU PAGEREF _Toc231652736 \h XI
+
+
+CHƯƠNG 1: GIỚI THIỆU TỔNG QUAN PAGEREF _Toc231652737 \h 1
+
+
+1.1. Lý do chọn đề tài PAGEREF _Toc231652738 \h 1
+
+
+1.2. Mục tiêu của đề tài PAGEREF _Toc231652739 \h 1
+
+
+1.3. Giới hạn phạm vi đề tài PAGEREF _Toc231652740 \h 2
+
+
+1.4. Kết quả dự kiến đạt được PAGEREF _Toc231652741 \h 2
+
+
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG CỤ SỬ DỤNG PAGEREF _Toc231652742 \h 4
+
+
+2.1. Nền tảng Node.js và ngôn ngữ TypeScript PAGEREF _Toc231652743 \h 4
+
+
+2.2. Hệ quản trị cơ sở dữ liệu MongoDB PAGEREF _Toc231652744 \h 4
+
+
+2.3. Kiến trúc RESTful API PAGEREF _Toc231652745 \h 5
+
+
+2.4. Ứng dụng Trí tuệ nhân tạo (AI) trong chăm sóc khách hàng PAGEREF _Toc231652746 \h 5
+
+
+2.4.1. Khái quát về AI Chatbot và Xử lý ngôn ngữ tự nhiên (NLP) PAGEREF _Toc231652747 \h 5
+
+
+2.4.2. Lựa chọn Model AI cho hệ thống PAGEREF _Toc231652748 \h 6
+
+
+2.4.3. Cơ chế nhận diện Ý định (Intent) và Thực thể (Entity) PAGEREF _Toc231652749 \h 6
+
+
+2.4.4. Luồng hoạt động của Chatbot trong hệ thống CineBooking PAGEREF _Toc231652750 \h 7
+
+
+2.5. Các công cụ hỗ trợ phát triển (Postman &amp; IDE) PAGEREF _Toc231652751 \h 7
+
+
+CHƯƠNG 3: PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG PAGEREF _Toc231652752 \h 8
+
+
+3.1. Yêu cầu ban đầu PAGEREF _Toc231652753 \h 8
+
+
+3.2. Thu thập yêu cầu hệ thống PAGEREF _Toc231652754 \h 8
+
+
+3.2.1. Phỏng vấn trực tiếp PAGEREF _Toc231652755 \h 9
+
+
+3.2.2. Khảo sát bằng phiếu câu hỏi PAGEREF _Toc231652756 \h 12
+
+
+3.2.3. Khảo sát các hệ thống tương tự PAGEREF _Toc231652757 \h 12
+
+
+3.3. Đối tượng sử dụng hệ thống và chức năng PAGEREF _Toc231652758 \h 14
+
+
+3.4. Biểu đồ Use Case tổng quát và mô tả chức năng PAGEREF _Toc231652759 \h 15
+
+
+3.4.1. Biểu đồ Use Case tổng quát PAGEREF _Toc231652760 \h 15
+
+
+3.4.2. Bảng mô tả chức năng của các Use Case PAGEREF _Toc231652761 \h 16
+
+
+3.5. Biểu đồ và đặc tả UC chi tiết của 1 số chức năng chính PAGEREF _Toc231652762 \h 18
+
+
+3.5.1. UC đặt vé online PAGEREF _Toc231652763 \h 18
+
+
+3.5.2. UC chatbot AI PAGEREF _Toc231652764 \h 20
+
+
+3.5.3. UC quản lý phim PAGEREF _Toc231652765 \h 23
+
+
+3.5.4. UC bán vé tại quầy PAGEREF _Toc231652766 \h 34
+
+
+3.5.5. UC xem thống kê PAGEREF _Toc231652767 \h 37
+
+
+3.6. Sơ đồ lớp (Class Diagram) PAGEREF _Toc231652768 \h 40
+
+
+3.7. Thiết kế cơ sở dữ liệu PAGEREF _Toc231652769 \h 41
+
+
+3.7.1. Chi tiết cấu trúc các tài liệu dữ liệu (Collections) PAGEREF _Toc231652770 \h 41
+
+
+3.8. Kiến trúc về AI PAGEREF _Toc231652771 \h 47
+
+
+3.8.1. Tổng quan kiến trúc hệ thống AI Chatbot PAGEREF _Toc231652772 \h 47
+
+
+3.8.2. Quy trình xử lý câu hỏi PAGEREF _Toc231652773 \h 48
+
+
+3.8.3. Thiết kế Prompt Engineering PAGEREF _Toc231652774 \h 49
+
+
+CHƯƠNG 4: XÂY DỰNG HỆ THỐNG PAGEREF _Toc231652775 \h 50
+
+
+4.1. Kết quả xây dựng cơ sở dữ liệu PAGEREF _Toc231652776 \h 50
+
+
+4.2. Môi trường triển khai chương trình PAGEREF _Toc231652777 \h 51
+
+
+4.2.1. Phần mềm và môi trường cần thiết PAGEREF _Toc231652778 \h 51
+
+
+4.2.2. Cấu hình máy chủ và kết nối mạng PAGEREF _Toc231652779 \h 51
+
+
+4.2.3. Tích hợp dịch vụ bên ngoài PAGEREF _Toc231652780 \h 52
+
+
+4.3. Giao diện của website PAGEREF _Toc231652781 \h 53
+
+
+4.3.1. Giao diện khách hàng PAGEREF _Toc231652782 \h 53
+
+
+4.3.2. Giao diện nhân viên PAGEREF _Toc231652783 \h 56
+
+
+4.3.3. Giao diện quản trị (Admin) PAGEREF _Toc231652784 \h 57
+
+
+4.4. Kết quả xây dựng AI Chatbot PAGEREF _Toc231652785 \h 60
+
+
+4.4.1. Kết quả thực tế PAGEREF _Toc231652786 \h 60
+
+
+4.4.2. Đánh giá kết quả PAGEREF _Toc231652787 \h 61
+
+
+4.5. Kiểm thử và đánh giá hệ thống PAGEREF _Toc231652788 \h 61
+
+
+4.5.1. Mục tiêu kiểm thử PAGEREF _Toc231652789 \h 61
+
+
+4.5.2. Phương pháp kiểm thử PAGEREF _Toc231652790 \h 62
+
+
+KẾT LUẬN PAGEREF _Toc231652791 \h 66
+
+
+TÀI LIỆU THAM KHẢO PAGEREF _Toc231652792 \h 67
+
+
+
+
+DANH MỤC HÌNH ẢNH
+
+
+ TOC \h \z \t "Hinh Anh,1" Hình 2.1: Logo hệ quản trị cơ sở dữ liệu MongoDB PAGEREF _Toc231652793 \h 4
+
+
+Hình 2.2: Logo các công cụ hỗ trợ phát triển Postman và Visual Studio Code PAGEREF _Toc231652795 \h 7
+
+
+Hình 3.1 Biểu đồ Use Case tổng quát PAGEREF _Toc231652796 \h 15
+
+
+Hình 3.2 Biểu đồ UC đặt vé online PAGEREF _Toc231652797 \h 18
+
+
+Hình 3.3 Biểu đồ hoạt động đặt vé online PAGEREF _Toc231652798 \h 19
+
+
+Hình 3.4 Biểu đồ trình tự đặt vé online PAGEREF _Toc231652799 \h 20
+
+
+Hình 3.5 Biểu đồ UC chatbot AI PAGEREF _Toc231652800 \h 20
+
+
+Hình 3.6 Biểu đồ hoạt động chatbot AI PAGEREF _Toc231652801 \h 22
+
+
+Hình 3.7 Biểu đồ trình tự chatbot AI PAGEREF _Toc231652802 \h 23
+
+
+Hình 3.8 Biểu đồ UC quản lý phim PAGEREF _Toc231652803 \h 23
+
+
+Hình 3.9 Biểu đồ hoạt động thêm thông tin phim PAGEREF _Toc231652804 \h 25
+
+
+Hình 3.10 Biểu đồ trình tự thêm thông tin phim PAGEREF _Toc231652805 \h 26
+
+
+Hình 3.11 Biểu đồ hoạt động sửa thông tin phim PAGEREF _Toc231652806 \h 28
+
+
+Hình 3.12 Biểu đồ trình tự sửa thông tin phim PAGEREF _Toc231652807 \h 29
+
+
+Hình 3.13 Biểu đồ hoạt động xóa thông tin phim PAGEREF _Toc231652808 \h 31
+
+
+Hình 3.14 Biểu đồ trình tự xóa thông tin phim PAGEREF _Toc231652809 \h 32
+
+
+Hình 3.15 Biểu đồ hoạt động tìm kiếm thông tin phim PAGEREF _Toc231652810 \h 33
+
+
+Hình 3.16 Biểu đồ trình tự tìm kiếm thông tin phim PAGEREF _Toc231652811 \h 34
+
+
+Hình 3.17 Biểu đồ UC bán vé tại quầy PAGEREF _Toc231652812 \h 34
+
+
+Hình 3.18 Biểu đồ hoạt động bán vé tại quầy PAGEREF _Toc231652813 \h 36
+
+
+Hình 3.19 Biểu đồ trình tự bán vé tại quầy PAGEREF _Toc231652814 \h 37
+
+
+Hình 3.20 Biểu đồ UC xem thống kê PAGEREF _Toc231652815 \h 37
+
+
+Hình 3.21 Biểu đồ hoạt động xem thống kê PAGEREF _Toc231652816 \h 39
+
+
+Hình 3.22 Biểu đồ trình tự xem thống kê PAGEREF _Toc231652817 \h 39
+
+
+Hình 3.23 Sơ đồ lớp (Class Diagram) PAGEREF _Toc231652818 \h 40
+
+
+Hình 3.24 Sơ đồ kiến trúc hệ thống AI Chatbot CineBooking PAGEREF _Toc231652819 \h 47
+
+
+Hình 4.1: Sơ đồ thực thể cơ sở dữ liệu (Database Schema) PAGEREF _Toc231652820 \h 50
+
+
+Hình 4.2 Giao diện trang chủ — danh sách phim đang chiếu PAGEREF _Toc231652821 \h 53
+
+
+Hình 4.3 Giao diện chi tiết phim và lịch chiếu PAGEREF _Toc231652822 \h 53
+
+
+Hình 4.4 Giao diện sơ đồ chọn ghế ngồi PAGEREF _Toc231652823 \h 54
+
+
+Hình 4.5 Giao diện thanh toán trực tuyến PAGEREF _Toc231652824 \h 55
+
+
+Hình 4.6 Giao diện vé điện tử và lịch sử giao dịch PAGEREF _Toc231652825 \h 55
+
+
+Hình 4.7 Giao diện đăng nhập phân hệ nhân viên PAGEREF _Toc231652826 \h 56
+
+
+Hình 4.8 Giao diện soát vé bằng camera quét mã QR Code PAGEREF _Toc231652827 \h 57
+
+
+Hình 4.9 Giao diện Dashboard thống kê doanh thu PAGEREF _Toc231652828 \h 58
+
+
+Hình 4.10 Giao diện quản lý danh mục phim PAGEREF _Toc231652829 \h 58
+
+
+Hình 4.11 Giao diện quản lý lịch chiếu PAGEREF _Toc231652830 \h 59
+
+
+Hình 4.12 Giao diện quản lý tài khoản người dùng và phân quyền PAGEREF _Toc231652831 \h 59
+
+
+Hình 4.13 Giao diện tài liệu hóa API bằng Swagger UI PAGEREF _Toc231652832 \h 59
+
+
+Hình 4.14 Giao diện AI Chatbot trả lời câu hỏi về lịch chiếu phim PAGEREF _Toc231652833 \h 60
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+DANH MỤC BẢNG
+
+
+ TOC \h \z \t "Bang,1" Bảng 2.1. So sánh cơ sở dữ liệu MySQL và MongoDB PAGEREF _Toc231652834 \h 5
+
+
+Bảng 2.2. So sánh các model AI cho bài toán Chatbot PAGEREF _Toc231652835 \h 6
+
+
+Bảng 3.1. Phương pháp khảo sát PAGEREF _Toc231652836 \h 8
+
+
+Bảng 3.2. Kết quả phỏng vấn Chị Kiều Hải Yến PAGEREF _Toc231652837 \h 9
+
+
+Bảng 3.3. Kết quả phỏng vấn Chị Nguyễn Thu Hằng PAGEREF _Toc231652838 \h 11
+
+
+Bảng 3.4: Bảng mô tả chức năng của các Use Case PAGEREF _Toc231652839 \h 16
+
+
+Bảng 3.5: Đặc tả yêu cầu UC đặt vé online PAGEREF _Toc231652840 \h 18
+
+
+Bảng 3.6: Đặc tả yêu cầu UC chatbot AI PAGEREF _Toc231652841 \h 21
+
+
+Bảng 3.7: Đặc tả yêu cầu thêm thông tin phim PAGEREF _Toc231652842 \h 24
+
+
+Bảng 3.8: Đặc tả yêu cầu sửa thông tin phim PAGEREF _Toc231652843 \h 26
+
+
+Bảng 3.9: Đặc tả yêu cầu xóa thông tin phim PAGEREF _Toc231652844 \h 29
+
+
+Bảng 3.10: Đặc tả yêu cầu tìm kiếm thông tin phim PAGEREF _Toc231652845 \h 32
+
+
+Bảng 3.11: Đặc tả yêu cầu UC bán vé tại quầy PAGEREF _Toc231652846 \h 35
+
+
+Bảng 3.12: Đặc tả yêu cầu UC xem thống kê PAGEREF _Toc231652847 \h 38
+
+
+Bảng 3.13. Collection User (Người dùng) PAGEREF _Toc231652848 \h 41
+
+
+Bảng 3.14. Collection Movie (Phim) PAGEREF _Toc231652849 \h 42
+
+
+Bảng 3.15. Collection Theater (Cụm rạp chiếu) PAGEREF _Toc231652850 \h 42
+
+
+Bảng 3.16. Collection Room (Phòng chiếu) PAGEREF _Toc231652851 \h 43
+
+
+Bảng 3.17. Collection Schedule (Lịch chiếu) PAGEREF _Toc231652852 \h 43
+
+
+Bảng 3.18. Collection Booking (Đơn đặt vé) PAGEREF _Toc231652853 \h 44
+
+
+Bảng 3.19. Collection Product (Sản phẩm combo) PAGEREF _Toc231652854 \h 45
+
+
+Bảng 3.20. Collection Voucher (Mã giảm giá) PAGEREF _Toc231652855 \h 45
+
+
+Bảng 3.21. Collection Category (Thể loại phim) PAGEREF _Toc231652856 \h 46
+
+
+Bảng 3.22. Collection Review (Đánh giá phim) PAGEREF _Toc231652857 \h 46
+
+
+Bảng 3.23. Collection Shift (Ca làm việc) PAGEREF _Toc231652858 \h 46
+
+
+Bảng 3.24. Quy trình xử lý câu hỏi của AI Chatbot PAGEREF _Toc231652859 \h 48
+
+
+Bảng 4.1. Môi trường và phần mềm triển khai hệ thống CineBooking PAGEREF _Toc231652860 \h 51
+
+
+Bảng 4.2: Cấu hình môi trường và endpoint callback của các cổng thanh toán PAGEREF _Toc231652861 \h 52
+
+
+Bảng 4.3. Kết quả kiểm tra độ chính xác AI Chatbot theo nhóm câu hỏi PAGEREF _Toc231652862 \h 60
+
+
+Bảng 4.4. Testcase chức năng Đặt vé online PAGEREF _Toc231652863 \h 62
+
+
+Bảng 4.5. Testcase chức năng Chatbot AI PAGEREF _Toc231652864 \h 63
+
+
+Bảng 4.6. Testcase chức năng bán vé tại quầy PAGEREF _Toc231652865 \h 64
+
+
+Bảng 4.7. Testcase chức năng quản lý phim (Admin) PAGEREF _Toc231652866 \h 64
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DANH MỤC VIẾT TẮT
+
+STT
+
+Viết tắt
+
+Tiếng Anh (Giải thích đầy đủ)
+
+Tiếng Việt
+
+1
+
+AI
+
+Artificial Intelligence
+
+Trí tuệ nhân tạo
+
+2
+
+API
+
+Application Programming Interface
+
+Giao diện lập trình ứng dụng
+
+3
+
+BPMN
+
+Business Process Model and Notation
+
+Ký hiệu mô hình hóa quy trình nghiệp vụ
+
+4
+
+CDN
+
+Content Delivery Network
+
+Mạng phân phối nội dung
+
+5
+
+CPU
+
+Central Processing Unit
+
+Bộ xử lý trung tâm
+
+6
+
+CRUD
+
+Create, Read, Update, Delete
+
+Tạo, Đọc, Cập nhật, Xóa
+
+7
+
+CSR
+
+Client-Side Rendering
+
+Kết xuất phía máy khách
+
+8
+
+CSS
+
+Cascading Style Sheets
+
+Ngôn ngữ định kiểu tầng
+
+9
+
+DB
+
+Database
+
+Cơ sở dữ liệu
+
+10
+
+HTTP
+
+HyperText Transfer Protocol
+
+Giao thức truyền tải siêu văn bản
+
+11
+
+HTTPS
+
+HyperText Transfer Protocol Secure
+
+Giao thức truyền tải siêu văn bản bảo mật
+
+12
+
+IDE
+
+Integrated Development Environment
+
+Môi trường phát triển tích hợp
+
+13
+
+JSON
+
+JavaScript Object Notation
+
+Định dạng trao đổi dữ liệu nhẹ
+
+14
+
+JWT
+
+JSON Web Token
+
+Mã thông báo xác thực dạng JSON
+
+15
+
+HMAC
+
+Hash-based Message Authentication Code
+
+Mã xác thực thông điệp dựa trên hàm băm
+
+16
+
+NLP
+
+Natural Language Processing
+
+Xử lý ngôn ngữ tự nhiên
+
+17
+
+NoSQL
+
+Not Only SQL
+
+Cơ sở dữ liệu phi quan hệ
+
+18
+
+OTP
+
+One-Time Password
+
+Mật khẩu dùng một lần
+
+19
+
+QR
+
+Quick Response
+
+Mã phản hồi nhanh
+
+20
+
+RAM
+
+Random Access Memory
+
+Bộ nhớ truy cập ngẫu nhiên
+
+21
+
+RDBMS
+
+Relational Database Management System
+
+Hệ quản trị cơ sở dữ liệu quan hệ
+
+22
+
+REST
+
+Representational State Transfer
+
+Kiến trúc truyền tải trạng thái đại diện
+
+23
+
+SDK
+
+Software Development Kit
+
+Bộ công cụ phát triển phần mềm
+
+24
+
+SHA
+
+Secure Hash Algorithm
+
+Thuật toán băm bảo mật
+
+25
+
+SMTP
+
+Simple Mail Transfer Protocol
+
+Giao thức truyền thư điện tử đơn giản
+
+26
+
+SQL
+
+Structured Query Language
+
+Ngôn ngữ truy vấn có cấu trúc
+
+27
+
+SSR
+
+Server-Side Rendering
+
+Kết xuất phía máy chủ
+
+28
+
+SSL
+
+Secure Sockets Layer
+
+Lớp kết nối bảo mật
+
+29
+
+TLS
+
+Transport Layer Security
+
+Bảo mật tầng truyền tải
+
+30
+
+TTL
+
+Time To Live
+
+Thời gian sống của dữ liệu
+
+31
+
+UC
+
+Use Case
+
+Ca sử dụng
+
+32
+
+UI
+
+User Interface
+
+Giao diện người dùng
+
+33
+
+URL
+
+Uniform Resource Locator
+
+Định vị tài nguyên thống nhất
+
+34
+
+UX
+
+User Experience
+
+Trải nghiệm người dùng
+
+
+LỜI MỞ ĐẦU
+
+
+Sự phát triển mạnh mẽ của cuộc cách mạng công nghiệp lần thứ tư đã và đang thay đổi toàn diện phương thức vận hành của nền kinh tế toàn cầu, trong đó thương mại điện tử đóng vai trò là một trong những trụ cột cốt lõi. Ngành công nghiệp điện ảnh và dịch vụ giải trí chiếu rạp tại Việt Nam cũng không nằm ngoài xu thế dịch chuyển tất yếu đó. Mô hình bán vé truyền thống tại quầy đang dần bộc lộ nhiều điểm nghẽn về mặt không gian và thời gian, đặc biệt là vào các khung giờ cao điểm hoặc các dịp lễ tết, gây nên tình trạng ùn ứ và gia tăng chi phí vận hành cho doanh nghiệp. Việc chuyển đổi mô hình kinh doanh sang nền tảng số thông qua các hệ thống đặt vé trực tuyến là giải pháp chiến lược giúp các rạp chiếu phim tối ưu hóa nguồn lực, quản lý tập trung và nâng cao năng lực cạnh tranh.
+
+
+Tuy nhiên, việc xây dựng một hệ thống đặt vé trực tuyến chất lượng cao đòi hỏi phải giải quyết triệt để các bài toán công nghệ phức tạp liên quan đến hạ tầng xử lý giao dịch. Vấn đề tranh chấp dữ liệu khi hàng ngàn khách hàng cùng truy cập và đặt mua một vị trí ghế ngồi trong cùng một thời điểm, hay việc suy giảm hiệu năng hệ thống khi khối lượng bản ghi suất chiếu và hóa đơn tăng lên theo cấp số nhân là những rào cản kỹ thuật lớn. Bên cạnh đó, việc thiếu hụt các công cụ tổng hợp dữ liệu trực quan theo thời gian thực cũng khiến các nhà quản lý rạp gặp khó khăn trong việc đưa ra chiến lược phân bổ lịch chiếu tối ưu.
+
+
+Nhận thức được tầm quan trọng và tính cấp thiết của vấn đề, em đã lựa chọn đề tài "Xây dựng website đặt vé xem phim trực tuyến cho rạp CineBooking" để nghiên cứu và triển khai đồ án tốt nghiệp của mình. Hệ thống hướng tới việc ứng dụng những công nghệ lập trình web tiên tiến để tối ưu hóa toàn bộ quy trình từ khâu tra cứu lịch chiếu, giữ chỗ, thanh toán không dùng tiền mặt của khách hàng cho đến khâu kiểm duyệt vé của nhân viên và phân tích hiệu suất kinh doanh của nhà quản trị.
+
+
+
+
+
+
+
+
+
+
+CHƯƠNG 1: GIỚI THIỆU TỔNG QUAN
+
+
+1.1. Lý do chọn đề tài
+
+Ngày nay, cùng với sự phát triển mạnh mẽ của Công nghệ thông tin và Internet, việc số hóa các dịch vụ thương mại đang trở thành xu hướng tất yếu. Trong lĩnh vực giải trí, đặc biệt là công nghiệp điện ảnh, nhu cầu xem phim tại rạp của người dân ngày càng tăng cao. Tuy nhiên, hình thức mua vé trực tiếp tại quầy truyền thống vẫn bộc lộ nhiều hạn chế như: khách hàng mất nhiều thời gian xếp hàng chờ đợi, không chủ động được việc chọn vị trí ghế ngồi ưng ý, và rạp chiếu phim gặp khó khăn trong việc kiểm soát lưu lượng khách vào các khung giờ cao điểm.
+
+Bên cạnh đó, với sự bùng nổ của Trí tuệ nhân tạo (AI), việc ứng dụng AI vào chăm sóc khách hàng đang mang lại hiệu quả vượt trội. Các hệ thống tư vấn tự động (Chatbot) có khả năng giải đáp thắc mắc của khách hàng 24/7, giúp tiết kiệm nguồn nhân lực và nâng cao trải nghiệm người dùng một cách chuyên nghiệp nhất. Việc kết hợp giữa một nền tảng thương mại điện tử và trợ lý ảo thông minh là một hướng đi vô cùng tiềm năng.
+
+Nhận thấy những vấn đề thực tiễn đó, kết hợp với những kiến thức đã tích lũy được trong quá trình học tập, em quyết định lựa chọn đề tài: "Xây dựng website đặt vé xem phim trực tuyến cho rạp CineBooking". Đề tài không chỉ giúp giải quyết bài toán đặt vé truyền thống mà còn là cơ hội để em ứng dụng các công nghệ lập trình hiện đại như Node.js, TypeScript và đặc biệt là tích hợp AI vào một hệ thống thực tế.
+
+
+1.2. Mục tiêu của đề tài
+
+Về phía khách hàng: Xây dựng một nền tảng web thân thiện, trực quan, cho phép người dùng dễ dàng tra cứu thông tin phim, lịch chiếu, chủ động lựa chọn vị trí ghế ngồi, đặt mua các combo bắp nước và thực hiện thanh toán trực tuyến một cách nhanh chóng.
+
+Về phía quản trị viên: Phát triển hệ thống quản trị (Admin Dashboard) chuyên nghiệp nhằm hỗ trợ Ban quản lý kiểm soát toàn diện danh mục phim, suất chiếu, hạ tầng phòng chiếu, tài khoản người dùng và cung cấp các báo cáo thống kê doanh thu hiệu quả.
+
+
+
+
+
+
+
+Về mặt công nghệ và kiến trúc hệ thống:
+
++ Triển khai cơ chế khóa ghế tạm thời (Hold Seat) sử dụng Redis với thời gian sống (TTL) 10 phút để xử lý các truy cập đồng thời (Concurrency), đảm bảo tính toàn vẹn dữ liệu và ngăn chặn tuyệt đối lỗi đặt trùng vị trí ghế.
+
++ Tích hợp trợ lý ảo AI ứng dụng mô hình Google Gemini 1.5 Flash nhằm tự động hóa khâu chăm sóc khách hàng. Chatbot có khả năng hiểu và giải đáp các thắc mắc thường gặp (FAQ) về lịch chiếu, giá vé và khuyến mãi bằng tiếng Việt tự nhiên.
+
+
+1.3. Giới hạn phạm vi đề tài
+
+Phạm vi nghiệp vụ: Đề tài tập trung giải quyết quy trình vận hành cốt lõi của hệ thống rạp chiếu phim CineBooking, bao gồm: quản lý danh mục phim, cấu hình suất chiếu, luồng đặt vé và nghiệp vụ chăm sóc khách hàng cơ bản.
+
+Phạm vi công nghệ: Ứng dụng được phát triển và tối ưu hóa trên nền tảng Web. Các tính năng thanh toán trực tuyến được tích hợp và mô phỏng giao dịch trong môi trường thử nghiệm (Sandbox).
+
+Phạm vi ứng dụng AI Chatbot: Trợ lý ảo được giới hạn trong việc phân tích ý định (Intent) và phản hồi các câu hỏi liên quan trực tiếp đến dịch vụ của rạp chiếu phim. Hệ thống không hỗ trợ hội thoại đa lượt phức tạp hoặc xử lý các yêu cầu nằm ngoài phạm vi nghiệp vụ điện ảnh.
+
+Phạm vi cơ chế Hold Seat: Cơ chế giữ chỗ tạm thời chỉ có hiệu lực tối đa 10 phút. Hệ thống không hỗ trợ tính năng đặt giữ chỗ dài hạn hoặc đặt ghế trước nhiều ngày nếu không phát sinh giao dịch thanh toán.
+
+
+1.4. Kết quả dự kiến đạt được
+
+- Xây dựng hoàn chỉnh hệ thống đặt vé xem phim CineBooking với 03 phân hệ người dùng rõ ràng: Khách hàng, Nhân viên rạp và Quản trị viên.
+
+- Cơ chế Hold Seat hoạt động chính xác, đảm bảo không xảy ra tình trạng xung đột hoặc trùng ghế khi nhiều người dùng thao tác đặt vé cùng một thời điểm.
+
+- Tối ưu hóa hiệu năng hệ thống bằng Redis Cache và kỹ thuật phân trang (Pagination), giúp tốc độ phản hồi API tra cứu đạt mức lý tưởng dưới 50ms (giảm thiểu đáng kể so với mức 200–300ms khi chưa tối ưu).
+
+- Tích hợp thành công ít nhất 02 cổng thanh toán điện tử (MoMo, VNPay hoặc PayOS) đi kèm cơ chế tự động phát hành vé điện tử dưới định dạng mã QR Code.
+
+- Module Trợ lý ảo AI vận hành ổn định, có khả năng phản hồi chính xác các câu hỏi về nghiệp vụ rạp phim với độ chuẩn xác kỳ vọng đạt trên 85%.
+
+- Hoàn thiện phân hệ soát vé dành cho nhân viên, hỗ trợ quét và xác thực mã QR Code bằng camera thiết bị di động, tự động cập nhật trạng thái "Đã check-in" theo thời gian thực.
+
+- Dashboard quản trị hiển thị các biểu đồ thống kê doanh thu và tỷ trọng phim trực quan, sinh động bằng thư viện Recharts.
+
+- Toàn bộ hệ thống API Backend được tài liệu hóa đầy đủ trên giao diện Swagger UI với cơ chế xác thực bảo mật Bearer Token, sẵn sàng cho việc mở rộng ứng dụng lên nền tảng Mobile App trong tương lai.
+
+
+
+
+
+
+
+
+
+
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT VÀ CÔNG CỤ SỬ DỤNG
+
+
+2.1. Nền tảng Node.js và ngôn ngữ TypeScript
+
+Node.js: Là một môi trường thực thi JavaScript mã nguồn mở, hoạt động đa nền tảng và được xây dựng trên V8 JavaScript Engine của Google Chrome. Ưu điểm lớn nhất của Node.js là sử dụng kiến trúc hướng sự kiện (Event-driven) và mô hình I/O không đồng bộ (Non-blocking I/O). Điều này đặc biệt phù hợp với hệ thống đặt vé CineBooking, nơi máy chủ phải xử lý đồng thời hàng ngàn yêu cầu kiểm tra trạng thái ghế trống cùng lúc mà không bị tắc nghẽn tài nguyên.
+
+TypeScript: Là một ngôn ngữ lập trình mã nguồn mở được phát triển bởi Microsoft, được xem là một phiên bản nâng cao của JavaScript. Bằng cách bổ sung các tùy chọn định kiểu tĩnh (Static Typing), TypeScript giúp lập trình viên phát hiện lỗi ngay trong quá trình viết code (Compile-time) thay vì lúc chạy chương trình. Việc sử dụng TypeScript trong dự án giúp định nghĩa rõ ràng các giao diện dữ liệu (Interfaces) cho Movie, Ticket, User, từ đó hệ thống trở nên bảo mật và dễ bảo trì hơn.
+
+
+2.2. Hệ quản trị cơ sở dữ liệu MongoDB
+
+MongoDB là hệ quản trị cơ sở dữ liệu NoSQL hướng tài liệu (Document-oriented), lưu trữ dữ liệu dưới dạng các document JSON linh hoạt thay vì bảng quan hệ cố định như các hệ quản trị SQL truyền thống. Mỗi document tương đương một bản ghi nhưng không bị ràng buộc bởi schema cứng — các document trong cùng một Collection có thể có cấu trúc khác nhau, phù hợp với dữ liệu thay đổi thường xuyên.
+
+
+
+
+Hình 2.1: Logo hệ quản trị cơ sở dữ liệu MongoDB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dự án CineBooking lựa chọn MongoDB thay vì MySQL với các lý do được thể hiện qua bảng so sánh sau:
+
+
+Bảng 2.1. So sánh cơ sở dữ liệu MySQL và MongoDB
+
+Tiêu chí
+
+MySQL (SQL)
+
+MongoDB (NoSQL)
+
+Cấu trúc dữ liệu
+
+Bảng cố định (Schema cứng)
+
+Document linh hoạt (Dynamic Schema)
+
+Lưu sơ đồ ghế
+
+Phải JOIN nhiều bảng
+
+Nhúng trực tiếp vào document Schedule
+
+Tốc độ đọc
+
+Chậm hơn khi JOIN nhiều bảng
+
+Nhanh hơn nhờ Embedded Documents
+
+Mở rộng hệ thống
+
+Vertical Scaling
+
+Horizontal Scaling
+
+Phù hợp bài toán
+
+Giao dịch tài chính phức tạp
+
+Dữ liệu linh hoạt, thay đổi thường xuyên
+
+Với nghiệp vụ rạp chiếu phim, sơ đồ ghế của mỗi suất chiếu có thể lên đến hàng trăm phần tử trạng thái cần cập nhật liên tục. MongoDB cho phép nhúng toàn bộ mảng ghế vào trong document Schedule, loại bỏ hoàn toàn nhu cầu JOIN bảng và tối ưu tốc độ truy xuất. Hệ thống triển khai trên MongoDB Atlas — nền tảng đám mây được quản lý hoàn toàn, cluster đặt tại region Singapore (ap-southeast-1), kết nối từ Backend qua Connection String bảo mật bằng TLS/SSL.
+
+
+2.3. Kiến trúc RESTful API
+
+RESTful API (Representational State Transfer) là một tiêu chuẩn kiến trúc phần mềm dùng để thiết kế các dịch vụ mạng (Web Services). Trong hệ thống CineBooking, RESTful API đóng vai trò là cầu nối giao tiếp giữa phần giao diện (Front-end) và máy chủ (Back-end). Các API được thiết kế xoay quanh các tài nguyên (Resources) với các phương thức HTTP chuẩn:
+
++ GET: Truy xuất dữ liệu (Ví dụ: Lấy danh sách phim đang chiếu).
+
++ POST: Tạo mới tài nguyên (Ví dụ: Khách hàng tạo một đơn đặt vé mới).
+
++ PUT/PATCH: Cập nhật thông tin (Ví dụ: Admin thay đổi thông tin suất chiếu).
+
++ DELETE: Xóa tài nguyên. Việc áp dụng RESTful API giúp hệ thống trở nên độc lập, Front-end và Back-end có thể được phát triển song song và dễ dàng mở rộng sang các nền tảng khác (như Mobile App) trong tương lai.
+
+
+2.4. Ứng dụng Trí tuệ nhân tạo (AI) trong chăm sóc khách hàng
+
+
+2.4.1. Khái quát về AI Chatbot và Xử lý ngôn ngữ tự nhiên (NLP) 
+
+Trong dự án này, hệ thống ứng dụng Trí tuệ nhân tạo dưới dạng một Chatbot thông minh dựa trên kỹ thuật Xử lý ngôn ngữ tự nhiên (Natural Language Processing - NLP). Khác với các hệ thống chatbot theo kịch bản cứng (Rule-based) chỉ hoạt động khi người dùng bấm vào các nút có sẵn, AI Chatbot có khả năng "đọc - hiểu" các câu văn tự do do khách hàng nhập vào, từ đó trích xuất ra ý định thực sự của họ.
+
+
+2.4.2. Lựa chọn Model AI cho hệ thống
+
+
+Để tìm ra giải pháp tối ưu nhất cho module Chatbot, dự án đã tiến hành khảo sát và đánh giá các mô hình AI ngôn ngữ lớn phổ biến hiện nay. Sau quá trình thử nghiệm, hệ thống quyết định lựa chọn Google Gemini 1.5 Flash.
+
+
+Bảng 2.2. So sánh các model AI cho bài toán Chatbot
+
+Tiêu chí
+
+Gemini 1.5 Flash
+
+GPT-4o Mini (OpenAI)
+
+Claude Haiku (Anthropic)
+Chi phí
+Có gói miễn phí (Free tier 15 req/phút)
+Trả phí từ đầu
+Trả phí từ đầu
+Tốc độ phản hồi
+
+~1–2 giây
+~2–3 giây
+~1–2 giây
+Hỗ trợ tiếng Việt
+Tốt
+Tốt
+Tốt
+Tích hợp Node.js
+SDK đơn giản (@google/generative-ai)
+SDK phức tạp hơn
+SDK trung bình
+Context window
+1 triệu token
+128K token
+200K token
+Phù hợp đồ án
+Miễn phí, dễ tích hợp
+Có chi phí
+Có chi phí
+
+
+Lý do lựa chọn: Gemini 1.5 Flash đáp ứng xuất sắc và toàn diện các yêu cầu kỹ thuật của đề tài với chi phí vận hành bằng 0 (trong phạm vi đồ án sinh viên). Bộ SDK cung cấp khả năng tích hợp đơn giản vào môi trường Node.js, tốc độ phản hồi cực nhanh và năng lực xử lý tiếng Việt trôi chảy. Đặc biệt, với lợi thế vượt trội về kích thước Context Window lên tới 1 triệu token, hệ thống có thể dễ dàng đính kèm toàn bộ dữ liệu danh mục phim, lịch chiếu phức tạp vào Prompt mà không gặp phải giới hạn tràn bộ nhớ ngữ cảnh.
+
+
+2.4.3. Cơ chế nhận diện Ý định (Intent) và Thực thể (Entity) 
+
+Để Chatbot có thể hỗ trợ khách hàng đặt vé hoặc tra cứu thông tin phim, hệ thống AI được thiết kế để phân tích câu input qua 2 yếu tố chính:
+
++ Intent (Ý định): Xác định mục đích của câu nói. (Ví dụ: Khách hàng gõ "Cho mình hỏi lịch chiếu phim hành động hôm nay", AI sẽ nhận diện Intent là Tra_cuu_lich_chieu).
+
++ Entity (Thực thể): Bóc tách các dữ liệu quan trọng từ câu nói. (Trong ví dụ trên, Entity là Thể loại: Hành động, Thời gian: Hôm nay).
+
+
+2.4.4. Luồng hoạt động của Chatbot trong hệ thống CineBooking 
+
+Việc tích hợp AI vào kiến trúc hệ thống diễn ra theo quy trình chặt chẽ:
+
+1. Người dùng nhập câu hỏi vào giao diện Chatbox trên website.
+
+2. Front-end gửi nội dung này đến API của hệ thống Node.js.
+
+3. Node.js Server đóng gói câu hỏi kèm theo các Prompt (ngữ cảnh về rạp chiếu phim) và gọi đến API của Mô hình ngôn ngữ AI.
+
+4. AI phân tích câu nói, trả về kết quả định dạng JSON cho Server.
+
+5. Dựa vào kết quả từ AI, Server sẽ truy xuất cơ sở dữ liệu MongoDB (ví dụ: tìm các phim hành động chiếu trong ngày) và định dạng lại thành câu trả lời tự nhiên nhất để hiển thị ra màn hình cho người dùng.
+
+
+2.5. Các công cụ hỗ trợ phát triển (Postman &amp; IDE)
+
+Postman: Là một nền tảng hỗ trợ mạnh mẽ cho việc phát triển và kiểm thử (Testing) API. Trong quá trình xây dựng Back-end cho CineBooking, Postman được sử dụng để giả lập các request từ Client, truyền các tham số, kiểm tra xác thực (Bearer Token) và đảm bảo rằng các endpoint trả về dữ liệu chuẩn xác trước khi tiến hành tích hợp vào giao diện Front-end.
+
+
+
+
+Hình 2.2: Logo các công cụ hỗ trợ phát triển Postman và Visual Studio Code
+
+IDE (Môi trường phát triển tích hợp): Dự án sử dụng Visual Studio Code (VS Code) làm công cụ lập trình chính. Với hệ sinh thái Extension phong phú, hỗ trợ tốt cho Node.js, TypeScript và các công cụ quản lý mã nguồn như Git, VS Code giúp tăng tốc độ viết code, dễ dàng gỡ lỗi (debug) và quản lý cấu trúc thư mục dự án một cách khoa học và dễ dàng.
+
+
+
+
+
+
+CHƯƠNG 3: PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+
+
+3.1. Yêu cầu ban đầu
+
+Yêu cầu ban đầu của dự án là xây dựng hệ thống đặt vé xem phim trực tuyến CineBooking nhằm số hóa quy trình bán vé tại quầy của rạp chiếu phim. Hệ thống cần triển khai cơ chế khóa ghế tạm thời (Hold Seat) sử dụng Redis để ngăn chặn lỗi trùng ghế khi nhiều khách hàng cùng đặt vé một suất chiếu. Đặc biệt, hệ thống được kỳ vọng tích hợp trợ lý ảo AI Chatbot sử dụng model Google Gemini 1.5 Flash để tự động giải đáp thắc mắc của khách hàng về lịch chiếu, giá vé và khuyến mãi 24/7, đồng thời cung cấp cho Ban quản lý trang quản trị với biểu đồ thống kê doanh thu trực quan theo thời gian thực. 
+
+
+3.2. Thu thập yêu cầu hệ thống
+
+
+Để thu thập thông tin phục vụ cho quá trình phân tích và thiết kế hệ thống của rạp CineBooking, đề tài sử dụng ba phương pháp khảo sát chính gồm: phỏng vấn trực tiếp, khảo sát bằng phiếu câu hỏi và khảo sát các hệ thống tương tự. Việc kết hợp nhiều phương pháp khảo sát giúp thông tin thu thập được đầy đủ hơn, vừa phản ánh được quy trình vận hành thực tế tại rạp chiếu phim, vừa thể hiện được nhu cầu sử dụng dịch vụ của khách hàng và đặc điểm của các hệ thống đặt vé đang được sử dụng hiện nay.
+
+
+Bảng 3.1. Phương pháp khảo sát
+
+STT
+
+Phương pháp khảo sát
+
+Đối tượng khảo sát
+
+Mục đích khảo sát
+1
+Phỏng vấn trực tiếp
+
+Quản lý rạp và nhân viên bán vé tại rạp chiếu phim
+
+Tìm hiểu quy trình vận hành rạp, quản lý phim, lịch chiếu, phòng chiếu, vé, ghế, thanh toán và các tình huống phát sinh thực tế
+2
+Khảo sát bằng phiếu câu hỏi
+
+Nhóm khách hàng trong độ tuổi 16–35 đã từng xem phim tại rạp hoặc đặt vé trực tuyến
+
+Thu thập nhu cầu, thói quen, khó khăn và mong muốn của người dùng khi sử dụng dịch vụ đặt vé xem phim trực tuyến
+3
+Khảo sát các hệ thống tương tự
+
+Website đặt vé của CGV Cinemas, Lotte Cinema và Beta Cinemas
+
+So sánh chức năng, luồng đặt vé, cách hiển thị thông tin và rút ra các chức năng cần thiết cho hệ thống 
+
+
+Kết quả thu được từ các phương pháp khảo sát trên được sử dụng làm cơ sở để xác định các nghiệp vụ chính, yêu cầu chức năng và dữ liệu cần quản lý trong hệ thống CineBooking.
+
+
+3.2.1. Phỏng vấn trực tiếp
+
+
+Thông tin người phỏng vấn thứ nhất:
+
+
++ Họ và tên: Kiều Hải Yến
+
+
++ Số điện thoại: 0986457251
+
+
++ Đơn vị công tác: Rạp chiếu phim CGV Vincom Nguyễn Chí Thanh, Hà Nội
+
+
++ Chức danh: Quản lý vận hành rạp
+
+
++ Kinh nghiệm làm việc: 5 năm
+
+
++ Nhiệm vụ chính: Theo dõi hoạt động vận hành hằng ngày tại rạp; quản lý lịch chiếu, phòng chiếu và tình trạng ghế; theo dõi đơn đặt vé, trạng thái thanh toán và doanh thu.
+
+
++ Ngày phỏng vấn: 9h00 ngày 05/05/2026
+
+
+Bảng 3.2. Kết quả phỏng vấn Chị Kiều Hải Yến
+
+STT
+
+Câu hỏi
+
+Câu trả lời
+1
+Khi quản lý thông tin phim, những dữ liệu nào là cần thiết để khách hàng có thể tra cứu và quyết định đặt vé?
+
+Hệ thống cần quản lý tên phim, thể loại, thời lượng, mô tả nội dung, poster, trailer, độ tuổi giới hạn và trạng thái phim đang chiếu hoặc sắp chiếu. Những thông tin này cần hiển thị rõ ràng để khách hàng dễ đưa ra quyết định trước khi chọn suất chiếu.
+2
+Khi tạo một suất chiếu mới, cần nhập những thông tin nào và kiểm tra những điều kiện gì?
+
+Cần có phim, rạp chiếu, phòng chiếu, ngày chiếu, giờ bắt đầu, giờ kết thúc, giá vé và trạng thái mở bán. Hệ thống phải kiểm tra phòng chiếu có bị trùng thời gian không, phòng có đang hoạt động không và thời gian chiếu có hợp lệ không để tránh tạo hai suất chiếu trùng phòng.
+3
+Vấn đề trùng ghế xảy ra như thế nào và hệ thống cần xử lý ra sao?
+
+Khi có nhiều khách cùng chọn một ghế trong cùng một suất chiếu, nếu không có cơ chế khóa tạm thời thì rất dễ xảy ra trùng ghế. Hệ thống cần giữ ghế tạm thời ngay khi khách chọn, trong khoảng 5 đến 10 phút. Nếu khách không thanh toán trong thời gian đó thì ghế phải được tự động mở lại cho người khác.
+4
+Đối với sơ đồ ghế, hệ thống cần phân biệt và hiển thị những trạng thái nào?
+
+Sơ đồ ghế cần phân biệt rõ ba trạng thái: ghế trống (có thể đặt), ghế đang bị giữ tạm thời (người khác đang trong quá trình thanh toán) và ghế đã bán (không thể đặt). Hiển thị rõ ràng giúp khách hàng chọn ghế nhanh và tránh nhầm lẫn.
+5
+Một đơn đặt vé cần lưu những thông tin nào để rạp có thể kiểm tra và đối soát?
+
+Đơn đặt vé cần lưu mã đơn, thông tin khách hàng, phim, suất chiếu, phòng chiếu, danh sách ghế, combo, voucher, tổng tiền, phương thức thanh toán, trạng thái thanh toán và trạng thái vé. Các thông tin này giúp tra cứu lại khi khách cần hỗ trợ hoặc khi đối soát giao dịch.
+6
+Trên Dashboard quản trị, quản lý rạp cần theo dõi những chỉ số nào?
+
+Dashboard cần hiển thị số vé đã bán, doanh thu theo ngày, phim bán chạy, khung giờ chiếu có tỷ lệ lấp đầy cao, số đơn đã thanh toán thành công và số đơn thất bại. Những chỉ số này giúp quản lý nắm nhanh tình hình hoạt động của rạp và điều chỉnh lịch chiếu kịp thời.
+7
+Voucher/mã giảm giá cần được quản lý và kiểm tra những điều kiện nào?
+
+Voucher cần có mã, thời gian áp dụng, số lượng sử dụng tối đa, giá trị giảm, điều kiện đơn tối thiểu và trạng thái còn hiệu lực. Khi khách nhập voucher, hệ thống cần kiểm tra đầy đủ điều kiện và thông báo rõ lý do nếu voucher không dùng được.
+
+
+Thông tin người phỏng vấn thứ hai:
+
+
++ Họ và tên: Nguyễn Thu Hằng
+
+
++ Số điện thoại: 0384579321
+
+
++ Đơn vị công tác: Rạp chiếu phim Lotte Cinema Hà Đông, Hà Nội
+
+
++ Chức danh: Nhân viên soát vé
+
+
++ Kinh nghiệm làm việc: 2 năm
+
+
++ Nhiệm vụ chính: Kiểm tra vé điện tử khi khách đến rạp; hỗ trợ xử lý các vấn đề liên quan đến mã vé, mã QR, combo và voucher; hướng dẫn khách hàng vào đúng phòng chiếu và đúng vị trí ghế ngồi.
+
+
++ Ngày phỏng vấn: 14h00 ngày 05/05/2026
+
+
+Bảng 3.3. Kết quả phỏng vấn Chị Nguyễn Thu Hằng
+
+STT
+
+Câu hỏi
+
+Câu trả lời
+1
+Khi khách đến rạp xuất trình vé điện tử, nhân viên cần kiểm tra những thông tin nào?
+
+Nhân viên cần kiểm tra mã vé hoặc mã QR, tên phim, ngày giờ chiếu, phòng chiếu, số ghế và trạng thái thanh toán. Các thông tin này cần hiển thị rõ để nhân viên kiểm tra nhanh, đặc biệt vào giờ cao điểm có đông khách vào cùng lúc.
+2
+Những lỗi nào thường gặp khi khách sử dụng vé online tại rạp?
+
+Các lỗi thường gặp gồm: khách chưa thanh toán xong nhưng nghĩ đã có vé, thanh toán thành công nhưng vé chưa hiển thị, mã QR không quét được, khách đặt nhầm suất chiếu hoặc vé đã được sử dụng trước đó. Hệ thống cần hiển thị trạng thái vé và thanh toán rõ ràng để nhân viên xử lý nhanh.
+3
+Hệ thống nên phản hồi như thế nào khi quét QR vé hợp lệ?
+
+Nếu vé hợp lệ, hệ thống nên hiển thị thông báo kiểm tra thành công kèm thông tin phim, phòng chiếu, ghế và giờ chiếu. Sau đó cập nhật ngay trạng thái vé sang "Đã check-in" để vé không thể sử dụng lại lần thứ hai.
+4
+Nếu vé đã check-in trước đó nhưng khách đưa lại mã vé, hệ thống xử lý thế nào?
+
+Hệ thống cần thông báo vé đã được sử dụng, hiển thị thời gian check-in trước đó và không cho xác nhận lại. Điều này ngăn tình trạng một vé dùng nhiều lần hoặc khách vào nhầm phòng chiếu.
+5
+Theo chị, màn hình soát vé cần thiết kế như thế nào để thao tác nhanh trong giờ cao điểm?
+
+Màn hình soát vé nên có nút kích hoạt camera quét QR ngay khi mở lên, khu vực hiển thị kết quả lớn và rõ ràng. Trạng thái hợp lệ hay không hợp lệ cần phân biệt bằng màu sắc (xanh/đỏ) để nhân viên nhận biết ngay mà không cần đọc chi tiết trong giờ cao điểm.
+
+
+3.2.2. Khảo sát bằng phiếu câu hỏi
+
+
+Đề tài xây dựng bảng câu hỏi khảo sát thông qua công cụ Google Forms và thu thập được hơn 150 phản hồi từ nhóm đối tượng trong độ tuổi 16–35 (học sinh, sinh viên, nhân viên văn phòng) — những người có tần suất đi xem phim tại rạp cao và thường xuyên sử dụng các ứng dụng công nghệ
+
+
+Các kết quả nổi bật từ khảo sát:
+
+
++ 94,5% người tham gia cho biết luôn sử dụng tính năng đặt vé trực tuyến trước khi đến rạp để đảm bảo giữ được vị trí ghế mong muốn (ghế trung tâm, ghế VIP, ghế đôi). Hơn 70% có thói quen mua kèm combo bắp nước ngay trên ứng dụng nếu quy trình thuận tiện và có ưu đãi rõ ràng.
+
+
++ 88% khách hàng lựa chọn thanh toán qua mã QR (VNPay, PayOS) hoặc ví điện tử (MoMo), yêu cầu luồng giao dịch phải hoàn tất trong dưới 1 phút và có cơ chế tự động giải phóng ghế nếu giao dịch thất bại.
+
+
++ 81,2% người dùng sẵn sàng tương tác với trợ lý ảo AI Chatbot đặt trực tiếp trên website để hỏi nhanh về lịch chiếu, giá vé và khuyến mãi, thay vì phải tự tìm kiếm thủ công hoặc chờ nhân viên tổng đài phản hồi.
+
+
+3.2.3. Khảo sát các hệ thống tương tự
+
+
+Đề tài tiến hành tìm hiểu một số hệ thống đặt vé xem phim trực tuyến đang vận hành tại Việt Nam, gồm CGV Cinemas, Lotte Cinema và Beta Cinemas. Mục đích khảo sát là đánh giá cách các nền tảng hiện có tổ chức chức năng đặt vé, hiển thị thông tin và hỗ trợ người dùng, từ đó rút ra các chức năng cần thiết cho CineBooking.
+
+
+Hệ thống CGV Cinemas
+
+
+CGV là hệ thống rạp chiếu phim có quy mô lớn và cung cấp tương đối đầy đủ các chức năng phục vụ đặt vé trực tuyến.
+
+
++ Ưu điểm: Hỗ trợ xem phim đang chiếu và sắp chiếu, thông tin chi tiết phim, lịch chiếu theo rạp, chọn ghế, thanh toán online, tài khoản thành viên và chương trình ưu đãi. Thông tin phim và suất chiếu được trình bày đầy đủ, giúp khách hàng có nhiều căn cứ trước khi đặt vé.
+
+
++ Hạn chế: Do tích hợp nhiều nội dung (phim, rạp, ưu đãi, quảng cáo, thành viên) nên giao diện có thể gây rối với người dùng mới hoặc người chỉ muốn đặt vé nhanh. Vào giờ cao điểm, hệ thống thường xuyên phản hồi chậm. Kênh hỗ trợ khách hàng vẫn phụ thuộc nhiều vào tổng đài và nhân viên trực Fanpage, chưa có trợ lý ảo AI xử lý tự động.
+
+
++ Giá trị rút ra: Cần ưu tiên luồng đặt vé rõ ràng, các bước thao tác sắp xếp theo trình tự dễ hiểu và hạn chế nội dung phụ ảnh hưởng đến thao tác chính. Bổ sung AI Chatbot để tự động hóa kênh hỗ trợ khách hàng là điểm khác biệt cần thiết.
+
+
+Hệ thống Lotte Cinema
+
+
+Lotte Cinema tập trung vào các chức năng đặt vé cơ bản và hỗ trợ người dùng tra cứu thông tin khá thuận tiện.
+
+
++ Ưu điểm: Quy trình đặt vé được tổ chức theo từng bước rõ ràng (chọn phim → chọn rạp → chọn suất → chọn ghế → thanh toán), phù hợp với thói quen sử dụng của khách hàng phổ thông.
+
+
++ Hạn chế: Các tiện ích hỗ trợ trải nghiệm cá nhân như gợi ý phim theo sở thích, nhắc lịch xem phim chưa nổi bật. Tốc độ tải trang sơ đồ ghế đôi khi chậm vào khung giờ cao điểm.
+
+
++ Giá trị rút ra: Cần trình bày lịch chiếu dễ lọc theo rạp, ngày và phim. Bổ sung cơ chế cache và tối ưu tốc độ tải sơ đồ ghế để đảm bảo trải nghiệm mượt mà trong giờ cao điểm.
+
+
+Hệ thống Beta Cinemas
+
+
+Beta Cinemas có phong cách giao diện trẻ trung, phù hợp với nhóm khách hàng học sinh, sinh viên và người đi làm trẻ.
+
+
++ Ưu điểm: Giao diện đơn giản, không quá phức tạp, người dùng dễ tiếp cận các thông tin cơ bản như phim đang chiếu, lịch chiếu và ưu đãi. Quy trình đặt vé ngắn gọn, ít bước thao tác.
+
+
++ Hạn chế: Thiếu các tính năng hỗ trợ trải nghiệm cá nhân như danh sách phim yêu thích, lịch sử xem phim và gợi ý phim theo sở thích. Kênh hỗ trợ khách hàng chưa có giải pháp tự động hóa.
+
+
++ Giá trị rút ra: Cần giữ giao diện đơn giản, dễ sử dụng, đồng thời bổ sung AI Chatbot để nâng cao trải nghiệm hỗ trợ khách hàng tự động 24/7 — đây là điểm mà tất cả các hệ thống hiện tại đều chưa có.
+
+
+Kết luận từ quá trình khảo sát: Dựa trên kết quả phỏng vấn, khảo sát người dùng và phân tích hệ thống tương tự, hệ thống CineBooking cần tập trung vào ba điểm cốt lõi: 
+
+
+(1) tối ưu hóa tốc độ xử lý giao dịch thời gian thực và giải quyết bài toán trùng ghế bằng cơ chế Hold Seat, 
+
+
+(2) tích hợp đa dạng cổng thanh toán trực tuyến (MoMo, VNPay, PayOS) với luồng giao dịch dưới 1 phút, và 
+
+
+(3) xây dựng AI Chatbot có khả năng hiểu ngôn ngữ tự nhiên tiếng Việt để hỗ trợ khách hàng tự động — đây là tính năng chưa có trên bất kỳ hệ thống rạp chiếu phim nào được khảo sát.
+
+
+3.3. Đối tượng sử dụng hệ thống và chức năng
+
+Dựa trên kết luận khảo sát phía trên và phân tích nghiệp vụ rạp chiếu phim, hệ thống CineBooking được thiết kế để phục vụ ba đối tượng sử dụng chính (Actors). Mỗi đối tượng sẽ có các quyền hạn và phạm vi chức năng riêng biệt nhằm đảm bảo tính bảo mật và tối ưu hóa quy trình vận hành:
+
++ Khách hàng (Customer): Là người dùng cuối sử dụng website để tiếp cận dịch vụ của rạp phim. Khách hàng có quyền thực hiện các chức năng tương tác như tra cứu phim, lịch chiếu, đặt vé, đặt combo thức ăn, thanh toán trực tuyến và trò chuyện trực tiếp với trợ lý ảo AI Chatbot để nhận tư vấn.
+
++ Nhân viên rạp (Staff): Là đối tượng vận hành trực tiếp tại quầy, có nhiệm vụ tiếp nhận thông tin, kiểm tra mã vé điện tử (Check-in) khi khách hàng đến rạp xem phim để đảm bảo tính hợp lệ của vé.
+
++ Quản trị viên (Admin): Là đối tượng có quyền hạn cao nhất trong hệ thống, chịu trách nhiệm quản lý toàn bộ tài nguyên của rạp bao gồm danh mục phim, danh sách phòng chiếu, cấu hình các suất chiếu, quản lý tài khoản người dùng và theo dõi toàn bộ các biểu đồ báo cáo thống kê doanh thu.
+
+
+3.4. Biểu đồ Use Case tổng quát và mô tả chức năng
+
+
+3.4.1. Biểu đồ Use Case tổng quát
+
+
+
+
+Hình 3.1 Biểu đồ Use Case tổng quát
+
+
+
+
+3.4.2. Bảng mô tả chức năng của các Use Case
+
+
+Bảng 3.4: Bảng mô tả chức năng của các Use Case
+
+Tên Use case
+
+Mô tả mục đích sử dụng
+Đăng nhập
+
+Cho phép Admin và Nhân viên xác thực danh tính bằng email và mật khẩu để truy cập vào hệ thống quản lý theo đúng phân quyền vai trò.
+Đăng xuất
+
+Cho phép Admin và Nhân viên kết thúc phiên làm việc, hủy JWT Token hiện tại và đảm bảo bảo mật tài khoản sau khi sử dụng.
+Quản lý phim
+
+Cho phép Admin thêm mới, chỉnh sửa, xóa và tìm kiếm thông tin phim bao gồm tên, thể loại, thời lượng, poster, trailer, độ tuổi giới hạn và trạng thái chiếu.
+Quản lý rạp chiếu
+
+Cho phép Admin thêm mới, chỉnh sửa và xóa thông tin các cụm rạp chiếu phim trong hệ thống.
+Quản lý phòng chiếu
+
+Cho phép Admin cấu hình phòng chiếu thuộc từng cụm rạp, bao gồm tên phòng, loại phòng (2D/3D/IMAX) và sơ đồ ghế ngồi.
+Quản lý lịch chiếu
+
+Cho phép Admin tạo, chỉnh sửa và xóa các suất chiếu, bao gồm phim, phòng chiếu, ngày giờ chiếu và giá vé, đồng thời kiểm tra trùng lịch tự động.
+Quản lý người dùng
+
+Cho phép Admin xem danh sách, tìm kiếm, kích hoạt hoặc khóa tài khoản người dùng và phân quyền vai trò cho nhân viên.
+Quản lý voucher
+
+Cho phép Admin tạo và quản lý mã giảm giá bao gồm giá trị giảm, điều kiện áp dụng, số lượng sử dụng và thời hạn hiệu lực.
+Quản lý sản phẩm (combo)
+
+Cho phép Admin thêm mới, chỉnh sửa và xóa các combo bắp nước, đồ ăn kèm để khách hàng chọn khi đặt vé.
+Quản lý thể loại phim
+
+Cho phép Admin thêm mới, chỉnh sửa và xóa các thể loại phim phục vụ phân loại và lọc phim trong hệ thống.
+Quản lý ca làm việc
+
+Cho phép Admin tạo ca làm việc và phân công lịch làm việc cho nhân viên theo từng ngày và cụm rạp.
+Quản lý đơn vé
+
+Cho phép Admin xem danh sách toàn bộ đơn đặt vé, tra cứu theo mã đơn hoặc khách hàng và theo dõi trạng thái thanh toán.
+Xem thống kê và báo cáo
+
+Cho phép Admin theo dõi Dashboard với các biểu đồ doanh thu theo khung giờ (Bar Chart) và tỷ trọng thể loại phim (Pie Chart) theo thời gian thực.
+Soát vé vào rạp
+
+Cho phép Nhân viên sử dụng camera thiết bị di động quét mã QR Code trên vé điện tử của khách, xác thực tính hợp lệ và cập nhật trạng thái "Đã check-in".
+Xác nhận vé online
+
+Cho phép Nhân viên tra cứu và xác nhận thủ công thông tin vé trong trường hợp khách không hiển thị được mã QR.
+Bán vé tại quầy
+
+Cho phép Nhân viên hỗ trợ khách hàng đặt vé trực tiếp tại quầy trong trường hợp khách không tự đặt online được.
+Bán bắp nước
+
+Cho phép Nhân viên ghi nhận và xử lý yêu cầu mua combo bắp nước của khách hàng tại quầy.
+Tra cứu khách hàng
+
+Cho phép Nhân viên tìm kiếm thông tin tài khoản và lịch sử đặt vé của khách hàng để hỗ trợ xử lý sự cố.
+Đăng ký tài khoản
+
+Cho phép khách hàng tạo tài khoản mới bằng email hoặc đăng ký nhanh qua Google OAuth để sử dụng các tính năng đặt vé.
+Xem phim và lịch chiếu
+
+Cho phép khách hàng duyệt danh sách phim đang chiếu và sắp chiếu, xem thông tin chi tiết phim, trailer và tra cứu lịch chiếu theo rạp và ngày.
+Đặt vé online
+
+Cho phép khách hàng chọn suất chiếu, chọn ghế trên sơ đồ thời gian thực, chọn combo, nhập voucher và thanh toán qua MoMo, VNPay hoặc PayOS để nhận vé điện tử QR Code.
+Xem lịch sử đặt vé
+
+Cho phép khách hàng xem lại toàn bộ các đơn đặt vé đã thực hiện, kiểm tra trạng thái thanh toán và xem lại vé điện tử đã sử dụng.
+Quản lý tài khoản
+
+Cho phép khách hàng cập nhật thông tin cá nhân, đổi mật khẩu và thay ảnh đại diện.
+Đánh giá phim
+
+Cho phép khách hàng đã xem phim để lại điểm đánh giá và nhận xét, góp phần tính điểm trung bình phim hiển thị trên hệ thống.
+Hỏi đáp Chatbot AI
+
+Cho phép khách hàng tương tác với trợ lý ảo AI để hỏi nhanh về lịch chiếu, giá vé, khuyến mãi và được phản hồi tự động bằng tiếng Việt tự nhiên 24/7.
+
+
+
+3.5. Biểu đồ và đặc tả UC chi tiết của 1 số chức năng chính
+
+
+3.5.1. UC đặt vé online
+
+- Biểu đồ UC đặt vé online
+
+
+
+
+Hình 3.2 Biểu đồ UC đặt vé online
+
+- Đặc tả yêu cầu UC đặt vé online
+
+
+Bảng 3.5: Đặc tả yêu cầu UC đặt vé online
+
+Tên Use Case
+
+Đặt vé online
+
+Tác nhân
+
+Khách hàng
+
+Mục đích
+
+Đặt vé xem phim và thanh toán trực tuyến
+
+Tiền điều kiện
+
+Khách hàng đã đăng nhập thành công
+
+Dòng sự kiện chính
+
+1. KH chọn phim và suất chiếu. 
+
+2. Hệ thống hiển thị sơ đồ ghế. 
+
+3. KH chọn ghế ngồi. 
+
+4. Hệ thống khóa ghế (hold 10 phút). 
+
+5. KH chọn bắp nước, nhập voucher (nếu có). 
+
+6. Hệ thống tính tổng tiền. 
+
+7. KH chọn thanh toán qua PayOS. 
+
+8. Hệ thống tạo link thanh toán &amp; mã QR. 
+
+9. KH quét QR thanh toán. 
+
+10. PayOS gửi webhook xác nhận. 
+
+11. Hệ thống cập nhật đơn vé &amp; sinh mã QR vé. 
+
+12. Hệ thống hiển thị vé điện tử.
+
+Dòng sự kiện phụ
+
+3.1. Ghế đã đặt → Chọn ghế khác. 
+
+4.1. Hết 10 phút → Tự động hủy.
+
+9.1. TT thất bại → Hủy giữ ghế. 
+
+Hậu điều kiện
+
+Đơn vé được tạo và thanh toán thành công
+
+Điều kiện thoát
+
+- Khi đặt vé thành công 
+
+- Khi khách hàng hủy
+
+- Khi hết thời gian giữ ghế
+
+
+
+- Biều đồ hoạt động đặt vé online
+
+
+
+
+Hình 3.3 Biểu đồ hoạt động đặt vé online
+
+- Biểu đồ trình tự đặt vé online
+
+
+
+
+Hình 3.4 Biểu đồ trình tự đặt vé online
+
+
+3.5.2. UC chatbot AI
+
+- Biểu đồ UC chatbot AI
+
+
+
+
+Hình 3.5 Biểu đồ UC chatbot AI
+
+- Đặc tả yêu cầu UC chatbot AI
+
+
+Bảng 3.6: Đặc tả yêu cầu UC chatbot AI
+
+Tên Use Case
+
+Hỏi đáp Chatbot AI
+
+Tác nhân
+
+Khách hàng
+
+Mục đích
+
+Hỏi đáp thông tin phim, lịch chiếu qua Chatbot AI
+
+Tiền điều kiện
+
+Không cần đăng nhập
+
+Dòng sự kiện chính
+
+1. KH nhấn biểu tượng Chatbot trên trang web. 
+
+2. Hệ thống mở cửa sổ chat. 
+
+3. KH nhập câu hỏi (VD: phim hay nhất tuần này, lịch chiếu phim X). 
+
+4. Hệ thống gửi câu hỏi đến Backend. 
+
+5.: Backend truy vấn CSDL (phim, rạp, lịch chiếu) lấy dữ liệu liên quan. 
+
+6. Backend gửi prompt + context đến AI Service (Gemini/OpenAI) 
+
+7. AI Service sinh câu trả lời dựa trên dữ liệu thực tế. 
+
+8. Hệ thống hiển thị câu trả lời trong cửa sổ chat. 
+
+9. KH có thể tiếp tục hỏi hoặc đóng chatbot.
+
+Dòng sự kiện phụ
+
+5.1. AI không hiểu câu hỏi → Gợi ý các câu hỏi mẫu. 
+
+5.2. Không có dữ liệu phù hợp → Thông báo không tìm thấy
+
+Hậu điều kiện
+
+Hiển thị câu trả lời cho KH
+
+Điều kiện thoát
+
+- Khi thao tác thành công 
+
+- Khi người dùng hủy
+
+
+
+
+
+- Biều đồ hoạt động chatbot AI
+
+
+
+
+Hình 3.6 Biểu đồ hoạt động chatbot AI
+
+
+
+- Biểu đồ trình tự thêm chatbot AI
+
+
+
+
+Hình 3.7 Biểu đồ trình tự chatbot AI
+
+
+3.5.3. UC quản lý phim
+
+- Biểu đồ UC quản lý phim:
+
+
+
+
+Hình 3.8 Biểu đồ UC quản lý phim
+
+- Đặc tả yêu cầu thêm thông tin phim
+
+
+Bảng 3.7: Đặc tả yêu cầu thêm thông tin phim
+
+
+Tên Use Case
+
+
+Thêm thông tin phim
+
+
+Tác nhân
+
+
+Admin
+
+
+Mục đích
+
+
+Thêm mới phim vào hệ thống
+
+
+Tiền điều kiện
+
+
+Đã đăng nhập thành công
+
+
+Dòng sự kiện chính
+
+
+1. Admin truy cập trang Quản lý phim. 
+
+
+2. Hệ thống hiển thị danh sách phim hiện có. 
+
+
+3. Admin nhấn nút "Thêm mới". 
+
+
+4. Hệ thống hiển thị form nhập liệu (tên, mô tả, thời lượng, poster, trailer). 
+
+
+5. Admin nhập đầy đủ thông tin. 
+
+
+6. Admin nhấn nút "Lưu". 
+
+
+7. Hệ thống kiểm tra tính hợp lệ của dữ liệu. 
+
+
+8. Hệ thống lưu phim mới vào CSDL. 
+
+
+9. Hệ thống thông báo thêm phim thành công. 
+
+
+10. Hệ thống cập nhật lại danh sách.
+
+
+Dòng sự kiện phụ
+
+
+7.1. Dữ liệu không hợp lệ → Hệ thống thông báo lỗi, yêu cầu nhập lại. 
+
+
+7.2. Trùng dữ liệu → Hệ thống cảnh báo đã tồn tại.
+
+
+Hậu điều kiện
+
+
+phim mới được lưu trong CSDL
+
+
+Điều kiện thoát
+
+
+- Khi thao tác thành công 
+
+
+- Khi người dùng hủy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ hoạt động thêm thông tin phim
+
+
+
+
+Hình 3.9 Biểu đồ hoạt động thêm thông tin phim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ trình tự thêm thông tin phim
+
+
+
+
+Hình 3.10 Biểu đồ trình tự thêm thông tin phim
+
+
+Đặc tả yêu cầu sửa thông tin phim
+
+
+Bảng 3.8: Đặc tả yêu cầu sửa thông tin phim
+
+
+Tên Use Case
+
+
+Sửa thông tin phim
+
+
+Tác nhân
+
+
+Admin
+
+
+Mục đích
+
+
+Cập nhật thông tin phim
+
+
+Tiền điều kiện
+
+
+Đã đăng nhập thành công
+
+
+Dòng sự kiện chính
+
+
+1. Admin truy cập trang Quản lý phim. 
+
+
+2. Hệ thống hiển thị danh sách phim. 
+
+
+3. Admin chọn phim cần chỉnh sửa. 
+
+
+4. Hệ thống hiển thị form với dữ liệu hiện tại (tên, mô tả, thời lượng, poster, trailer). 
+
+
+5. Admin chỉnh sửa các trường cần thay đổi. 
+
+
+6. Admin nhấn nút "Lưu". 
+
+
+7. Hệ thống kiểm tra tính hợp lệ. 
+
+
+8. Hệ thống cập nhật phim trong CSDL. 
+
+
+9. Hệ thống thông báo cập nhật thành công.
+
+
+Dòng sự kiện phụ
+
+
+3.1. Phim không tồn tại → Thông báo lỗi.
+
+
+7.1. Dữ liệu không hợp lệ → Thông báo lỗi, yêu cầu nhập lại. 
+
+
+Hậu điều kiện
+
+
+Thông tin phim được cập nhật trong CSDL
+
+
+Điều kiện thoát
+
+
+- Khi thao tác thành công 
+
+
+- Khi người dùng hủy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ hoạt động sửa thông tin phim
+
+
+
+
+Hình 3.11 Biểu đồ hoạt động sửa thông tin phim
+
+
+
+
+
+
+
+
+Biểu đồ trình tự sửa thông tin phim
+
+
+
+
+Hình 3.12 Biểu đồ trình tự sửa thông tin phim
+
+
+Đặc tả yêu cầu xóa thông tin phim
+
+
+Bảng 3.9: Đặc tả yêu cầu xóa thông tin phim
+
+
+Tên Use Case
+
+
+Xóa thông tin phim
+
+
+Tác nhân
+
+
+Admin
+
+
+Mục đích
+
+
+Xóa phim khỏi hệ thống
+
+
+Tiền điều kiện
+
+
+Đã đăng nhập thành công
+
+
+Dòng sự kiện chính
+
+
+1. Admin truy cập trang Quản lý phim. 
+
+
+2. Hệ thống hiển thị danh sách phim. 
+
+
+3. Admin chọn phim cần xóa. 
+
+
+4. Admin nhấn nút "Xóa". 
+
+
+5. Hệ thống hiển thị hộp thoại xác nhận xóa. 
+
+
+6. Admin xác nhận xóa. 
+
+
+7. Hệ thống xóa phim khỏi CSDL. 
+
+
+8. Hệ thống thông báo xóa thành công. 
+
+
+9. Hệ thống cập nhật lại danh sách.
+
+
+Dòng sự kiện phụ
+
+
+6.1. Admin hủy xác nhận → Quay lại danh sách. 
+
+
+7.1. Phim đang được sử dụng → Thông báo không thể xóa.
+
+
+Hậu điều kiện
+
+
+phim được xóa khỏi CSDL
+
+
+Điều kiện thoát
+
+
+- Khi thao tác thành công 
+
+
+- Khi người dùng hủy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ hoạt động xóa thông tin phim
+
+
+
+
+Hình 3.13 Biểu đồ hoạt động xóa thông tin phim
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ trình tự xóa thông tin phim
+
+
+
+
+Hình 3.14 Biểu đồ trình tự xóa thông tin phim
+
+
+Đặc tả yêu cầu tìm kiếm thông tin phim
+
+
+Bảng 3.10: Đặc tả yêu cầu tìm kiếm thông tin phim
+
+
+Tên Use Case
+
+
+Tìm kiếm phim
+
+
+Tác nhân
+
+
+Admin
+
+
+Mục đích
+
+
+Tìm kiếm phim theo từ khóa
+
+
+Tiền điều kiện
+
+
+Đã đăng nhập thành công
+
+
+Dòng sự kiện chính
+
+
+1. Admin truy cập trang Quản lý phim. 
+
+
+2. Admin nhập từ khóa vào ô tìm kiếm. 
+
+
+3. Hệ thống truy vấn CSDL theo từ khóa. 
+
+
+4. Hệ thống hiển thị danh sách phim phù hợp. 
+
+
+5. Admin xem kết quả tìm kiếm.
+
+
+Dòng sự kiện phụ
+
+
+4.1. Không tìm thấy kết quả → Hiển thị "Không tìm thấy phim".
+
+
+Hậu điều kiện
+
+
+Hiển thị kết quả tìm kiếm
+
+
+Điều kiện thoát
+
+
+- Khi thao tác thành công 
+
+
+- Khi người dùng hủy
+
+
+Biểu đồ hoạt động tìm kiếm thông tin phim
+
+
+
+
+Hình 3.15 Biểu đồ hoạt động tìm kiếm thông tin phim
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Biểu đồ trình tự tìm kiếm thông tin phim
+
+
+
+
+
+Hình 3.16 Biểu đồ trình tự tìm kiếm thông tin phim
+
+
+3.5.4. UC bán vé tại quầy
+
+- Biểu đồ UC bán vé tại quầy
+
+
+
+
+Hình 3.17 Biểu đồ UC bán vé tại quầy
+
+- Đặc tả yêu cầu UC bán vé tại quầy
+
+
+Bảng 3.11: Đặc tả yêu cầu UC bán vé tại quầy
+
+Tên Use Case
+
+Bán vé tại quầy
+
+Tác nhân
+
+Nhân viên
+
+Mục đích
+
+Bán vé xem phim cho khách tại quầy
+
+Tiền điều kiện
+
+NV đã đăng nhập POS
+
+Dòng sự kiện chính
+
+1. NV nhập SĐT khách hàng để tra cứu. 
+
+2. Hệ thống hiển thị TT KH (nếu có). 
+
+3. NV chọn phim và suất chiếu. 
+
+4. Hệ thống hiển thị sơ đồ ghế. 
+
+5. NV chọn ghế cho khách. 
+
+6. Hệ thống khóa ghế đã chọn. 
+
+7. NV thêm bắp nước (nếu KH yêu cầu). 
+
+8. Hệ thống tính tổng tiền. 
+
+9. NV thu tiền mặt / chuyển khoản. 
+
+10. Hệ thống lưu đơn hàng &amp; cộng điểm KH. 
+
+11. Hệ thống in vé cho khách.
+
+Dòng sự kiện phụ
+
+1.1 KH không có trong hệ thống → Tạo KH mới.
+
+5.1 Ghế đã đặt → Thông báo, chọn ghế khác. 
+
+Hậu điều kiện
+
+Đơn vé được tạo và in thành công
+
+Điều kiện thoát
+
+- Khi thao tác thành công 
+
+- Khi người dùng hủy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- Biều đồ hoạt động bán vé tại quầy
+
+
+
+
+Hình 3.18 Biểu đồ hoạt động bán vé tại quầy
+
+
+
+
+
+Biểu đồ trình tự bán vé tại quầy
+
+
+
+
+Hình 3.19 Biểu đồ trình tự bán vé tại quầy
+
+
+3.5.5. UC xem thống kê
+
+- Biểu đồ UC xem thống kê
+
+
+
+
+Hình 3.20 Biểu đồ UC xem thống kê
+
+- Đặc tả yêu cầu UC xem thống kê
+
+
+Bảng 3.12: Đặc tả yêu cầu UC xem thống kê
+
+Tên Use Case
+
+Xem thống kê doanh thu
+
+Tác nhân
+
+Admin
+
+Mục đích
+
+Xem báo cáo doanh thu hệ thống
+
+Tiền điều kiện
+
+Đã đăng nhập thành công vào hệ thống
+
+Dòng sự kiện chính
+
+1. Admin truy cập trang Thống kê. 
+
+2. Admin chọn loại báo cáo (doanh thu). 
+
+3. Admin chọn khoảng thời gian. 
+
+4. Hệ thống truy vấn CSDL và tính toán. 
+
+5. Hệ thống vẽ biểu đồ thống kê. 
+
+6. Admin xem và phân tích số liệu.
+
+Dòng sự kiện phụ
+
+4.1. Không có dữ liệu → Thông báo trống.
+
+Hậu điều kiện
+
+Hiển thị biểu đồ thống kê
+
+Điều kiện thoát
+
+- Khi chức năng thực hiện thành công 
+
+- Khi người dùng chọn thoát
+
+
+
+
+
+- Biều đồ hoạt động xem thống kê
+
+
+
+
+Hình 3.21 Biểu đồ hoạt động xem thống kê
+
+- Biểu đồ trình tự xem thống kê
+
+
+
+
+Hình 3.22 Biểu đồ trình tự xem thống kê
+
+
+3.6. Sơ đồ lớp (Class Diagram)
+
+
+
+
+Hình 3.23 Sơ đồ lớp (Class Diagram)
+
+
+
+
+3.7. Thiết kế cơ sở dữ liệu
+
+Hệ thống CineBooking sử dụng hệ quản trị cơ sở dữ liệu NoSQL MongoDB. Cấu trúc dữ liệu được tổ chức theo mô hình hướng tài liệu (Document-oriented), thiết kế dưới dạng các Collection tối ưu hóa cấu trúc lồng nhau (Embedded) giúp tăng tốc độ truy vấn, loại bỏ liên kết join phức tạp và giải quyết triệt để bài toán xử lý tranh chấp đồng thời giao dịch. 
+
+
+3.7.1. Chi tiết cấu trúc các tài liệu dữ liệu (Collections)
+
+
+Hệ thống bao gồm các Collection chính sau:
+
+
+Bảng 3.13. Collection User (Người dùng)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key, Auto
+
+Khóa chính, định danh tài liệu
+
+2
+
+fullName
+
+String
+
+Not Null, Trim
+
+Họ và tên người dùng
+
+3
+
+email
+
+String
+
+Unique, Required
+
+Địa chỉ email (duy nhất)
+
+4
+
+password
+
+String
+
+Required
+
+Mật khẩu đã được băm (hashed)
+
+5
+
+phone
+
+String
+
+Not Null
+
+Số điện thoại
+
+6
+
+avatar
+
+String
+
+Optional
+
+URL ảnh đại diện (Cloudinary)
+
+7
+
+role
+
+String
+
+Default: 'user'
+
+Vai trò: "admin" / "staff" / "user"
+
+8
+
+isActive
+
+Boolean
+
+Default: true
+
+Trạng thái tài khoản (hoạt động / bị khóa)
+
+9
+
+createdAt
+
+Date
+
+System Date
+
+Thời điểm tạo tài khoản
+
+
+
+
+
+
+Bảng 3.14. Collection Movie (Phim)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+title
+
+String
+
+Not Null
+
+Tên phim
+
+3
+
+description
+
+String
+
+Required
+
+Mô tả nội dung phim
+
+4
+
+duration
+
+Number
+
+Min: 1
+
+Thời lượng (phút)
+
+5
+
+releaseDate
+
+Date
+
+Required
+
+Ngày khởi chiếu
+
+6
+
+poster
+
+String
+
+Not Null
+
+URL ảnh poster (Cloudinary)
+
+7
+
+trailer
+
+String
+
+Optional
+
+URL trailer phim
+
+8
+
+genre
+
+[ObjectId]
+
+Reference
+
+Mảng tham chiếu đến Collection Category
+
+9
+
+director
+
+String
+
+Not Null
+
+Tên đạo diễn
+
+10
+
+cast
+
+[String]
+
+Array
+
+Danh sách diễn viên
+
+11
+
+status
+
+String
+
+Enum
+
+Trạng thái: "nowShowing" / "comingSoon"
+
+12
+
+rating
+
+Number
+
+Default: 0
+
+Điểm đánh giá trung bình
+
+13
+
+createdAt
+
+Date
+
+System Date
+
+Thời điểm tạo
+
+
+
+
+Bảng 3.15. Collection Theater (Cụm rạp chiếu)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+name
+
+String
+
+Unique, Not Null
+
+Tên cụm rạp
+
+3
+
+address
+
+String
+
+Required
+
+Địa chỉ
+
+4
+
+city
+
+String
+
+Required
+
+Thành phố
+
+5
+
+hotline
+
+String
+
+Not Null
+
+Số điện thoại liên hệ
+
+6
+
+isActive
+
+Boolean
+
+Default: true
+
+Trạng thái hoạt động
+
+
+
+
+Bảng 3.16. Collection Room (Phòng chiếu)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+theaterId
+
+ObjectId
+
+Ref: Theaters
+
+Tham chiếu đến Theater
+
+3
+
+name
+
+String
+
+Not Null
+
+Tên phòng chiếu
+
+4
+
+type
+
+String
+
+Enum
+
+Loại phòng: "2D" / "3D" / "IMAX"
+
+5
+
+totalSeats
+
+Number
+
+Min: 1
+
+Tổng số ghế
+
+6
+
+seatLayout
+
+Array
+
+Embedded Object
+
+Cấu hình sơ đồ ghế ngồi
+
+
+
+
+Bảng 3.17. Collection Schedule (Lịch chiếu)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+movieId
+
+ObjectId
+
+Ref: Movies
+
+Tham chiếu đến Movie
+
+3
+
+roomId
+
+ObjectId
+
+Ref: Rooms
+
+Tham chiếu đến Room
+
+4
+
+startTime
+
+Date
+
+Required
+
+Thời điểm bắt đầu suất chiếu
+
+5
+
+endTime
+
+Date
+
+Required
+
+Thời điểm kết thúc
+
+6
+
+price
+
+Number
+
+Required
+
+Giá vé cơ bản
+
+7
+
+seats
+
+[Object]
+
+Embedded Array
+
+Mảng trạng thái từng ghế (available / held / booked)
+
+8
+
+heldSeats
+
+[Object]
+
+
+
+Danh sách ghế đang bị giữ tạm thời (TTL Redis)
+
+
+
+
+Bảng 3.18. Collection Booking (Đơn đặt vé)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+userId
+
+ObjectId
+
+Ref: Users
+
+Tham chiếu đến User
+
+3
+
+scheduleId
+
+ObjectId
+
+Ref: Schedules
+
+Tham chiếu đến Schedule
+
+4
+
+seats
+
+[String]
+
+Array of Strings
+
+Danh sách mã ghế được đặt
+
+5
+
+combos
+
+[Object]
+
+Embedded Object
+
+Danh sách combo sản phẩm kèm theo
+
+6
+
+totalAmount
+
+Number
+
+Required
+
+Tổng tiền thanh toán
+
+7
+
+voucherId
+
+ObjectId
+
+Ref: Vouchers
+
+Tham chiếu Voucher (nếu có)
+
+8
+
+paymentMethod
+
+String
+
+Enum
+
+Hình thức thanh toán: "momo" / "vnpay" / "payos"
+
+9
+
+paymentStatus
+
+String
+
+Enum
+
+Trạng thái: "pending" / "paid" / "cancelled"
+
+10
+
+qrCode
+
+String
+
+Unique
+
+Mã QR Code vé điện tử
+
+11
+
+checkedIn
+
+Boolean
+
+Default: false
+
+Đã soát vé hay chưa
+
+12
+
+createdAt
+
+Date
+
+
+
+Thời điểm tạo đơn
+
+
+
+
+
+
+Bảng 3.19. Collection Product (Sản phẩm combo)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+name
+
+String
+
+Not Null
+
+Tên sản phẩm
+
+3
+
+description
+
+String
+
+Optional
+
+Mô tả
+
+4
+
+price
+
+Number
+
+Min: 0
+
+Giá tiền
+
+5
+
+image
+
+String
+
+Not Null
+
+URL hình ảnh sản phẩm
+
+6
+
+isActive
+
+Boolean
+
+Default: true
+
+Còn bán hay không
+
+
+
+
+Bảng 3.20. Collection Voucher (Mã giảm giá)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Ràng buộc / Constraint
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Primary Key
+
+Khóa chính
+
+2
+
+code
+
+String
+
+Unique, Required
+
+Mã voucher (duy nhất)
+
+3
+
+discountType
+
+String
+
+Enum
+
+Loại giảm: "percent" / "fixed"
+
+4
+
+discountValue
+
+Number
+
+Min: 1
+
+Giá trị giảm
+
+5
+
+minOrderValue
+
+Number
+
+Default: 0
+
+Giá trị đơn tối thiểu áp dụng
+
+6
+
+maxUsage
+
+Number
+
+Required
+
+Số lần sử dụng tối đa
+
+7
+
+usedCount
+
+Number
+
+Default: 0
+
+Số lần đã dùng
+
+8
+
+expiredAt
+
+Date
+
+Required
+
+Ngày hết hạn
+
+9
+
+isActive
+
+Boolean
+
+
+
+Còn hiệu lực hay không
+
+
+
+
+
+
+Bảng 3.21. Collection Category (Thể loại phim)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Khóa chính
+
+2
+
+name
+
+String
+
+Tên thể loại (Hành động, Kinh dị...)
+
+
+
+
+Bảng 3.22. Collection Review (Đánh giá phim)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Khóa chính
+
+2
+
+userId
+
+ObjectId
+
+Tham chiếu đến User
+
+3
+
+movieId
+
+ObjectId
+
+Tham chiếu đến Movie
+
+4
+
+rating
+
+Number
+
+Điểm đánh giá (1–5)
+
+5
+
+comment
+
+String
+
+Nội dung nhận xét
+
+6
+
+createdAt
+
+Date
+
+Thời điểm đánh giá
+
+
+
+
+Bảng 3.23. Collection Shift (Ca làm việc)
+
+STT
+
+Thuộc tính
+
+Kiểu dữ liệu
+
+Mô tả
+
+1
+
+_id
+
+ObjectId
+
+Khóa chính
+
+2
+
+staffId
+
+ObjectId
+
+Tham chiếu đến User (nhân viên)
+
+3
+
+theaterId
+
+ObjectId
+
+Tham chiếu đến Theater
+
+4
+
+date
+
+Date
+
+Ngày làm việc
+
+5
+
+startTime
+
+String
+
+Giờ bắt đầu ca
+
+6
+
+endTime
+
+String
+
+Giờ kết thúc ca
+
+
+
+
+3.8. Kiến trúc về AI
+
+
+3.8.1. Tổng quan kiến trúc hệ thống AI Chatbot
+
+
+Hệ thống CineBooking tích hợp trợ lý ảo AI Chatbot trực tiếp trên giao diện website, cho phép khách hàng đặt câu hỏi bằng ngôn ngữ tự nhiên và nhận phản hồi tức thì 24/7. Kiến trúc được thiết kế theo mô hình 4 tầng:
+
+
+
+
+
+Hình 3.24 Sơ đồ kiến trúc hệ thống AI Chatbot CineBooking
+
+
++ Tầng 1 — Giao diện (Frontend/Next.js): Khách hàng nhập câu hỏi vào khung chat trên website. Frontend gửi POST request đến Backend kèm nội dung câu hỏi.
+
+
++ Tầng 2 — Backend API (Node.js/Express.js): Nhận câu hỏi, truy vấn MongoDB lấy dữ liệu thực tế (phim đang chiếu, giá vé, khuyến mãi), ghép vào Prompt rồi sẽ gọi Gemini API.
+
+
++ Tầng 3 — AI Service (Google Gemini API): Xử lý ngôn ngữ tự nhiên, phân tích ý định câu hỏi và sinh câu trả lời bằng tiếng Việt.
+
+
++ Tầng 4 — Cơ sở dữ liệu (MongoDB): Cung cấp dữ liệu nghiệp vụ thực tế để Backend đính kèm vào Prompt, đảm bảo AI luôn trả lời đúng thông tin hiện tại của rạp.
+
+
+3.8.2. Quy trình xử lý câu hỏi
+
+
+Bảng 3.24. Quy trình xử lý câu hỏi của AI Chatbot
+
+Bước
+
+Thành phần
+
+Hành động
+1
+Khách hàng
+Nhập câu hỏi vào khung chat trên website
+2
+Frontend
+Gửi POST /api/chatbot kèm nội dung câu hỏi
+3
+Backend
+Truy vấn MongoDB: lấy danh sách phim đang chiếu, giá vé, khuyến mãi hiện tại
+4
+Backend
+Xây dựng Prompt: ghép dữ liệu thực tế + vai trò Chatbot + câu hỏi của khách
+5
+Gemini API
+Tiếp nhận Prompt, xử lý NLP, sinh câu trả lời tự nhiên bằng tiếng Việt
+6
+Backend
+Nhận response từ Gemini, trả về Frontend dưới dạng JSON
+7
+Frontend
+Hiển thị câu trả lời trong khung chat cho khách hàng
+
+
+
+
+
+
+3.8.3. Thiết kế Prompt Engineering
+
+
+Để AI luôn trả lời đúng nghiệp vụ, không bịa thông tin và luôn dùng tiếng Việt, hệ thống áp dụng kỹ thuật Prompt Engineering với cấu trúc cố định gồm 3 phần:
+
+
+*Phần 1 — System Instruction (Vai trò và giới hạn):
+
+
+Bạn là trợ lý ảo của rạp chiếu phim CineBooking.
+
+
+Nhiệm vụ: Hỗ trợ khách hàng tra cứu thông tin về phim đang 
+
+
+chiếu, lịch chiếu, giá vé và chương trình khuyến mãi.
+
+
+Quy tắc bắt buộc:
+
+
+- Chỉ trả lời các câu hỏi liên quan đến rạp phim CineBooking.
+
+
+- Nếu câu hỏi ngoài phạm vi, lịch sự từ chối và gợi ý khách 
+
+
+  hỏi đúng chủ đề.
+
+
+- Luôn trả lời bằng tiếng Việt, ngắn gọn và thân thiện.
+
+
+- Không tự bịa thông tin ngoài dữ liệu được cung cấp.
+
+
+*Phần 2 — Context Data (Dữ liệu thực tế từ MongoDB):
+
+
+Dữ liệu hiện tại của rạp:
+
+
+- Phim đang chiếu: {danh_sach_phim_tu_DB}
+
+
+- Bảng giá vé: {bang_gia_tu_DB}
+
+
+- Khuyến mãi đang áp dụng: {khuyen_mai_tu_DB}
+
+
+*Phần 3 — User Input (Câu hỏi của khách hàng):
+
+
+Câu hỏi của khách hàng: {noi_dung_cau_hoi}
+
+
+Việc tách rõ 3 phần giúp AI phân biệt được đâu là hướng dẫn hệ thống, đâu là dữ liệu tham chiếu và đâu là yêu cầu của người dùng, từ đó sinh ra câu trả lời chính xác và có kiểm soát.
+
+
+
+
+
+
+CHƯƠNG 4: XÂY DỰNG HỆ THỐNG
+
+
+4.1. Kết quả xây dựng cơ sở dữ liệu
+
+
+
+
+Hình 4.1: Sơ đồ thực thể cơ sở dữ liệu (Database Schema)
+
+
+
+
+4.2. Môi trường triển khai chương trình
+
+
+4.2.1. Phần mềm và môi trường cần thiết
+
+
+Bảng 4.1. Môi trường và phần mềm triển khai hệ thống CineBooking
+
+Thành phần
+
+Công nghệ / Phiên bản
+
+Vai trò
+Frontend
+Next.js 14, Tailwind CSS, Vercel
+Giao diện người dùng, triển khai trên Vercel
+Backend
+Node.js 20 LTS, Express.js 4.x
+Máy chủ API, xử lý nghiệp vụ
+Cơ sở dữ liệu chính
+MongoDB Atlas (Cloud)
+Lưu trữ toàn bộ dữ liệu hệ thống
+Bộ nhớ đệm
+Redis Cloud (Upstash)
+Hold Seat, Cache API
+Lưu trữ file
+Cloudinary
+Ảnh poster phim, ảnh đại diện người dùng
+Triển khai Backend
+Render.com / Railway
+Hosting Node.js API Server
+Tài liệu hóa API
+Swagger UI (swagger-jsdoc)
+Mô tả và kiểm thử toàn bộ endpoint
+
+
+4.2.2. Cấu hình máy chủ và kết nối mạng
+
+
+Hệ thống CineBooking được triển khai theo mô hình Cloud-based, toàn bộ hạ tầng đặt trên các nền tảng đám mây, không yêu cầu máy chủ vật lý riêng:
+
+
++ Frontend (Vercel): Tự động build và deploy khi có commit mới lên nhánh main của repository GitHub. Vercel cung cấp CDN toàn cầu giúp tài nguyên tĩnh (hình ảnh, CSS, JS) được phân phối từ máy chủ gần nhất với người dùng, tối ưu tốc độ tải trang.
+
+
++ Backend API: Deploy trên Render.com với cấu hình 512MB RAM, 0.1 CPU. Server Node.js lắng nghe kết nối tại cổng 3001, nhận request từ Frontend qua giao thức HTTPS.
+
+
++ MongoDB Atlas: Cluster M0 (Free tier) đặt tại region Singapore (ap-southeast-1), kết nối từ Backend qua Connection String bảo mật bằng TLS/SSL.
+
+
++ Redis (Upstash): Instance serverless, kết nối qua HTTPS REST API, dùng riêng cho nghiệp vụ Hold Seat (TTL 10 phút) và Cache danh sách phim (TTL 5 phút).
+
+
+4.2.3. Tích hợp dịch vụ bên ngoài
+
+
+Cổng thanh toán: Hệ thống tích hợp 3 cổng thanh toán qua cơ chế Webhook. Khi khách hàng hoàn tất giao dịch, cổng thanh toán gửi HTTP POST callback về endpoint /api/payment/webhook của Backend. Server xác minh chữ ký bảo mật (HMAC-SHA256) trước khi cập nhật trạng thái đơn vé vào MongoDB.
+
+
+Bảng 4.2: Cấu hình môi trường và endpoint callback của các cổng thanh toán
+
+Cổng thanh toán
+
+Môi trường
+
+Endpoint callback
+PayOS
+Sandbox / Production
+/api/payment/payos/webhook
+MoMo
+Sandbox / Production
+/api/payment/momo/webhook
+VNPay
+Sandbox / Production
+/api/payment/vnpay/webhook
+
+
+AI Chatbot (Gemini API): Backend gọi Google Gemini API thông qua thư viện @google/generative-ai. API Key được lưu trong biến môi trường .env (không được hard-code trong source code). Mỗi request Chatbot từ Frontend sẽ kích hoạt Backend truy vấn MongoDB lấy dữ liệu thực tế, ghép vào Prompt và gửi lên Gemini, sau đó trả kết quả về Frontend trong vòng 1–2 giây.
+
+
+Email (Nodemailer + Gmail SMTP): Hệ thống gửi email xác nhận đặt vé thành công thông qua Nodemailer kết nối Gmail SMTP (smtp.gmail.com, cổng 587, STARTTLS). Tài khoản Gmail sử dụng App Password (16 ký tự) thay vì mật khẩu thường để đảm bảo bảo mật.
+
+
+Lưu trữ ảnh (Cloudinary): Toàn bộ ảnh poster phim và ảnh đại diện người dùng được upload lên Cloudinary qua SDK cloudinary Node.js. URL ảnh được trả về và lưu vào MongoDB, Frontend render trực tiếp từ CDN của Cloudinary.
+
+
+
+4.3. Giao diện của website
+
+
+4.3.1. Giao diện khách hàng
+
+
+Giao diện phía khách hàng được xây dựng bằng Framework Next.js kết hợp Tailwind CSS, đảm bảo tương thích hoàn hảo trên mọi thiết bị (Responsive Design). Luồng thao tác được thiết kế theo dạng phễu chuyển đổi: từ trang chủ → chọn phim → chọn suất chiếu → chọn ghế → thanh toán → nhận vé.
+
+
+
+
+
+Hình 4.2 Giao diện trang chủ — danh sách phim đang chiếu
+
+
+Trang chủ hiển thị danh sách phim đang chiếu và sắp chiếu được phân trang (Pagination) giúp tải nhanh. Khách hàng có thể lọc phim theo thể loại, cụm rạp và ngày chiếu.
+
+
+
+
+
+Hình 4.3 Giao diện chi tiết phim và lịch chiếu
+
+
+Trang chi tiết phim hiển thị đầy đủ thông tin: poster, trailer, thời lượng, thể loại, diễn viên và toàn bộ lịch chiếu còn trống theo từng ngày và cụm rạp.
+
+
+
+
+
+Hình 4.4 Giao diện sơ đồ chọn ghế ngồi
+
+
+Sơ đồ phòng chiếu hiển thị trực quan trạng thái từng ghế theo thời gian thực: ghế trống (màu xanh), ghế đang bị giữ tạm thời (màu vàng), ghế đã bán (màu đỏ). Khi khách chọn ghế, hệ thống lập tức kích hoạt cơ chế Hold Seat với thời gian giữ 10 phút để tránh tranh chấp.
+
+
+
+
+
+Hình 4.5 Giao diện thanh toán trực tuyến
+
+
+Trang thanh toán hiển thị tổng hợp đơn hàng (ghế, combo, voucher), cho phép khách chọn cổng thanh toán (MoMo, VNPay, PayOS) và tạo mã QR thanh toán tức thì.
+
+
+
+
+
+Hình 4.6 Giao diện vé điện tử và lịch sử giao dịch
+
+
+Sau khi thanh toán thành công, hệ thống tự động phát hành vé điện tử tích hợp mã QR Code định danh. Khách hàng có thể xem lại toàn bộ lịch sử đặt vé trong trang tài khoản cá nhân.
+
+
+4.3.2. Giao diện nhân viên
+
+
+Phân hệ nhân viên được thiết kế tối giản, tập trung vào nghiệp vụ soát vé tại cửa phòng chiếu. Nhân viên đăng nhập bằng tài khoản được Admin cấp và sử dụng trực tiếp trên thiết bị di động.
+
+
+
+
+
+Hình 4.7 Giao diện đăng nhập phân hệ nhân viên
+
+
+
+
+
+Hình 4.8 Giao diện soát vé bằng camera quét mã QR Code
+
+
+Nhân viên mở chức năng soát vé, camera thiết bị di động sẽ quét mã QR trên vé điện tử của khách. Hệ thống truy vấn cơ sở dữ liệu để xác thực tính hợp lệ của vé và tự động cập nhật trạng thái sang "Đã check-in", hiển thị thông báo kết quả ngay lập tức cho nhân viên.
+
+
+4.3.3. Giao diện quản trị (Admin)
+
+
+Phân hệ quản trị cung cấp bộ công cụ toàn diện để Admin kiểm soát toàn bộ dữ liệu và theo dõi hiệu quả kinh doanh. Toàn bộ API được tài liệu hóa qua Swagger UI với cơ chế xác thực Bearer Token.
+
+
+
+
+
+Hình 4.9 Giao diện Dashboard thống kê doanh thu
+
+
+Dashboard hiển thị các biểu đồ phân tích chuyên sâu được xây dựng bằng thư viện Recharts: Biểu đồ cột (Bar Chart) thể hiện số vé bán theo từng khung giờ chiếu trong ngày; Biểu đồ tròn (Pie Chart) phân tích tỷ trọng thể loại phim được khách hàng yêu thích.
+
+
+
+
+
+Hình 4.10 Giao diện quản lý danh mục phim
+
+
+
+
+
+Hình 4.11 Giao diện quản lý lịch chiếu
+
+
+
+
+
+Hình 4.12 Giao diện quản lý tài khoản người dùng và phân quyền
+
+
+
+
+
+Hình 4.13 Giao diện tài liệu hóa API bằng Swagger UI
+
+
+4.4. Kết quả xây dựng AI Chatbot
+
+
+4.4.1. Kết quả thực tế
+
+
+Sau khi hoàn thiện tích hợp, AI Chatbot được kiểm tra thực tế với 40 câu hỏi thuộc các nhóm nghiệp vụ khác nhau. Kết quả tổng hợp như sau:
+
+
+Bảng 4.3. Kết quả kiểm tra độ chính xác AI Chatbot theo nhóm câu hỏi
+
+STT
+
+Nhóm câu hỏi
+
+Số câu test
+
+Trả lời đúng
+
+Tỷ lệ
+
+1
+
+Lịch chiếu phim theo ngày/thể loại
+
+10
+
+9
+
+90%
+
+2
+
+Giá vé theo đối tượng (sinh viên, trẻ em)
+
+8
+
+7
+
+87,5%
+
+3
+
+Thông tin chương trình khuyến mãi/voucher
+
+8
+
+7
+
+87,5%
+
+4
+
+Câu hỏi ngoài phạm vi (từ chối đúng)
+
+8
+
+8
+
+100%
+
+5
+
+Câu hỏi viết tắt/sai chính tả nhẹ
+
+6
+
+5
+
+83,3%
+
+
+
+Tổng cộng
+
+40
+
+36
+
+90%
+
+ 
+
+
+Hình 4.14 Giao diện AI Chatbot trả lời câu hỏi về lịch chiếu phim
+
+
+
+
+4.4.2. Đánh giá kết quả
+
+
+Điểm mạnh:
+
+
++ Chatbot xử lý tốt các câu hỏi thường gặp về lịch chiếu, giá vé và khuyến mãi với độ chính xác trên 87%.
+
+
++ Nhận diện và từ chối đúng 100% các câu hỏi ngoài phạm vi nghiệp vụ rạp phim, tránh tình trạng trả lời sai lệch.
+
+
++ Chấp nhận được câu hỏi viết tắt hoặc có lỗi chính tả nhẹ nhờ khả năng NLP của Gemini API.
+
+
++ Tốc độ phản hồi trung bình từ 1–2 giây, không làm gián đoạn trải nghiệm người dùng.
+
+
+Hạn chế:
+
+
++ Độ chính xác giảm khi câu hỏi quá ngắn, thiếu ngữ cảnh (VD: chỉ nhập "phim hay" mà không nêu thể loại hay ngày chiếu).
+
+
++ Chưa hỗ trợ hội thoại đa lượt (multi-turn conversation) — mỗi câu hỏi được xử lý độc lập, chưa ghi nhớ lịch sử cuộc trò chuyện.
+
+
++ Phụ thuộc vào kết nối Internet để gọi Gemini API — nếu API gián đoạn, Chatbot sẽ trả về thông báo lỗi mặc định.
+
+
+4.5. Kiểm thử và đánh giá hệ thống
+
+
+4.5.1. Mục tiêu kiểm thử
+
+
+Kiểm thử hệ thống nhằm đảm bảo toàn bộ các chức năng hoạt động đúng theo đặc tả yêu cầu, phát hiện và xử lý các lỗi tiềm ẩn trước khi triển khai thực tế. Cụ thể:
+
+
++ Xác minh các chức năng nghiệp vụ cốt lõi hoạt động chính xác theo luồng đã thiết kế (đăng nhập, đặt vé, thanh toán, soát vé).
+
+
++ Kiểm tra khả năng xử lý đồng thời (Concurrency) — đảm bảo cơ chế Hold Seat hoạt động đúng khi nhiều người dùng cùng chọn một ghế.
+
+
++ Kiểm tra các trường hợp ngoại lệ và dữ liệu đầu vào không hợp lệ.
+
+
++ Đánh giá tốc độ phản hồi của hệ thống API.
+
+
+4.5.2. Phương pháp kiểm thử
+
+- Hệ thống áp dụng phương pháp kiểm thử hộp đen (Black-box Testing) kết hợp hai kỹ thuật thiết kế ca kiểm thử:
+
++ Phân vùng tương đương (Equivalence Partitioning): Chia dữ liệu đầu vào thành các lớp tương đương — hợp lệ và không hợp lệ — và chọn một giá trị đại diện từ mỗi lớp. Áp dụng chủ yếu cho các chức năng có nhiều trạng thái đầu vào như đặt vé (ghế trống / đang giữ / đã bán), quản lý phim (đủ dữ liệu / thiếu trường bắt buộc), chatbot AI (câu hỏi đúng nghiệp vụ / ngoài phạm vi).
+
++ Phân tích giá trị biên (Boundary Value Analysis): Kiểm tra tại các giá trị ranh giới của miền đầu vào. Áp dụng cho cơ chế Hold Seat — kiểm tra hành vi hệ thống khi thanh toán trước, đúng và sau mốc 10 phút giữ ghế.
+
+- Công cụ sử dụng: Postman để gửi 
+
+
+Bảng 4.4. Testcase chức năng Đặt vé online
+
+Mã TC
+
+Kịch bản kiếm thử (test case)
+
+Dữ liệu đầu vào
+
+Kết quả mong đợi
+
+Kết quả thực tế
+
+Đánh giá
+
+TC01
+
+Đặt vé — ghế trống hợp lệ
+
+Chọn ghế A1, A2 trống, thanh toán PayOS
+
+HTTP 200, ghế "Booked", sinh QR Code
+
+HTTP 200, ghế A1 A2 → "Booked", QR sinh thành công
+
+Đạt
+
+TC02
+
+Chọn ghế đang bị giữ
+
+Click ghế trạng thái "Holding"
+
+HTTP 409, báo ghế đang bị giữ
+
+HTTP 409, "Seat is held by another user"
+
+Đạt
+
+TC03
+
+Thanh toán đúng mốc 10 phút
+
+Chờ đúng 10 phút rồi thanh toántoán
+
+HTTP 400, ghế về "Available"
+
+HTTP 400, Redis TTL hết, ghế → "Available"
+
+Đạt
+
+TC04
+
+Thanh toán sau 10 phút
+
+Chờ 12 phút rồi thanh toán
+
+HTTP 400, đơn hủy, ghế giải phóng
+
+HTTP 400, đơn "Cancelled", ghế "Available"
+
+Đạt
+
+TC05
+
+Hủy giao dịch chủ động
+
+Bấm "Hủy" ở bước thanh toán
+
+Đơn "Cancelled", ghế về "Available" ngay
+
+Đơn "Cancelled", ghế "Available" tức thì, không chờ TTL
+
+Đạt
+
+
+
+
+
+Bảng 4.5. Testcase chức năng Chatbot AI
+
+Mã TC
+
+Kịch bản kiếm thử (test case)
+
+Dữ liệu đầu vào
+
+Kết quả mong đợi
+
+Kết quả thực tế
+
+Đánh giá
+
+TC01
+
+Tra cứu lịch chiếu phim đang có
+
+Nhập: "Hôm nay có phim hành động nào chiếu không?"
+
+AI truy vấn DB, trả về đúng danh sách phim hành động + suất chiếu hôm nay
+
+Trả về 2 phim hành động, khớp dữ liệu DB
+
+Đạt
+
+TC02
+
+Hỏi giá vé — đúng nghiệp vụ
+
+"Giá vé cuối tuần sinh viên bao nhiêu?"
+
+Trả về bảng giá đúng đối tượng
+
+Trả về giá vé sinh viên cuối tuần chính xác
+
+Đạt
+
+TC03
+
+Câu hỏi ngoài phạm vi
+
+"Chỉ tôi cách nấu thịt kho tàu"
+
+Từ chối lịch sự, không trả lời
+
+"Xin lỗi, tôi chỉ hỗ trợ thông tin về rạp CineBooking"
+
+Đạt
+
+TC04
+
+Nhập câu hỏi có dấu / viết tắt / sai lỗi chính tả nhẹ
+
+Nhập: "lich chieu phym mai danh co k"
+
+NLP của AI vẫn hiểu đúng ý định, trả về lịch chiếu phim "Mai"
+
+Gemini nhận diện đúng intent, trả về lịch chiếu hợp lệ
+
+Đạt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bảng 4.6. Testcase chức năng bán vé tại quầy
+
+Mã TC
+
+Kịch bản kiếm thử (test case)
+
+Dữ liệu đầu vào
+
+Kết quả mong đợi
+
+Kết quả thực tế
+
+Đánh giá
+
+TC01
+
+Bán vé thành công 
+
+Chọn phim, ghế, nhận tiền mặt, hoàn tất
+
+HTTP 201, ghế "Booked", in vé
+
+HTTP 201, ghế "Booked", vé in thành công
+
+Đạt
+
+TC02
+
+Tra cứu thông tin Khách hàng thành viên
+
+Nhập số điện thoại khách hàng đã đăng ký (VD: 0987654321)
+
+Hiển thị tên KH, số điểm tích lũy hiện có, áp dụng chiết khấu (nếu có)
+
+Trả đúng thông tin KH, 150 điểm, giảm 15.000đ
+
+Đạt
+
+TC03
+
+Bán kèm sản phẩm bắp nước (Combo)
+
+Chọn ghế + Chọn Combo 1 Bắp 2 Nước
+
+Hệ thống cộng dồn tổng tiền chính xác, trừ kho sản phẩm tương ứng
+
+Đúng như mong đợi
+
+Đạt
+
+TC04
+
+In vé lỗi kết nối
+
+Bấm hoàn tất nhưng máy in mất kết nối
+
+Đơn vé vẫn lưu thành công vào DB, hệ thống báo lỗi in và có nút "In lại"
+
+HTTP 201 thành công, toast "Lỗi máy in — nhấn In lại"
+
+Đạt
+
+
+Bảng 4.7. Testcase chức năng quản lý phim (Admin)
+
+Mã TC
+
+Kịch bản kiếm thử (test case)
+
+Dữ liệu đầu vào
+
+Kết quả mong đợi
+
+Kết quả thực tế
+
+Đánh giá
+
+TC01
+
+Thêm phim thành công
+
+Điền đầy đủ thông tin hợp lệ
+
+Phim được thêm vào CSDL, hiển thị trong danh sách
+
+phim hiển thị đầu danh sách đúng dữ liệu
+
+Đạt
+
+TC02
+
+Thêm phim thiếu trường bắt buộc
+
+Bỏ trống tên phim
+
+Thông báo lỗi validation
+
+Đúng như mong đợi
+
+Đạt
+
+TC03
+
+Sửa thông tin phim
+
+Cập nhật mô tả phim
+
+Dữ liệu được cập nhật vào CSDL
+
+Description cập nhật, các trường khác không đổi
+
+Đạt
+
+TC04
+
+Xóa phim
+
+Chọn phim cần xóa và xác nhận
+
+Phim bị xóa khỏi CSDL
+
+Không còn trả về phim đó
+
+Đạt
+
+
+
+
+
+
+
+KẾT LUẬN
+
+Hệ thống "Xây dựng website đặt vé xem phim trực tuyến cho rạp CineBooking" đã được nghiên cứu và triển khai thành công với đầy đủ 3 phân hệ: Khách hàng có thể tra cứu phim, đặt vé trực tuyến với sơ đồ ghế thời gian thực, thanh toán qua MoMo/VNPay/PayOS và nhận vé điện tử QR Code; Nhân viên soát vé bằng camera quét mã QR trực tiếp trên thiết bị di động, tự động cập nhật trạng thái check-in; Admin quản lý toàn bộ danh mục dữ liệu và theo dõi Dashboard thống kê doanh thu theo thời gian thực qua Recharts. Về mặt kỹ thuật, hệ thống giải quyết hiệu quả bài toán xử lý đồng thời thông qua cơ chế Hold Seat sử dụng Redis TTL 10 phút, ngăn chặn lỗi trùng ghế khi nhiều người dùng cùng đặt vé; đồng thời tích hợp thành công AI Chatbot sử dụng Google Gemini 1.5 Flash với độ chính xác 90% qua kiểm thử thực tế. Qua quá trình thực hiện, bản thân em đã nắm vững quy trình phát triển phần mềm hoàn chỉnh, làm chủ hệ sinh thái công nghệ JavaScript/TypeScript hiện đại và hiểu sâu các bài toán kỹ thuật phức tạp như Concurrency Control, tích hợp thanh toán điện tử và bảo mật API bằng JWT.
+
+Đề tài có tính thực tiễn cao, gắn liền với nhu cầu chuyển đổi số của ngành điện ảnh Việt Nam, hệ sinh thái JavaScript có tài liệu phong phú và nhận được sự hướng dẫn tận tình từ giảng viên trong suốt quá trình thực hiện. Tuy nhiên, bài toán xử lý đồng thời khi nhiều khách cùng chọn ghế đòi hỏi nghiên cứu sâu về Redis; việc tích hợp đồng thời ba cổng thanh toán yêu cầu xử lý phức tạp các luồng webhook; hạn chế thời gian khiến một số tính năng nâng cao chưa được triển khai đầy đủ.
+
+Trong tương lai, hệ thống có thể phát triển ứng dụng di động iOS/Android bằng React Native để mở rộng khả năng tiếp cận; tích hợp Recommendation System gợi ý phim cá nhân hóa theo lịch sử xem của từng khách hàng; bổ sung thông báo thời gian thực bằng WebSocket và chương trình thẻ thành viên tích điểm. Về hạ tầng, có thể nâng cấp lên môi trường đám mây AWS/GCP với Auto Scaling để đáp ứng lưu lượng truy cập lớn trong các dịp cao điểm — khắc phục trực tiếp hạn chế về khả năng mở rộng của kiến trúc triển khai hiện tại. Về định hướng cá nhân, em sẽ tiếp tục nghiên cứu kiến trúc Microservices, Docker/Kubernetes và ứng dụng AI vào phân tích dữ liệu kinh doanh thực tế.
+
+
+TÀI LIỆU THAM KHẢO
+
+
+[1] N. T. Sơn, Lập trình Web với Node.js và Express.js. Hà Nội: NXB Thông tin và Truyền thông, 2022.
+
+
+[2] T. M. Tuấn, Thiết kế và xây dựng cơ sở dữ liệu NoSQL với MongoDB. Hà Nội: NXB Bách Khoa Hà Nội, 2021.
+
+
+[3] R. Wieruch, The Road to React. Self-published, 2022.
+
+
+[4] F. Rappl, Modern Front-End Development with Next.js. Birmingham: Packt Publishing, 2023.
+
+
+[5] J. Wilson, Node.js 8 the Right Way: Practical, Server-Side JavaScript That Scales. Raleigh: Pragmatic Bookshelf, 2018.
+
+
+[6] M. Hossain, Getting MEAN with Mongo, Express, Angular, and Node. Shelter Island: Manning Publications, 2019.
+
+
+[7] K. Banker, MongoDB in Action, 2nd ed. Shelter Island: Manning Publications, 2016.
+
+
+[8] J. Carlson, Redis in Action. Shelter Island: Manning Publications, 2013.
+
+
+[9] N. Madden, API Security in Action. Shelter Island: Manning Publications, 2020.
+
+
+[10] M. Frisbie, Professional JavaScript for Web Developers, 4th ed. Hoboken: Wiley, 2019.
+
+
+[11] Vercel, "Next.js Documentation," Next.js. [Online]. Available: https://nextjs.org/docs. [Accessed: May 2026].
+
+
+[12] OpenJS Foundation, "Node.js Documentation," Node.js. [Online]. Available: https://nodejs.org/en/docs. [Accessed: May 2026].
+
+
+[13] OpenJS Foundation, "Express.js Documentation," Express.js. [Online]. Available: https://expressjs.com. [Accessed: May 2026].
+
+
+[14] MongoDB, Inc., "MongoDB Documentation," MongoDB. [Online]. Available: https://www.mongodb.com/docs. [Accessed: May 2026].
+
+
+[15] Redis Ltd., "Redis Documentation," Redis. [Online]. Available: https://redis.io/docs. [Accessed: May 2026].
+
+
+[16] Tailwind Labs, "Tailwind CSS Documentation," Tailwind CSS. [Online]. Available: https://tailwindcss.com/docs. [Accessed: May 2026].
+
+
+[17] Recharts Group, "Recharts Documentation," Recharts. [Online]. Available: https://recharts.org/en-US. [Accessed: May 2026].
+
+
+[18] SmartBear Software, "Swagger / OpenAPI Specification," Swagger. [Online]. Available: https://swagger.io/docs. [Accessed: May 2026].
+
+
+[19] Auth0, "JSON Web Token Introduction," JWT.io. [Online]. Available: https://jwt.io/introduction. [Accessed: May 2026].
+
+
+[20] Cloudinary, "Cloudinary Documentation," Cloudinary. [Online]. Available: https://cloudinary.com/documentation. [Accessed: May 2026].
+
+
+[21] Google DeepMind, "Gemini API Documentation," Google AI for Developers. [Online]. Available: https://ai.google.dev/docs. [Accessed: May 2026].
+
+
+
+

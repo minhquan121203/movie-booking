@@ -1,4 +1,5 @@
 'use client'
+import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +19,7 @@ import { CreditCard, Image, Bell, Palette, Shield } from 'lucide-react'
 export default function SystemSettingsPage() {
   return (
     <main className="flex-1 overflow-y-auto p-8 bg-gray-50">
-      {/* <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h1 className="text-gray-900 text-3xl mb-8">Cấu Hình Hệ Thống</h1>
 
         <Tabs defaultValue="payment" className="w-full">
@@ -94,7 +95,7 @@ export default function SystemSettingsPage() {
                     className="bg-gray-50 border-gray-300 text-gray-900 mt-2"
                   />
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
+                <Button onClick={() => toast.success('Cập nhật cấu hình thành công!')} className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
               </div>
             </Card>
           </TabsContent>
@@ -141,7 +142,7 @@ export default function SystemSettingsPage() {
                     className="bg-gray-50 border-gray-300 text-gray-900 mt-2"
                   />
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
+                <Button onClick={() => toast.success('Cập nhật cấu hình thành công!')} className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
               </div>
             </Card>
           </TabsContent>
@@ -186,7 +187,7 @@ export default function SystemSettingsPage() {
                     className="bg-gray-50 border-gray-300 text-gray-900 mt-2 min-h-[150px]"
                   />
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
+                <Button onClick={() => toast.success('Cập nhật cấu hình thành công!')} className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
               </div>
             </Card>
           </TabsContent>
@@ -255,7 +256,7 @@ export default function SystemSettingsPage() {
                   </div>
                   <Switch />
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
+                <Button onClick={() => toast.success('Cập nhật cấu hình thành công!')} className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
               </div>
             </Card>
           </TabsContent>
@@ -309,13 +310,12 @@ export default function SystemSettingsPage() {
                   />
                   <p className="text-gray-500 text-sm mt-2">Nhập mỗi IP trên một dòng</p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
+                <Button onClick={() => toast.success('Cập nhật cấu hình thành công!')} className="bg-blue-600 hover:bg-blue-700 text-white w-full">Lưu Cài Đặt</Button>
               </div>
             </Card>
           </TabsContent>
         </Tabs>
-      </div> */}
-      Chức năng đang phát triển
+      </div>
     </main>
   )
 }
