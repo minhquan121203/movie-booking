@@ -90,7 +90,7 @@ function MoviesContent() {
   const { data: topMoviesData = DEFAULT_MOVIE_LIST } = useMovies({
     page: 1,
     limit: 10,
-    sortBy: 'view_count',
+    sortBy: 'viewCount',
     order: 'desc',
   })
 

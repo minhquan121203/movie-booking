@@ -1,26 +1,50 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import Schedule from '../models/schedule.model.js';
 
 class EmailService {
   constructor() {
-    if (process.env.SENDGRID_API_KEY) {
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      console.log("SendGrid Service (Full Functions) Ready!");
-    } else {
-      console.error("Lỗi: Thiếu SENDGRID_API_KEY trong cấu hình Render!");
+    this.transporter = null;
+    this._initTransporter();
+  }
+
+  _initTransporter() {
+    try {
+      const user = process.env.GMAIL_USER;
+      const pass = process.env.GMAIL_APP_PASSWORD;
+
+      if (!user || !pass) {
+        console.error("⚠️ Thiếu GMAIL_USER hoặc GMAIL_APP_PASSWORD trong biến môi trường!");
+        return;
+      }
+
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass },
+      });
+
+      console.log("✅ Nodemailer (Gmail SMTP) Ready!");
+    } catch (err) {
+      console.error("❌ Khởi tạo Nodemailer thất bại:", err);
     }
   }
 
   getSender() {
-    return {
-      name: 'CineBooking',
-      email: process.env.SENDGRID_FROM_EMAIL || 'quankm1520@gmail.com'
-    };
+    return `"CineBooking" <${process.env.GMAIL_USER || 'quankm1520@gmail.com'}>`;
   }
 
   // Hàm gửi mail ĐẶT VÉ
   async sendBookingConfirmation(booking, user) {
     try {
+      if (!this.transporter) {
+        console.error("[Đặt vé] Transporter chưa sẵn sàng, bỏ qua gửi email.");
+        return;
+      }
+
+      if (!user || !user.email) {
+        console.log(`[Đặt vé] Bỏ qua gửi email vì user không có email.`);
+        return;
+      }
+
       let dateStr = "Đang cập nhật";
       let timeStr = "Đang cập nhật";
 
@@ -55,29 +79,23 @@ class EmailService {
         }
       }
 
-      if (!user || !user.email) {
-        console.log(`[Đặt vé] Bỏ qua gửi email vì user không có email.`);
-        return;
-      }
-
+      // Xử lý QR Code attachment
       const attachments = [];
       let qrImgTag = "";
 
       if (booking.qrCode && typeof booking.qrCode === 'string' && booking.qrCode.includes("base64,")) {
         attachments.push({
-          content: booking.qrCode.split("base64,")[1],
           filename: 'ticket-qr.png',
-          type: 'image/png',
-          disposition: 'inline',
-          content_id: 'ticket_qr'
+          content: Buffer.from(booking.qrCode.split("base64,")[1], 'base64'),
+          cid: 'ticket_qr'
         });
         qrImgTag = `<p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px;">QUÉT MÃ ĐỂ VÀO RẠP</p>
                     <img src="cid:ticket_qr" style="width: 180px; height: 180px; border: 1px solid #eee;" alt="QR Code"/>`;
       }
 
-      const msg = {
-        to: user.email,
+      const mailOptions = {
         from: this.getSender(),
+        to: user.email,
         subject: `🎟️ Xác nhận đặt vé thành công - ${booking.movieTitle}`,
         html: `
           <div style="font-family: 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 20px auto; background-color: #1a1c23; color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -124,22 +142,24 @@ class EmailService {
             </div>
           </div>
         `,
-        attachments: attachments.length > 0 ? attachments : undefined
+        attachments
       };
 
-      await sgMail.send(msg);
-      console.log(`[Đặt vé] Mail đã gửi tới: ${user.email}`);
+      await this.transporter.sendMail(mailOptions);
+      console.log(`[Đặt vé] ✅ Mail đã gửi tới: ${user.email}`);
     } catch (error) {
-      console.error("Lỗi gửi mail đặt vé:", error.response ? error.response.body : error);
+      console.error("❌ Lỗi gửi mail đặt vé:", error);
     }
   }
 
   // Gửi lịch GIAO CA
   async sendStaffSchedule(staff, scheduleData) {
     try {
-      const msg = {
-        to: staff.email,
+      if (!this.transporter) return;
+
+      const mailOptions = {
         from: this.getSender(),
+        to: staff.email,
         subject: `📅 Thông báo lịch làm việc mới - ${scheduleData.date}`,
         html: `
           <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -158,19 +178,21 @@ class EmailService {
           </div>
         `
       };
-      await sgMail.send(msg);
-      console.log(`[Giao ca] Mail đã gửi tới: ${staff.email}`);
+      await this.transporter.sendMail(mailOptions);
+      console.log(`[Giao ca] ✅ Mail đã gửi tới: ${staff.email}`);
     } catch (error) {
-      console.error("Lỗi gửi mail giao ca:", error.response ? error.response.body : error);
+      console.error("❌ Lỗi gửi mail giao ca:", error);
     }
   }
 
   // Gửi thông báo HỦY CA
   async sendShiftCancellation(staff, scheduleData) {
     try {
-      const msg = {
-        to: staff.email,
+      if (!this.transporter) return;
+
+      const mailOptions = {
         from: this.getSender(),
+        to: staff.email,
         subject: `❌ THÔNG BÁO HỦY CA LÀM VIỆC - ${scheduleData.date}`,
         html: `
           <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -188,10 +210,10 @@ class EmailService {
           </div>
         `
       };
-      await sgMail.send(msg);
-      console.log(`[Hủy ca] Mail đã gửi tới: ${staff.email}`);
+      await this.transporter.sendMail(mailOptions);
+      console.log(`[Hủy ca] ✅ Mail đã gửi tới: ${staff.email}`);
     } catch (error) {
-      console.error("Lỗi gửi mail hủy ca:", error.response ? error.response.body : error);
+      console.error("❌ Lỗi gửi mail hủy ca:", error);
     }
   }
 }
