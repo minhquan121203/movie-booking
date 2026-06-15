@@ -45,7 +45,7 @@ export function ShowtimeSection({ movieId }: ShowtimeSectionProps) {
           >
             <div>
               <p className="text-xl font-bold text-violet-600">
-                {new Date(show.showDate).toLocaleDateString('vi-VN')}
+                {show.startTime} - {new Date(show.showDate).toLocaleDateString('vi-VN')}
               </p>
               <p className="text-sm font-semibold text-text-primary mt-1">{show.theater.name}</p>
               <div className="flex items-center gap-1 text-xs text-text-secondary mt-1">
