@@ -313,22 +313,30 @@ const UserNav = () => {
                   <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
                 </div>
 
+                {/* Thẻ hạng thành viên + điểm khả dụng */}
                 <div className={cn(
-                  'flex items-center gap-1.5 px-2 py-1.5 rounded-md w-fit border',
+                  'flex flex-col gap-0.5 px-2 py-2 rounded-md w-full border',
                   (!user.membershipLevel || user.membershipLevel === 'Bạc') && 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700/50',
                   user.membershipLevel === 'Vàng' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
                   user.membershipLevel === 'Kim Cương' && 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/50',
                 )}>
-                  <Star className={cn(
-                    'h-3 w-3',
-                    (!user.membershipLevel || user.membershipLevel === 'Bạc') && 'fill-slate-500 text-slate-500',
-                    user.membershipLevel === 'Vàng' && 'fill-amber-500 text-amber-500',
-                    user.membershipLevel === 'Kim Cương' && 'fill-violet-500 text-violet-500',
-                  )} />
-                  <span className="text-xs font-bold">{user.membershipLevel || 'Thành viên'}</span>
-                  <span className="text-[10px] opacity-60">•</span>
-                  {/* Điểm khả dụng: dùng availablePoints (từ loyalty API), fallback về user.loyaltyPoints nếu chưa load */}
-                  <span className="text-xs font-bold">{(availablePoints || user.loyaltyPoints || 0).toLocaleString('vi-VN')} điểm</span>
+                  {/* Dòng 1: Hạng thành viên */}
+                  <div className="flex items-center gap-1">
+                    <Star className={cn(
+                      'h-3 w-3',
+                      (!user.membershipLevel || user.membershipLevel === 'Bạc') && 'fill-slate-500 text-slate-500',
+                      user.membershipLevel === 'Vàng' && 'fill-amber-500 text-amber-500',
+                      user.membershipLevel === 'Kim Cương' && 'fill-violet-500 text-violet-500',
+                    )} />
+                    <span className="text-xs font-bold">{user.membershipLevel || 'Thành viên'}</span>
+                  </div>
+                  {/* Dòng 2: Điểm khả dụng */}
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-bold leading-none">
+                      {(availablePoints || user.loyaltyPoints || 0).toLocaleString('vi-VN')}
+                    </span>
+                    <span className="text-[10px] opacity-70 font-medium">điểm khả dụng</span>
+                  </div>
                 </div>
 
               </div>
