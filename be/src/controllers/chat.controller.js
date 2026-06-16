@@ -596,6 +596,7 @@ export const handleChat = async (req, res) => {
             }
 
             botResponse.data = schedules.slice(0, 10).map(s => ({
+                movieId: s.movie?._id || null,
                 movieTitle: s.movie?.title || "?",
                 theaterName: s.theater?.name || "?",
                 roomName: s.roomName || "?",

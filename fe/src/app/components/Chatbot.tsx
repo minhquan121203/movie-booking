@@ -577,6 +577,64 @@ export default function ChatBot() {
                         </div>
                       )}
 
+                      {/* Schedule Cards */}
+                      {m.content?.type === 'schedule' && Array.isArray(m.content?.data) && m.content.data.length > 0 && (
+                        <div className="px-3 pb-3">
+                          <div className="flex items-center gap-1.5 mb-2.5 px-1">
+                            <span className="text-xs">📅</span>
+                            <span className="text-[11px] font-semibold text-[var(--primary)] uppercase tracking-wider">
+                              Lịch chiếu
+                            </span>
+                            <div className="flex-1 h-px bg-gradient-to-r from-[var(--primary)]/20 to-transparent ml-1" />
+                          </div>
+
+                          <div className="space-y-2 max-h-[280px] overflow-y-auto chatbot-scrollbar pr-1">
+                            {m.content.data.map((item: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="rounded-xl overflow-hidden border border-violet-500/12 dark:border-violet-400/20 bg-gray-50 dark:bg-gray-700/50 hover:shadow-md transition-all duration-200"
+                              >
+                                <div className="p-3 flex items-center gap-3">
+                                  {/* Time badge */}
+                                  <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center text-white shadow-sm"
+                                    style={{ background: 'linear-gradient(135deg, #6c63ff, #8b5cf6)' }}
+                                  >
+                                    <span className="text-sm font-bold leading-none">{item.startTime}</span>
+                                    <span className="text-[8px] opacity-70 mt-0.5">{item.showDate}</span>
+                                  </div>
+
+                                  {/* Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-[12px] text-gray-800 dark:text-gray-100 line-clamp-1">{item.movieTitle}</h4>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className="text-[10px] text-gray-500 dark:text-gray-400">🏛️ {item.theaterName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-1.5 py-0.5 rounded-full font-medium">{item.roomName}</span>
+                                      <span className="text-[9px] text-gray-400">{item.startTime} - {item.endTime}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Book button */}
+                                  {item.movieId && (
+                                    <button
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        router.push(`/movies/${item.movieId}`);
+                                      }}
+                                      className="flex-shrink-0 px-3 py-2 rounded-lg text-white text-[10px] font-bold transition-all duration-200 hover:shadow-lg active:scale-95"
+                                      style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+                                    >
+                                      🎟️ Đặt vé
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Action Booking confirmation */}
                       {m.content?.type === 'action_booking' && m.content?.data?.movieId && (
                         <div className="px-4 pb-3">
