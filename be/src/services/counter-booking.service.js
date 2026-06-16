@@ -298,6 +298,13 @@ class CounterBookingService {
         // 9. Confirm seats (mark isBooked=true and set bookedBy to booking ID)
         await atomicSchedule.confirmSeats(seatNumbers, newBooking._id, session);
 
+        // 9.5. Tăng viewCount (số vé bán) cho phim → ảnh hưởng Top Movies
+        await mongoose.model("Movie").findByIdAndUpdate(
+          atomicSchedule.movie._id,
+          { $inc: { viewCount: seatNumbers.length } },
+          { session }
+        );
+
         // 10. Generate QR code
         try {
           const qrData = JSON.stringify({
