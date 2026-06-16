@@ -617,18 +617,36 @@ export default function ChatBot() {
               )}
             </div>
 
-            {/* Quick Actions */}
-            {messages.length <= 1 && (
-              <div className="px-3 pb-2 flex gap-2 overflow-x-auto chatbot-movie-scroll">
-                {['Top những phim đang hot', 'Phim đang chiếu?', 'Phim hay nhất?', 'Phim hành động?'].map((q, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(q)}
-                    className="flex-none px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200 hover:shadow-sm active:scale-95 whitespace-nowrap bg-violet-500/10 dark:bg-violet-400/15 text-violet-600 dark:text-violet-300 border border-violet-500/15 dark:border-violet-400/25"
-                  >
-                    {q}
-                  </button>
-                ))}
+            {/* Suggestion Chips - Hiện sau tin nhắn cuối của bot */}
+            {!isLoading && (
+              <div className="px-3 pb-2">
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {(messages.length <= 1
+                    ? [
+                        { icon: '🎬', label: 'Phim đang chiếu' },
+                        { icon: '🔥', label: 'Top phim hot' },
+                        { icon: '📅', label: 'Lịch chiếu hôm nay' },
+                        { icon: '🍿', label: 'Menu bắp nước' },
+                        { icon: '🎟️', label: 'Khuyến mãi hiện có' },
+                        { icon: '🏛️', label: 'Hệ thống rạp' },
+                      ]
+                    : [
+                        { icon: '🎬', label: 'Phim đang chiếu' },
+                        { icon: '📅', label: 'Lịch chiếu' },
+                        { icon: '🍿', label: 'Bắp nước' },
+                        { icon: '🎟️', label: 'Khuyến mãi' },
+                      ]
+                  ).map((chip, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSend(chip.label)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap border border-amber-400/60 dark:border-amber-400/40 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                    >
+                      <span className="text-xs">{chip.icon}</span>
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
