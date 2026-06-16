@@ -99,45 +99,29 @@ class DataSyncService {
   }
 
   /**
-   * Sync user loyalty points with actual bookings
+   * Sync user loyalty points với totalEarned từ PointTransaction (source of truth)
    */
   async syncUserLoyaltyPoints() {
     try {
-      // Find users with recent bookings
-      const recentBookings = await Booking.find({
-        status: "Hoàn tất",
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
-      }).populate("customer");
+      const PointTransaction = (await import("../models/point-transaction.model.js")).default;
 
-      const userPointsMap = new Map();
+      // Lấy tất cả user có điểm hoặc có hạng khác Bạc
+      const users = await User.find({
+        $or: [{ loyaltyPoints: { $gt: 0 } }, { membershipLevel: { $ne: "Bạc" } }],
+      });
 
-      // Calculate expected points
-      for (const booking of recentBookings) {
-        if (!booking.customer) continue;
-        const userId = booking.customer._id.toString();
-        const pointsEarned = Math.floor(booking.totalAmount / 10000);
-
-        if (!userPointsMap.has(userId)) {
-          userPointsMap.set(userId, {
-            user: booking.customer,
-            expectedPoints: booking.customer.loyaltyPoints,
-            earnedToday: 0,
-          });
-        }
-
-        userPointsMap.get(userId).earnedToday += pointsEarned;
-      }
-
-      // Sync membership levels
       let syncedCount = 0;
-      for (const [userId, data] of userPointsMap) {
-        const user = data.user;
-        const currentLevel = user.membershipLevel;
+      for (const user of users) {
+        const currentLevel = user.membershipLevel || "Bạc";
         let newLevel = currentLevel;
 
-        if (user.loyaltyPoints >= 1125 && currentLevel !== "Kim Cương") {
+        // Dùng totalEarned (tổng điểm tích lũy) để xét hạng - không bị ảnh hưởng bởi redeem
+        const stats = await PointTransaction.getUserStats(user._id);
+        const totalEarned = (stats.totalEarned || 0) + (stats.totalBonus || 0) + (stats.totalRefunded || 0);
+
+        if (totalEarned >= 1125 && currentLevel !== "Kim Cương") {
           newLevel = "Kim Cương";
-        } else if (user.loyaltyPoints >= 500 && currentLevel === "Bạc") {
+        } else if (totalEarned >= 500 && currentLevel === "Bạc") {
           newLevel = "Vàng";
         }
 
@@ -145,7 +129,7 @@ class DataSyncService {
           user.membershipLevel = newLevel;
           await user.save();
           syncedCount++;
-          console.log(`🔄 Updated ${user.email} membership: ${currentLevel} -> ${newLevel}`);
+          console.log(`🔄 Updated ${user.email} membership: ${currentLevel} -> ${newLevel} (totalEarned: ${totalEarned})`);
         }
       }
 

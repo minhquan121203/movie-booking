@@ -284,11 +284,13 @@ class PaymentStatusService {
               const pointsEarned = Math.floor(booking.totalAmount / 10000); // 1 điểm / 10k
               customer.loyaltyPoints += pointsEarned;
 
-              // Tự động nâng hạng membership
+              // Dùng tổng điểm ĐÃ TÍCH LŨY (totalEarned) để xét nâng hạng
               const oldLevel = customer.membershipLevel;
-              if (customer.loyaltyPoints >= 500 && customer.membershipLevel === "Bạc") {
+              const earnStats = await PointTransaction.getUserStats(customer._id);
+              const totalEarned = (earnStats.totalEarned || 0) + (earnStats.totalBonus || 0) + (earnStats.totalRefunded || 0) + pointsEarned;
+              if (totalEarned >= 500 && customer.membershipLevel === "Bạc") {
                 customer.membershipLevel = "Vàng";
-              } else if (customer.loyaltyPoints >= 1125 && customer.membershipLevel === "Vàng") {
+              } else if (totalEarned >= 1125 && customer.membershipLevel === "Vàng") {
                 customer.membershipLevel = "Kim Cương";
               }
 
