@@ -18,10 +18,11 @@ interface BookingSummaryProps {
   isProcessing: boolean
   lastBooking?: any
   productCart?: CartProduct[]
+  onPrintDone?: () => void // Callback sau khi in xong → reset về form khách mới
 }
 
 // Hàm mở cửa sổ in vé
-function printTicket(booking: any, schedule: Schedule | null) {
+function printTicket(booking: any, schedule: Schedule | null, productCart: CartProduct[] = []) {
   if (!booking) return
 
   const bookingData = booking.booking || booking
@@ -108,6 +109,15 @@ function printTicket(booking: any, schedule: Schedule | null) {
     .total-row .label { font-size: 12px; opacity: 0.8; }
     .total-row .amount { font-size: 18px; font-weight: 900; }
     .footer-note { text-align: center; font-size: 10px; color: #aaa; line-height: 1.6; }
+    /* Bắp nước */
+    .products-box {
+      background: #fff8f0; border: 1.5px dashed #f59e0b;
+      border-radius: 10px; padding: 12px; margin-bottom: 16px;
+    }
+    .products-box .p-title { font-size: 9px; color: #888; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 8px; }
+    .products-box .p-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .products-box .p-row .p-name { color: #374151; }
+    .products-box .p-row .p-price { font-weight: 700; color: #d97706; }
     @media print {
       body { background: white; padding: 0; }
       .ticket { box-shadow: none; }
@@ -152,6 +162,15 @@ function printTicket(booking: any, schedule: Schedule | null) {
         <label>Ghe ngoi</label>
         <span>${seats}</span>
       </div>
+      ${productCart.length > 0 ? `
+      <div class="products-box">
+        <span class="p-title">Bap nuoc / Do an kem theo</span>
+        ${productCart.map(p => `
+        <div class="p-row">
+          <span class="p-name">${p.name}${p.size && p.size !== 'N/A' ? ` (${p.size})` : ''} x${p.quantity}</span>
+          <span class="p-price">${(p.price * p.quantity).toLocaleString('vi-VN')}d</span>
+        </div>`).join('')}
+      </div>` : ''}
       <hr class="divider" />
       <div class="qr-section">
         ${qrCode
@@ -169,7 +188,7 @@ function printTicket(booking: any, schedule: Schedule | null) {
       </div>
     </div>
   </div>
-  <script>window.onload = function() { window.print(); }<\/script>
+  <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }<\/script>
 </body>
 </html>`
 
@@ -190,6 +209,7 @@ export function BookingSummary({
   isProcessing,
   lastBooking,
   productCart = [],
+  onPrintDone,
 }: BookingSummaryProps) {
   return (
     <Card className="p-5 border border-gray-200 shadow-md h-full flex flex-col sticky top-0">
@@ -304,7 +324,13 @@ export function BookingSummary({
                 : 'border-gray-300 text-gray-400 cursor-not-allowed'
             }`}
             disabled={!lastBooking}
-            onClick={() => printTicket(lastBooking, selectedSchedule)}
+            onClick={() => {
+              printTicket(lastBooking, selectedSchedule, productCart)
+              // Reset về form khách mới sau khi in
+              setTimeout(() => {
+                onPrintDone?.()
+              }, 500)
+            }}
             title={!lastBooking ? 'Thanh toán xong mới in được' : 'Mở cửa sổ in vé'}
           >
             <Printer className="w-3.5 h-3.5 mr-1.5" /> In Vé

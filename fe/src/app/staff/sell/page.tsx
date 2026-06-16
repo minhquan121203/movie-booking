@@ -329,6 +329,13 @@ export default function TicketSales() {
             onPayment={handlePayment}
             isProcessing={isPending}
             lastBooking={lastBooking}
+            onPrintDone={() => {
+              // Reset sau khi in → phục vụ khách mới
+              setCustomerInfo(null)
+              setLastBooking(null)
+              setProductCart([])
+              reset()
+            }}
           />
         </div>
       </div>

@@ -18,6 +18,7 @@ import {
   Phone,
   Mail,
   Ticket,
+  Printer,
 } from 'lucide-react'
 import { useProducts } from '@/lib/api/products'
 import { useCreateConcession, type ConcessionProduct } from '@/lib/api/concession'
@@ -30,11 +31,30 @@ interface CartItem extends Product {
   quantity: number
 }
 
+// In hóa đơn bắp nước
+function printConcessionReceipt(transaction: any, cart: CartItem[], customerName: string) {
+  const txId = transaction?.transactionId || '---'
+  const totalAmount = (transaction?.totalAmount || 0).toLocaleString('vi-VN')
+  const now = new Date().toLocaleString('vi-VN')
+  const itemRows = cart.map(item =>
+    `<div class="item-row">
+      <span class="item-name">${item.name}${item.size && item.size !== 'N/A' ? ` (${item.size})` : ''} x${item.quantity}</span>
+      <span class="item-price">${(item.price * item.quantity).toLocaleString('vi-VN')}d</span>
+    </div>`
+  ).join('')
+  const html = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8" /><title>Hoa Don - ${txId}</title>
+  <style>* { margin:0; padding:0; box-sizing:border-box; } body { font-family:Arial,sans-serif; background:#f5f5f5; display:flex; justify-content:center; padding:20px; } .receipt { background:white; width:320px; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.15); } .header { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; padding:16px; text-align:center; } .header h1 { font-size:20px; font-weight:900; } .header p { font-size:10px; opacity:.8; margin-top:2px; } .body { padding:16px; } .meta { font-size:10px; color:#888; margin-bottom:12px; } .customer { font-size:13px; font-weight:700; color:#1a1a2e; margin-bottom:12px; } .items-title { font-size:9px; color:#888; text-transform:uppercase; font-weight:700; margin-bottom:8px; } .item-row { display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid #f0f0f0; } .item-name { color:#374151; } .item-price { font-weight:700; color:#d97706; } .total-row { display:flex; justify-content:space-between; align-items:center; background:#1a1a2e; color:white; padding:10px 14px; border-radius:8px; margin-top:12px; } .total-row .label { font-size:12px; opacity:.8; } .total-row .amount { font-size:16px; font-weight:900; } .tx-code { text-align:center; font-size:10px; color:#aaa; margin-top:10px; } .footer { text-align:center; font-size:10px; color:#aaa; margin-top:8px; line-height:1.5; } @media print { body { background:white; padding:0; } .receipt { box-shadow:none; } }</style>
+  </head><body><div class="receipt"><div class="header"><h1>CineBooking</h1><p>Hoa don bap nuoc</p></div><div class="body"><div class="meta">Thoi gian: ${now}</div><div class="customer">Khach hang: ${customerName || 'Khach le'}</div><div class="items-title">San pham</div>${itemRows}<div class="total-row"><span class="label">Tong tien</span><span class="amount">${totalAmount} d</span></div><div class="tx-code">Ma don: ${txId}</div><div class="footer">Cam on ban da su dung dich vu CineBooking!</div></div></div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};}<\/script></body></html>`
+  const w = window.open('', '_blank', 'width=400,height=580')
+  if (w) { w.document.write(html); w.document.close() }
+}
+
 export default function ConcessionSalesPage() {
   const { showSuccess, showError } = useNotification()
 
   // State
   const [cart, setCart] = useState<CartItem[]>([])
+  const [lastTransaction, setLastTransaction] = useState<any>(null) // Để in hóa đơn
   const [customerInfo, setCustomerInfo] = useState({
     fullName: '',
     phone: '',
@@ -173,22 +193,12 @@ export default function ConcessionSalesPage() {
 
       // PAYOS 
       if (paymentMethod === 'bank_transfer' && qrData) {
-        
         console.log("Check PayOS Code từ Backend:", responseData.payosOrderCode);
-
-        setQrModal({
-          isOpen: true,
-          qrString: qrData, 
-          amount: txAmount,
-          orderCode: txId,
-          payosOrderCode: responseData.payosOrderCode 
-        })
+        setQrModal({ isOpen: true, qrString: qrData, amount: txAmount, orderCode: txId, payosOrderCode: responseData.payosOrderCode })
       } else {
-        // Luồng tiền mặt 
-        showSuccess(
-          'Đơn hàng thành công!',
-          `Mã đơn: ${txId} - Tổng: ${txAmount.toLocaleString('vi-VN')}đ`
-        )
+        // Luồng tiền mặt
+        setLastTransaction({ ...responseData, transactionId: txId, totalAmount: txAmount })
+        showSuccess('Dơn hàng thành công!', `Ma don: ${txId} - Tong: ${txAmount.toLocaleString('vi-VN')}đ`)
         clearCart()
       }
     } catch (error: any) {
@@ -462,24 +472,33 @@ export default function ConcessionSalesPage() {
             </div>
           </Card>
 
-          {/* Submit Button */}
-          <Button
-            onClick={handleSubmitOrder}
-            disabled={cart.length === 0 || createConcession.isPending}
-            className="w-full h-12 text-base"
-          >
-            {createConcession.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang xử lý...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Xác nhận đơn hàng
-              </>
+          {/* Submit Button + In Hóa Đơn */}
+          <div className="space-y-2">
+            <Button
+              onClick={handleSubmitOrder}
+              disabled={cart.length === 0 || createConcession.isPending}
+              className="w-full h-12 text-base"
+            >
+              {createConcession.isPending ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Ang xử lý...</>
+              ) : (
+                <><CheckCircle2 className="w-4 h-4 mr-2" />Xác nhận đơn hàng</>
+              )}
+            </Button>
+
+            {lastTransaction && (
+              <Button
+                variant="outline"
+                className="w-full h-10 border-amber-400 text-amber-700 hover:bg-amber-50"
+                onClick={() => {
+                  printConcessionReceipt(lastTransaction, cart.length > 0 ? cart : [], customerInfo.fullName)
+                  setLastTransaction(null)
+                }}
+              >
+                <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </div>
       <Dialog open={qrModal.isOpen} onOpenChange={(open) => !open && setQrModal(prev => ({...prev, isOpen: false}))}>
