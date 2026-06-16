@@ -47,7 +47,7 @@ export function SeatSelector({
   const sortedDates = Object.keys(groupedSchedules).sort()
 
   return (
-    <div className="space-y-4 flex-1 flex flex-col min-h-0">
+    <div className="space-y-4">
       {/* List Suất Chiếu */}
       <Card className="p-4 border border-gray-200 shadow-sm shrink-0 max-h-[300px] overflow-y-auto">
         <div className="flex items-center gap-2 mb-3">
