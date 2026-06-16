@@ -488,25 +488,16 @@ export default function ConcessionSalesPage() {
             </Button>
 
             {lastTransaction && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-10 border-amber-400 text-amber-700 hover:bg-amber-50"
-                  onClick={() => {
-                    printConcessionReceipt(lastTransaction, lastTransaction.items || [], lastTransaction.customerInfo?.fullName || 'Khách lẻ')
-                    setLastTransaction(null)
-                  }}
-                >
-                  <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 border-gray-300"
-                  onClick={() => setLastTransaction(null)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full h-10 border-amber-400 text-amber-700 hover:bg-amber-50"
+                onClick={() => {
+                  printConcessionReceipt(lastTransaction, lastTransaction.items || [], lastTransaction.customerInfo?.fullName || 'Khách lẻ')
+                  setLastTransaction(null)
+                }}
+              >
+                <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
+              </Button>
             )}
           </div>
         </div>
