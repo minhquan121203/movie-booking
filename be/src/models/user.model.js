@@ -250,9 +250,9 @@ userSchema.virtual("isAgeVerified").get(function () {
   return this.verified_age_level !== null && this.verified_age_level !== undefined;
 });
 
+// nextMembershipLevel: chỉ dùng để hiển thị tham khảo, việc nâng hạng thực tế
+// dựa trên totalEarned từ PointTransaction (xem loyalty.controller.js)
 userSchema.virtual("nextMembershipLevel").get(function () {
-  if (this.membershipLevel === "Bạc" && this.loyaltyPoints >= 500) return "Vàng";
-  if (this.membershipLevel === "Vàng" && this.loyaltyPoints >= 1125) return "Kim Cương";
   return this.membershipLevel;
 });
 
@@ -269,12 +269,10 @@ userSchema.pre("save", async function (next) {
     }
   }
 
-  // Auto-upgrade membership
-  if (this.loyaltyPoints >= 1125 && this.membershipLevel !== "Kim Cương") {
-    this.membershipLevel = "Kim Cương";
-  } else if (this.loyaltyPoints >= 500 && this.membershipLevel === "Bạc") {
-    this.membershipLevel = "Vàng";
-  }
+  // NOTE: Không auto-upgrade membership ở đây.
+  // Việc nâng hạng được thực hiện trong booking/payment controller
+  // dựa trên TỔNG ĐIỂM TÍCH LŨY (totalEarned từ PointTransaction),
+  // không phải loyaltyPoints hiện tại (có thể đã bị giảm do redeem).
 
   next();
 });

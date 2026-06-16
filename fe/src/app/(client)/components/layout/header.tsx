@@ -255,6 +255,14 @@ const UserNav = () => {
 
   const pathname = usePathname()
 
+  // Fetch khi mount lần đầu để đảm bảo dữ liệu mới nhất (tránh cache stale)
+  useEffect(() => {
+    if (isAuthenticated && typeof fetchUser === 'function') {
+      fetchUser()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch khi navigate sang page khác
   useEffect(() => {
     if (isAuthenticated && typeof fetchUser === 'function') {
       fetchUser()
