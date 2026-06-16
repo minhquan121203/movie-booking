@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Banknote, QrCode, Printer, Loader2 } from 'lucide-react'
 import { Schedule } from '@/types/schedule'
 import { BookedSeat } from '@/types/booking'
+import type { CartProduct } from './ProductSelector'
 
 interface BookingSummaryProps {
   selectedSchedule: Schedule | null
@@ -15,7 +16,8 @@ interface BookingSummaryProps {
   setPaymentMethod: (method: string) => void
   onPayment: () => void
   isProcessing: boolean
-  lastBooking?: any // Booking vừa tạo thành công (để in vé)
+  lastBooking?: any
+  productCart?: CartProduct[]
 }
 
 // Hàm mở cửa sổ in vé
@@ -187,6 +189,7 @@ export function BookingSummary({
   onPayment,
   isProcessing,
   lastBooking,
+  productCart = [],
 }: BookingSummaryProps) {
   return (
     <Card className="p-5 border border-gray-200 shadow-md h-full flex flex-col sticky top-0">
@@ -237,6 +240,23 @@ export function BookingSummary({
             <p className="text-xs text-gray-400 italic">Chưa chọn ghế</p>
           )}
         </div>
+
+        {/* Bắp nước */}
+        {productCart.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
+              Bắp nước ({productCart.length} loại)
+            </p>
+            <div className="space-y-1">
+              {productCart.map(p => (
+                <div key={p.productId} className="flex justify-between items-center text-xs">
+                  <span className="text-gray-700">{p.name} ×{p.quantity}</span>
+                  <span className="font-medium text-amber-600">{(p.price * p.quantity).toLocaleString('vi-VN')}đ</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Thanh Toán */}

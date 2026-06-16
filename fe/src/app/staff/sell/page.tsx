@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useMovies } from '@/lib/api/movies'
 import { useSchedules } from '@/lib/api/schedules'
+import { useProducts } from '@/lib/api/products'
 import { useBooking } from '@/hooks/useBooking'
 import { useStaffCreateBooking } from '@/hooks/useCreateBooking'
 import { toast } from 'sonner'
 import { MovieSelector } from './components/MovieSelector'
 import { SeatSelector } from './components/SeatSelector'
 import { BookingSummary } from './components/BookingSummary'
+import { ProductSelector, type CartProduct } from './components/ProductSelector'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -20,6 +22,7 @@ import { User, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNotification } from '@/providers/NotificationProvider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useUserStore } from '@/store/userStore'
+import type { Product } from '@/types/product'
 
 const customerSchema = z.object({
   fullName: z.string().min(2, 'Tên khách hàng phải có ít nhất 2 ký tự'),
@@ -41,7 +44,9 @@ export default function TicketSales() {
   const { showSuccess, showError } = useNotification()
   const queryClient = useQueryClient()
   const [customerInfo, setCustomerInfo] = useState<CustomerFormData | null>(null)
-  const [lastBooking, setLastBooking] = useState<any>(null) // Booking vừa tạo để in vé
+  const [lastBooking, setLastBooking] = useState<any>(null)
+  // Giỏ bắp nước
+  const [productCart, setProductCart] = useState<CartProduct[]>([])
 
   // React Hook Form Setup
   const {
@@ -60,6 +65,10 @@ export default function TicketSales() {
   // Fetch Movies (tất cả phim đang chiếu)
   const { data: movieData } = useMovies({ status: 'Đang chiếu', limit: 100 })
   const movies = movieData?.movies || []
+
+  // Fetch sản phẩm bắp nước
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts({ isActive: true, inStock: true })
+  const products = (productsData as any) || []
 
   // Fetch Schedules theo 3 params: theaterId, movieId (nếu không phải ALL), date (nếu không showAllDates)
   const { data: schedulesData, isLoading: isLoadingSchedules } = useSchedules({
@@ -89,7 +98,25 @@ export default function TicketSales() {
       setCustomerInfo(null)
       setSelectedSchedule(null)
       setLastBooking(null)
+      setProductCart([])
     }
+  }
+
+  // Hàm quản lý giỏ bắp nước
+  const handleAddProduct = (product: Product) => {
+    setProductCart(prev => {
+      const existing = prev.find(i => i.productId === product._id)
+      if (existing) return prev.map(i => i.productId === product._id ? { ...i, quantity: i.quantity + 1 } : i)
+      return [...prev, { productId: product._id, name: product.name, price: product.price, quantity: 1, size: product.size }]
+    })
+  }
+
+  const handleRemoveProduct = (productId: string) => {
+    setProductCart(prev => {
+      const existing = prev.find(i => i.productId === productId)
+      if (existing && existing.quantity > 1) return prev.map(i => i.productId === productId ? { ...i, quantity: i.quantity - 1 } : i)
+      return prev.filter(i => i.productId !== productId)
+    })
   }
 
   const handlePayment = () => {
@@ -97,7 +124,6 @@ export default function TicketSales() {
     if (selectedSeats.length === 0) return toast.error('Chưa chọn ghế')
     if (!customerInfo) return toast.error('Thiếu thông tin khách hàng')
 
-    // Thêm as any để tắt tiếng TypeScript kêu la
     const payload: any = {
       scheduleId: selectedSchedule._id,
       seats: selectedSeats.map(s => ({
@@ -105,11 +131,17 @@ export default function TicketSales() {
         seatType: s.seatType,
         price: s.price,
       })),
+      // Thêm sản phẩm bắp nước nếu có
+      products: productCart.length > 0 ? productCart.map(p => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        size: p.size !== 'N/A' ? p.size : undefined,
+      })) : undefined,
       customerInfo: {
         fullName: customerInfo.fullName,
         email: customerInfo.email || 'no-email@example.com',
       },
-      paymentMethod: paymentMethod, // Truyền cash hoặc bank_transfer lên BE
+      paymentMethod,
       cashReceived: 0,
     }
 
@@ -126,9 +158,9 @@ export default function TicketSales() {
             showError('Lỗi hệ thống', 'Không thể kết nối PayOS để tạo mã QR. Vui lòng thử lại!')
           }
         } else {
-          // Luồng Tiền mặt — lưu booking để in vé
           const bookingResult = responseData?.booking || responseData
           setLastBooking(bookingResult)
+          setProductCart([]) // Reset giỏ sau khi tạo đơn
           showSuccess('Tạo đơn thành công! Nhấn "In Vé" để in.')
           queryClient.invalidateQueries({ queryKey: ['schedules'] })
           setSelectedSchedule(null)
@@ -272,6 +304,17 @@ export default function TicketSales() {
             selectedSeats={selectedSeats}
             onSeatClick={handleSeatClick}
           />
+
+          {/* Chọn bắp nước kèm vé */}
+          {!isLoadingProducts && products.length > 0 && (
+            <ProductSelector
+              products={products}
+              cart={productCart}
+              onAdd={handleAddProduct}
+              onRemove={handleRemoveProduct}
+              onClear={() => setProductCart([])}
+            />
+          )}
         </div>
 
         {/* Cột Phải */}
@@ -279,7 +322,8 @@ export default function TicketSales() {
           <BookingSummary
             selectedSchedule={selectedSchedule}
             selectedSeats={selectedSeats}
-            totalAmount={totalAmount}
+            totalAmount={totalAmount + productCart.reduce((s, p) => s + p.price * p.quantity, 0)}
+            productCart={productCart}
             paymentMethod={paymentMethod as any}
             setPaymentMethod={setPaymentMethod as any}
             onPayment={handlePayment}
