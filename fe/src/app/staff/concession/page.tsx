@@ -197,9 +197,10 @@ export default function ConcessionSalesPage() {
         setQrModal({ isOpen: true, qrString: qrData, amount: txAmount, orderCode: txId, payosOrderCode: responseData.payosOrderCode })
       } else {
         // Luồng tiền mặt
-        setLastTransaction({ ...responseData, transactionId: txId, totalAmount: txAmount })
+        setLastTransaction({ ...responseData, transactionId: txId, totalAmount: txAmount, items: [...cart], customerInfo: { ...customerInfo } })
         showSuccess('Dơn hàng thành công!', `Ma don: ${txId} - Tong: ${txAmount.toLocaleString('vi-VN')}đ`)
         clearCart()
+        setCustomerInfo({ fullName: '', phone: '', email: '' })
       }
     } catch (error: any) {
       console.log('Create concession error:', error)
@@ -476,7 +477,7 @@ export default function ConcessionSalesPage() {
           <div className="space-y-2">
             <Button
               onClick={handleSubmitOrder}
-              disabled={cart.length === 0 || createConcession.isPending}
+              disabled={cart.length === 0 || createConcession.isPending || !!lastTransaction}
               className="w-full h-12 text-base"
             >
               {createConcession.isPending ? (
@@ -487,16 +488,25 @@ export default function ConcessionSalesPage() {
             </Button>
 
             {lastTransaction && (
-              <Button
-                variant="outline"
-                className="w-full h-10 border-amber-400 text-amber-700 hover:bg-amber-50"
-                onClick={() => {
-                  printConcessionReceipt(lastTransaction, cart.length > 0 ? cart : [], customerInfo.fullName)
-                  setLastTransaction(null)
-                }}
-              >
-                <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 border-amber-400 text-amber-700 hover:bg-amber-50"
+                  onClick={() => {
+                    printConcessionReceipt(lastTransaction, lastTransaction.items || [], lastTransaction.customerInfo?.fullName || 'Khách lẻ')
+                    setLastTransaction(null)
+                  }}
+                >
+                  <Printer className="w-4 h-4 mr-2" /> In Hóa Đơn
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-10 border-gray-300"
+                  onClick={() => setLastTransaction(null)}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
             )}
           </div>
         </div>
