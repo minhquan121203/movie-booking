@@ -327,8 +327,8 @@ const UserNav = () => {
                   )} />
                   <span className="text-xs font-bold">{user.membershipLevel || 'Thành viên'}</span>
                   <span className="text-[10px] opacity-60">•</span>
-                  {/* Hiển thị điểm khả dụng (có thể dùng giảm giá), luôn lấy từ loyalty API */}
-                  <span className="text-xs font-bold">{availablePoints.toLocaleString('vi-VN')} điểm★</span>
+                  {/* Điểm khả dụng: dùng availablePoints (từ loyalty API), fallback về user.loyaltyPoints nếu chưa load */}
+                  <span className="text-xs font-bold">{(availablePoints || user.loyaltyPoints || 0).toLocaleString('vi-VN')} điểm</span>
                 </div>
 
               </div>

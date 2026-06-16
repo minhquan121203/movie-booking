@@ -111,7 +111,9 @@ export const useUserStore = create<UserState>()(
         isAuthenticated: state.isAuthenticated,
         staffTheaterId: state.staffTheaterId,
         staffTheaterName: state.staffTheaterName,
-        // Không persist availablePoints/totalEarnedPoints → luôn fetch tươi
+        // Persist điểm để tránh hiển thị 0 khi reload
+        availablePoints: state.availablePoints,
+        totalEarnedPoints: state.totalEarnedPoints,
       }),
       onRehydrateStorage: () => state => {
         state?.setHasHydrated(true)
