@@ -9,6 +9,10 @@ interface UserState {
   staffTheaterId: string | null
   staffTheaterName: string | null
   _hasHydrated: boolean
+  // Điểm khả dụng (có thể dùng để giảm giá) - lấy từ loyalty/me (source of truth)
+  availablePoints: number
+  // Tổng điểm tích lũy (dùng để xét hạng, không giảm khi redeem)
+  totalEarnedPoints: number
   setUser: (user: User | null) => void
   setStaffTheater: (theaterId: string | null) => void
   setStaffTheaterName: (theaterName: string | null) => void
@@ -25,6 +29,8 @@ export const useUserStore = create<UserState>()(
       staffTheaterId: null,
       staffTheaterName: null,
       _hasHydrated: false,
+      availablePoints: 0,
+      totalEarnedPoints: 0,
 
       setUser: user => set({ user, isAuthenticated: !!user }),
 
@@ -67,6 +73,8 @@ export const useUserStore = create<UserState>()(
           if (!userData?.data) return
 
           let mergedUser = { ...userData.data }
+          let availablePoints = mergedUser.loyaltyPoints ?? 0
+          let totalEarnedPoints = 0
 
           // 2. Lấy điểm chính xác từ /loyalty/me (source of truth)
           try {
@@ -79,16 +87,18 @@ export const useUserStore = create<UserState>()(
             if (loyaltyRes.ok) {
               const loyaltyData = await loyaltyRes.json()
               if (loyaltyData?.data) {
-                mergedUser.loyaltyPoints = loyaltyData.data.points ?? mergedUser.loyaltyPoints
+                // points = điểm khả dụng (totalEarned - totalRedeemed)
+                availablePoints = loyaltyData.data.points ?? availablePoints
+                totalEarnedPoints = loyaltyData.data.totalEarned ?? 0
+                mergedUser.loyaltyPoints = availablePoints
                 mergedUser.membershipLevel = loyaltyData.data.level ?? mergedUser.membershipLevel
               }
             }
           } catch (loyaltyErr) {
-            // Nếu loyalty API lỗi → giữ nguyên điểm từ /users/me
             console.warn('⚠️ Loyalty API fallback:', loyaltyErr)
           }
 
-          set({ user: mergedUser, isAuthenticated: true })
+          set({ user: mergedUser, isAuthenticated: true, availablePoints, totalEarnedPoints })
         } catch (error) {
           console.error('❌ Lỗi cập nhật UserStore:', error)
         }
@@ -96,6 +106,13 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'user-storage',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        staffTheaterId: state.staffTheaterId,
+        staffTheaterName: state.staffTheaterName,
+        // Không persist availablePoints/totalEarnedPoints → luôn fetch tươi
+      }),
       onRehydrateStorage: () => state => {
         state?.setHasHydrated(true)
       },

@@ -249,7 +249,7 @@ const SearchBar = ({ isOpen, onToggle, className }: SearchBarProps) => {
 
 // 3. User Navigation Component
 const UserNav = () => {
-  const { user, isAuthenticated, fetchUser } = useUserStore()
+  const { user, isAuthenticated, fetchUser, availablePoints } = useUserStore()
   const { theme, setTheme } = useTheme()
   const isMounted = useMounted()
 
@@ -326,8 +326,9 @@ const UserNav = () => {
                     user.membershipLevel === 'Kim Cương' && 'fill-violet-500 text-violet-500',
                   )} />
                   <span className="text-xs font-bold">{user.membershipLevel || 'Thành viên'}</span>
-                  <span className="text-[10px] opacity-80">•</span>
-                  <span className="text-xs font-bold">{(user.loyaltyPoints || 0).toLocaleString('vi-VN')} điểm</span>
+                  <span className="text-[10px] opacity-60">•</span>
+                  {/* Hiển thị điểm khả dụng (có thể dùng giảm giá), luôn lấy từ loyalty API */}
+                  <span className="text-xs font-bold">{availablePoints.toLocaleString('vi-VN')} điểm★</span>
                 </div>
 
               </div>
