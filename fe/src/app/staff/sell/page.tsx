@@ -76,7 +76,6 @@ export default function TicketSales() {
     movieId: selectedMovieId !== 'ALL' ? selectedMovieId : undefined,
     showDate: !showAllDates ? selectedDate : undefined,
     limit: 100,
-    includePast: true,
   })
 
   const schedules = schedulesData?.schedules || []

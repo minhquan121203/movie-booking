@@ -31,8 +31,26 @@ export function SeatSelector({
     return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
   }
 
+  // Lọc các suất chiếu hợp lệ (hôm nay và tương lai, không quá 30p sau khi chiếu)
+  const now = new Date()
+  const todayString = now.toLocaleDateString('en-CA')
+
+  const validSchedules = schedules.filter(schedule => {
+    const showDateStr = new Date(schedule.showDate).toLocaleDateString('en-CA')
+    if (showDateStr < todayString) return false // Ngày quá khứ -> bỏ
+
+    if (showDateStr === todayString) {
+      const [hours, minutes] = schedule.startTime.split(':').map(Number)
+      const scheduleTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+      // Cho phép mua vé trễ tối đa 30 phút so với giờ bắt đầu chiếu
+      const cutoffTime = new Date(scheduleTime.getTime() + 30 * 60000)
+      if (now > cutoffTime) return false
+    }
+    return true
+  })
+
   // Group schedules by date
-  const groupedSchedules = schedules.reduce(
+  const groupedSchedules = validSchedules.reduce(
     (acc, schedule) => {
       const date = schedule.showDate
       if (!acc[date]) {
@@ -56,9 +74,9 @@ export function SeatSelector({
           </div>
           <h3 className="font-semibold text-gray-900 text-sm">
             Chọn suất chiếu
-            {schedules.length > 0 && (
+            {validSchedules.length > 0 && (
               <span className="ml-2 text-xs text-gray-500 font-normal">
-                ({schedules.length} suất)
+                ({validSchedules.length} suất)
               </span>
             )}
           </h3>
@@ -68,7 +86,7 @@ export function SeatSelector({
           <div className="py-4 flex justify-center">
             <Loader2 className="animate-spin text-primary w-5 h-5" />
           </div>
-        ) : schedules.length === 0 ? (
+        ) : validSchedules.length === 0 ? (
           <div className="py-6 flex flex-col items-center justify-center text-gray-400">
             <Calendar className="w-12 h-12 mb-2 opacity-50" />
             <p className="text-sm font-medium">Không có suất chiếu</p>
