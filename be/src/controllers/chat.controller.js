@@ -217,8 +217,8 @@ function buildSmartFallback(userMessage, contextData) {
             const scheduleList = schedules
                 .filter(s => s.movie && s.theater)
                 .map(s => {
-                    const d = new Date(s.startTime);
-                    return `- ${s.movie?.title || "?"} @ ${s.theater?.name || "?"} | ${d.toLocaleString("vi-VN")}`;
+                    const dateStr = s.showDate ? new Date(s.showDate).toLocaleDateString("vi-VN") : "?";
+                    return `- ${s.movie?.title || "?"} @ ${s.theater?.name || "?"} | Ngày ${dateStr} lúc ${s.startTime || "?"}`;
                 })
                 .join("\n");
             return {
@@ -598,7 +598,10 @@ export const handleChat = async (req, res) => {
             botResponse.data = schedules.slice(0, 10).map(s => ({
                 movieTitle: s.movie?.title || "?",
                 theaterName: s.theater?.name || "?",
-                startTime: s.startTime,
+                roomName: s.roomName || "?",
+                showDate: s.showDate ? new Date(s.showDate).toLocaleDateString("vi-VN") : "?",
+                startTime: s.startTime || "?",
+                endTime: s.endTime || "?",
             }));
         }
 

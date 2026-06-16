@@ -59,7 +59,8 @@ class ChatService {
     // internal fetch logic (kept for readability)
     async _fetchContextNoCache() {
         const now = new Date();
-        const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 00:00 hôm nay
+        const next7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         const safeQuery = (promise, label) =>
             promise.catch((e) => {
@@ -71,11 +72,15 @@ class ChatService {
             // Fetch tất cả phim chưa ngừng chiếu (cả "Đang chiếu" + "Sắp chiếu") để hỗ trợ movie_detail
             safeQuery(Movie.find({ status: { $ne: "Ngừng chiếu" } }).populate("genres", "name").lean(), "movies"),
             safeQuery(Theater.find({ isActive: true }).lean(), "theaters"),
+            // FIX: startTime là string ("20:00"), lọc theo showDate (Date) mới đúng
             safeQuery(
-                Schedule.find({ startTime: { $gte: now, $lte: next7Days } })
+                Schedule.find({
+                    showDate: { $gte: today, $lte: next7Days },
+                    status: { $in: ["Đang mở bán vé", "Sắp đầy"] },
+                })
                     .populate("movie", "title")
                     .populate("theater", "name")
-                    .sort({ startTime: 1 })
+                    .sort({ showDate: 1, startTime: 1 })
                     .lean(),
                 "schedules"
             ),
@@ -142,16 +147,11 @@ class ChatService {
 
         const schedulesText = rawSchedules?.length
             ? rawSchedules
-                .filter((s) => {
-                    try {
-                        const d = new Date(s.startTime);
-                        return s.movie && s.theater && d >= now && d <= next7Days;
-                    } catch { return false; }
-                })
+                .filter((s) => s.movie && s.theater)
                 .slice(0, 15)
                 .map((s) => {
-                    const d = new Date(s.startTime);
-                    return `- ${s.movie?.title || "?"} @ ${s.theater?.name || "?"} | ${d.toLocaleString("vi-VN")}`;
+                    const dateStr = s.showDate ? new Date(s.showDate).toLocaleDateString("vi-VN") : "?";
+                    return `- ${s.movie?.title || "?"} @ ${s.theater?.name || "?"} | Ngày ${dateStr} lúc ${s.startTime || "?"}`;
                 })
                 .join("\n")
             : "Chưa có lịch chiếu";
