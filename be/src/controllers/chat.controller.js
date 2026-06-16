@@ -320,8 +320,12 @@ export const handleChat = async (req, res) => {
             const detailKeywords = ["thông tin", "chi tiết", "nội dung", "review", "review phim"];
             const isAskingDetail = detailKeywords.some(kw => lowMsg.includes(kw));
 
-            // Chỉ block và trả list nhanh khi KHÔNG hỏi chi tiết và KHÔNG nói tên phim cụ thể
-            if (!extractedName && !isAskingDetail && movieListKeywords.some(kw => lowMsg.includes(kw))) {
+            // Các từ khóa về tâm trạng để chatbot AI tự xử lý (không dùng quick list)
+            const moodKeywords = ["tâm trạng", "buồn", "vui", "chán", "stress", "mệt mỏi", "thất tình", "cười", "khóc", "xả stress", "tình cảm", "khuây khỏa", "giải trí"];
+            const isMoodQuery = moodKeywords.some(kw => lowMsg.includes(kw));
+
+            // Chỉ block và trả list nhanh khi KHÔNG hỏi chi tiết, KHÔNG nói tên phim cụ thể và KHÔNG nói về tâm trạng
+            if (!extractedName && !isAskingDetail && !isMoodQuery && movieListKeywords.some(kw => lowMsg.includes(kw))) {
 
                 // Chỉ lấy phim đang chiếu
                 let moviesSource = (contextData.movies || []).filter(m => !m.isDeleted && m.status === "Đang chiếu");
@@ -507,6 +511,7 @@ export const handleChat = async (req, res) => {
         "response": "Câu trả lời ngắn gọn, dễ đọc, có xuống dòng",
         "action": "chat" | "movie_list" | "movie_detail" | "schedule" | "product_list",
         "phim": "Tên phim GẦN ĐÚNG NHẤT trong dữ liệu (nếu khách hỏi về phim) hoặc null",
+        "phim_list": ["Tên phim 1", "Tên phim 2"] (chỉ khi action="movie_list", chọn phim phù hợp với yêu cầu/tâm trạng của khách),
         "rap": "Tên rạp nếu có hoặc null"
         }
 
@@ -632,6 +637,29 @@ export const handleChat = async (req, res) => {
                 botResponse.data = buildMovieDetailData(movie);
             } else {
                 botResponse.type = "text";
+            }
+        }
+
+        // === ACTION: movie_list — gợi ý danh sách phim (đặc biệt theo tâm trạng) ===
+        if (aiData.action === "movie_list" && Array.isArray(aiData.phim_list)) {
+            const moviesSource = contextData.movies || [];
+            const matchedMovies = [];
+            for (const name of aiData.phim_list) {
+                const movie = findMovieByName(name, moviesSource);
+                if (movie && !matchedMovies.some(m => m._id === movie._id)) {
+                    matchedMovies.push(movie);
+                }
+            }
+            if (matchedMovies.length > 0) {
+                botResponse.type = "movie_list";
+                botResponse.data = matchedMovies.map(m => ({
+                    _id: m._id,
+                    title: m.title,
+                    posterUrl: m.posterUrl,
+                    trailerUrl: m.trailerUrl,
+                    genre: m.genres?.map(g => g.name).join(", ") || "Phim rạp",
+                    rating: m.rating,
+                }));
             }
         }
 
