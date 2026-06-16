@@ -85,7 +85,7 @@ class ChatService {
                 "schedules"
             ),
             safeQuery(Product.find({ isActive: true, isDeleted: { $ne: true } }).lean(), "products"),
-            safeQuery(Voucher.find({ isActive: true }).lean(), "vouchers"),
+            safeQuery(Voucher.find({ isActive: true, endDate: { $gte: now } }).lean(), "vouchers"),
         ]);
 
         // movies = chỉ "Đang chiếu" (dùng cho movie_list hiển thị)
@@ -142,7 +142,13 @@ class ChatService {
             : "Chưa có sản phẩm";
 
         const vouchersText = vouchers?.length
-            ? vouchers.map((v) => `- ${v.code}: Giảm ${v.discount}%`).join("\n")
+            ? vouchers.map((v) => {
+                const discountStr = v.discountType === "fixed"
+                    ? `${Number(v.discountValue).toLocaleString("vi-VN")} VNĐ`
+                    : `${v.discountValue}%`;
+                const endStr = v.endDate ? new Date(v.endDate).toLocaleDateString("vi-VN") : "";
+                return `- 🎟️ ${v.code}: Giảm ${discountStr}${v.minOrderValue ? ` (đơn từ ${Number(v.minOrderValue).toLocaleString("vi-VN")}đ)` : ""}${endStr ? ` — HSD: ${endStr}` : ""}`;
+            }).join("\n")
             : "Không có khuyến mãi";
 
         const schedulesText = rawSchedules?.length

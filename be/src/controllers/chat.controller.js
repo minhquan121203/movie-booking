@@ -250,14 +250,20 @@ function buildSmartFallback(userMessage, contextData) {
     if (voucherKeywords.some(kw => msgOriginal.includes(kw) || msg.includes(kw))) {
         const vouchers = (contextData.vouchers || []);
         if (vouchers.length > 0) {
-            const voucherList = vouchers.map(v => `- 🎟️ ${v.code}: Giảm ${v.discount}%`).join("\n");
+            const voucherList = vouchers.map(v => {
+                const discountStr = v.discountType === "fixed"
+                    ? `${Number(v.discountValue).toLocaleString("vi-VN")} VNĐ`
+                    : `${v.discountValue}%`;
+                const endStr = v.endDate ? new Date(v.endDate).toLocaleDateString("vi-VN") : "";
+                return `- 🎟️ ${v.code}: Giảm ${discountStr}${endStr ? ` (HSD: ${endStr})` : ""}`;
+            }).join("\n");
             return {
-                text: `Chương trình khuyến mãi hiện có:\n${voucherList}\nNhập mã khi thanh toán nhé!`,
+                text: `🎉 Chương trình khuyến mãi đang có:\n${voucherList}\nNhập mã khi thanh toán để được giảm giá nhé!`,
                 type: "text",
                 data: [],
             };
         }
-        return { text: "Hiện chưa có chương trình khuyến mãi nào. Bạn theo dõi thường xuyên nhé! 🎟️", type: "text", data: [] };
+        return { text: "Hiện tại chưa có chương trình khuyến mãi nào đang hoạt động. Bạn theo dõi thường xuyên nhé! 🎟️", type: "text", data: [] };
     }
 
     // Chào hỏi
