@@ -121,8 +121,8 @@ export function SeatSelector({
 
       {/* Bản Đồ Ghế */}
       {selectedSchedule && (
-        <Card className="p-4 border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="flex items-center justify-between mb-4 shrink-0">
+        <Card className="p-4 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
                 <Armchair className="w-4 h-4" />
@@ -138,7 +138,8 @@ export function SeatSelector({
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl border border-gray-100 p-2 flex-1 overflow-auto">
+          {/* Container mở rộng, scroll ngang nếu phòng rộng */}
+          <div className="w-full overflow-x-auto">
             <SeatMaps
               schedule={selectedSchedule}
               selectedSeats={selectedSeats}

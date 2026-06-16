@@ -109,7 +109,7 @@ export const requireActiveShift = async (req, res, next) => {
       return next();
     }
 
-    // Staff phải có active shift assignment
+    // Staff phải có active shift assignment (đã check-in)
     const activeAssignment = await ShiftAssignment.findOne({
       userId: req.userId,
       status: "active",
@@ -121,14 +121,9 @@ export const requireActiveShift = async (req, res, next) => {
       return errorResponse(res, "Bạn phải check-in ca làm việc trước khi thực hiện thao tác này", 403);
     }
 
-    // Kiểm tra xem ca làm việc có đang trong thời gian không (optional, có thể bỏ)
-    const now = new Date();
-    if (activeAssignment.workScheduleId) {
-      const schedule = activeAssignment.workScheduleId;
-      if (now < schedule.startDateTime || now > schedule.endDateTime) {
-        return errorResponse(res, "Ca làm việc của bạn chưa bắt đầu hoặc đã kết thúc", 403);
-      }
-    }
+    // NOTE: Bỏ kiểm tra startDateTime/endDateTime vì model lưu dạng string "HH:mm"
+    // không phải DateTime object, nên so sánh sẽ luôn sai.
+    // Nhân viên đã check-in (status = "active") là đủ điều kiện thao tác.
 
     // Attach assignment info vào request để controller có thể sử dụng
     req.activeShift = activeAssignment;
