@@ -357,6 +357,114 @@ export const handleChat = async (req, res) => {
             console.warn("⚠️ Lỗi xử lý quick intent phim:", e.message);
         }
 
+        // QUICK SERVER-SIDE INTENT: Lịch chiếu (trả type "schedule" để FE render card UI)
+        try {
+            const lowMsg = userMessage.toLowerCase();
+            const scheduleKeywords = ["lịch chiếu", "lich chieu", "giờ chiếu", "gio chieu", "suất chiếu", "suat chieu", "mấy giờ", "may gio", "chiếu lúc", "chieu luc"];
+            const isScheduleQuery = scheduleKeywords.some(kw => lowMsg.includes(kw));
+
+            if (isScheduleQuery) {
+                let schedules = (contextData.rawSchedules || []).filter(s => s.movie && s.theater);
+
+                // Lọc theo "hôm nay" nếu user hỏi cụ thể
+                const todayKeywords = ["hôm nay", "hom nay", "today", "hnay"];
+                const isAskingToday = todayKeywords.some(kw => lowMsg.includes(kw));
+
+                if (isAskingToday) {
+                    const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+                    schedules = schedules.filter(s => {
+                        const showDateStr = new Date(s.showDate).toLocaleDateString("en-CA");
+                        return showDateStr === todayStr;
+                    });
+                }
+
+                if (schedules.length > 0) {
+                    const scheduleItems = schedules.slice(0, 10).map(s => ({
+                        movieId: s.movie?._id || null,
+                        movieTitle: s.movie?.title || "?",
+                        theaterName: s.theater?.name || "?",
+                        roomName: s.roomName || "?",
+                        showDate: s.showDate ? new Date(s.showDate).toLocaleDateString("vi-VN") : "?",
+                        startTime: s.startTime || "?",
+                        endTime: s.endTime || "?",
+                    }));
+
+                    const label = isAskingToday ? "hôm nay" : "sắp tới";
+                    const botMsg = {
+                        text: `📅 Lịch chiếu ${label} (${scheduleItems.length} suất):`,
+                        type: "schedule",
+                        data: scheduleItems,
+                    };
+
+                    try {
+                        await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+                        await chatService.saveChatMessage(sessionId, userId, userName, "bot", botMsg.text, botMsg.type, botMsg.data);
+                    } catch (e) {
+                        console.warn("⚠️ Lỗi lưu lịch sử quick schedule:", e.message);
+                    }
+
+                    return res.json({ botMessage: botMsg, sessionId });
+                } else {
+                    // Không có suất chiếu → trả lời rõ ràng
+                    const noScheduleText = isAskingToday
+                        ? "📅 Hôm nay hiện tại chưa có suất chiếu nào. Bạn thử hỏi \"lịch chiếu\" để xem các ngày tới nhé! 🎬"
+                        : "📅 Hiện chưa có lịch chiếu nào trong 7 ngày tới. Bạn quay lại sau nhé! 🎬";
+
+                    const botMsg = { text: noScheduleText, type: "text", data: [] };
+
+                    try {
+                        await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+                        await chatService.saveChatMessage(sessionId, userId, userName, "bot", botMsg.text, botMsg.type, botMsg.data);
+                    } catch (e) {
+                        console.warn("⚠️ Lỗi lưu lịch sử:", e.message);
+                    }
+
+                    return res.json({ botMessage: botMsg, sessionId });
+                }
+            }
+        } catch (e) {
+            console.warn("⚠️ Lỗi xử lý quick intent lịch chiếu:", e.message);
+        }
+
+        // QUICK SERVER-SIDE INTENT: Bắp nước / Đồ ăn
+        try {
+            const lowMsg = userMessage.toLowerCase();
+            const productKeywords = ["bắp nước", "bap nuoc", "đồ ăn", "do an", "menu", "combo", "popcorn", "snack", "nước uống", "nuoc uong", "bắp rang", "bap rang"];
+            const isProductQuery = productKeywords.some(kw => lowMsg.includes(kw));
+
+            if (isProductQuery) {
+                const products = (contextData.products || []);
+                if (products.length > 0) {
+                    const productItems = products.map(p => ({
+                        _id: p._id,
+                        name: p.name,
+                        price: p.price,
+                        imageUrl: p.imageUrl,
+                        image: p.imageUrl,
+                        category: p.category,
+                        size: p.size,
+                    }));
+
+                    const botMsg = {
+                        text: `🍿 Menu bắp nước tại CineBooking (${productItems.length} sản phẩm):`,
+                        type: "product_list",
+                        data: productItems,
+                    };
+
+                    try {
+                        await chatService.saveChatMessage(sessionId, userId, userName, "user", userMessage, "text", null);
+                        await chatService.saveChatMessage(sessionId, userId, userName, "bot", botMsg.text, botMsg.type, botMsg.data);
+                    } catch (e) {
+                        console.warn("⚠️ Lỗi lưu lịch sử quick product:", e.message);
+                    }
+
+                    return res.json({ botMessage: botMsg, sessionId });
+                }
+            }
+        } catch (e) {
+            console.warn("⚠️ Lỗi xử lý quick intent bắp nước:", e.message);
+        }
+
         // 2. Kiểm tra API Key
         const apiKey = chatService.getActiveApiKey();
         if (!apiKey || !chatService.hasValidKeys()) {
