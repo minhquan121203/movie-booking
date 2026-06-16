@@ -121,10 +121,6 @@ export const requireActiveShift = async (req, res, next) => {
       return errorResponse(res, "Bạn phải check-in ca làm việc trước khi thực hiện thao tác này", 403);
     }
 
-    // NOTE: Bỏ kiểm tra startDateTime/endDateTime vì model lưu dạng string "HH:mm"
-    // không phải DateTime object, nên so sánh sẽ luôn sai.
-    // Nhân viên đã check-in (status = "active") là đủ điều kiện thao tác.
-
     // Attach assignment info vào request để controller có thể sử dụng
     req.activeShift = activeAssignment;
 

@@ -41,6 +41,7 @@ export default function TicketSales() {
   const { showSuccess, showError } = useNotification()
   const queryClient = useQueryClient()
   const [customerInfo, setCustomerInfo] = useState<CustomerFormData | null>(null)
+  const [lastBooking, setLastBooking] = useState<any>(null) // Booking vừa tạo để in vé
 
   // React Hook Form Setup
   const {
@@ -87,6 +88,7 @@ export default function TicketSales() {
     if (confirm('Quay lại sẽ xóa các ghế đang chọn. Bạn chắc chắn chứ?')) {
       setCustomerInfo(null)
       setSelectedSchedule(null)
+      setLastBooking(null)
     }
   }
 
@@ -113,24 +115,23 @@ export default function TicketSales() {
 
     staffCreateBooking(payload, {
       onSuccess: (result: any) => {
-        const responseData = result.data || result; 
-        const qrUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl;
+        const responseData = result.data || result
+        const qrUrl = responseData?.payosCheckoutUrl || responseData?.data?.payosCheckoutUrl
 
         if (paymentMethod === 'bank_transfer') {
           if (qrUrl) {
-            showSuccess('Đang chuyển đến trang thanh toán...');
-            window.location.href = qrUrl; 
+            showSuccess('Đang chuyển đến trang thanh toán...')
+            window.location.href = qrUrl
           } else {
-            // NẾU BACKEND LỖI TRẢ VỀ NULL -> BÁO LỖI NGAY LẬP TỨC!
-            showError('Lỗi hệ thống', 'Không thể kết nối PayOS để tạo mã QR. Vui lòng thử lại!');
+            showError('Lỗi hệ thống', 'Không thể kết nối PayOS để tạo mã QR. Vui lòng thử lại!')
           }
         } else {
-          // Luồng Tiền mặt
-          showSuccess('Tạo đơn thành công!');
-          queryClient.invalidateQueries({ queryKey: ['schedules'] });
-          setSelectedSchedule(null);
-          setCustomerInfo(null);
-          reset();
+          // Luồng Tiền mặt — lưu booking để in vé
+          const bookingResult = responseData?.booking || responseData
+          setLastBooking(bookingResult)
+          showSuccess('Tạo đơn thành công! Nhấn "In Vé" để in.')
+          queryClient.invalidateQueries({ queryKey: ['schedules'] })
+          setSelectedSchedule(null)
         }
       },
     })
@@ -283,6 +284,7 @@ export default function TicketSales() {
             setPaymentMethod={setPaymentMethod as any}
             onPayment={handlePayment}
             isProcessing={isPending}
+            lastBooking={lastBooking}
           />
         </div>
       </div>

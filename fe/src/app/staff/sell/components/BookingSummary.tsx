@@ -15,6 +15,167 @@ interface BookingSummaryProps {
   setPaymentMethod: (method: string) => void
   onPayment: () => void
   isProcessing: boolean
+  lastBooking?: any // Booking vừa tạo thành công (để in vé)
+}
+
+// Hàm mở cửa sổ in vé
+function printTicket(booking: any, schedule: Schedule | null) {
+  if (!booking) return
+
+  const bookingData = booking.booking || booking
+  const seats = bookingData.seats?.map((s: any) => s.seatNumber).join(', ') || '---'
+  const qrCode = bookingData.qrCode || ''
+  const movieTitle = bookingData.movieTitle || schedule?.movie?.title || '---'
+  const theaterName = bookingData.theaterName || '---'
+  const roomName = bookingData.roomName || schedule?.roomName || '---'
+  const showDate = bookingData.showDate
+    ? new Date(bookingData.showDate).toLocaleDateString('vi-VN')
+    : '---'
+  const showTime = bookingData.showTime || `${schedule?.startTime || ''}`
+  const bookingCode = bookingData.bookingCode || '---'
+  const totalAmount = (bookingData.totalAmount || 0).toLocaleString('vi-VN')
+  const paymentMethod = bookingData.paymentDetails?.paymentMethod || 'Tại quầy'
+  const customerName = bookingData.guestCustomer?.name || '---'
+
+  const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ve Xem Phim - ${bookingCode}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .ticket {
+      background: white;
+      width: 380px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .ticket-header {
+      background: linear-gradient(135deg, #6c63ff, #a855f7);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .cinema-name { font-size: 22px; font-weight: 900; letter-spacing: 2px; margin-bottom: 4px; }
+    .cinema-sub { font-size: 11px; opacity: 0.8; }
+    .ticket-body { padding: 20px; }
+    .movie-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1a1a2e;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .info-item label {
+      font-size: 9px; color: #888; text-transform: uppercase;
+      font-weight: 700; letter-spacing: 0.5px; display: block; margin-bottom: 3px;
+    }
+    .info-item span { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .info-item.full { grid-column: 1 / -1; }
+    .seats-box {
+      background: #f8f5ff; border: 1.5px dashed #a855f7;
+      border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 16px;
+    }
+    .seats-box label { font-size: 9px; color: #888; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
+    .seats-box span { font-size: 18px; font-weight: 900; color: #6c63ff; letter-spacing: 1px; }
+    .divider { border: none; border-top: 2px dashed #e5e7eb; margin: 16px 0; }
+    .qr-section { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .qr-section img { width: 150px; height: 150px; border: 3px solid #6c63ff; border-radius: 12px; padding: 4px; }
+    .qr-placeholder {
+      width: 150px; height: 150px; background: #f0f0f0; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 12px;
+    }
+    .booking-code {
+      font-size: 11px; font-weight: 700; color: #555; letter-spacing: 2px;
+      background: #f0f0f0; padding: 4px 12px; border-radius: 20px;
+    }
+    .total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #1a1a2e; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 12px;
+    }
+    .total-row .label { font-size: 12px; opacity: 0.8; }
+    .total-row .amount { font-size: 18px; font-weight: 900; }
+    .footer-note { text-align: center; font-size: 10px; color: #aaa; line-height: 1.6; }
+    @media print {
+      body { background: white; padding: 0; }
+      .ticket { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="ticket-header">
+      <div class="cinema-name">CineBooking</div>
+      <div class="cinema-sub">Ve dien tu / E-Ticket</div>
+    </div>
+    <div class="ticket-body">
+      <div class="movie-title">${movieTitle}</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Rap chieu</label>
+          <span>${theaterName}</span>
+        </div>
+        <div class="info-item">
+          <label>Phong</label>
+          <span>${roomName}</span>
+        </div>
+        <div class="info-item">
+          <label>Ngay chieu</label>
+          <span>${showDate}</span>
+        </div>
+        <div class="info-item">
+          <label>Suat chieu</label>
+          <span>${showTime}</span>
+        </div>
+        <div class="info-item full">
+          <label>Khach hang</label>
+          <span>${customerName}</span>
+        </div>
+        <div class="info-item full">
+          <label>Thanh toan</label>
+          <span>${paymentMethod}</span>
+        </div>
+      </div>
+      <div class="seats-box">
+        <label>Ghe ngoi</label>
+        <span>${seats}</span>
+      </div>
+      <hr class="divider" />
+      <div class="qr-section">
+        ${qrCode
+          ? `<img src="${qrCode}" alt="QR Code" />`
+          : `<div class="qr-placeholder">Khong co QR</div>`}
+        <div class="booking-code">${bookingCode}</div>
+      </div>
+      <div class="total-row">
+        <span class="label">Tong tien</span>
+        <span class="amount">${totalAmount} d</span>
+      </div>
+      <div class="footer-note">
+        Vui long xuat trinh ve nay khi vao rap.<br/>
+        Ve da mua khong duoc hoan tra. Cam on ban!
+      </div>
+    </div>
+  </div>
+  <script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`
+
+  const printWindow = window.open('', '_blank', 'width=460,height=700')
+  if (printWindow) {
+    printWindow.document.write(html)
+    printWindow.document.close()
+  }
 }
 
 export function BookingSummary({
@@ -25,6 +186,7 @@ export function BookingSummary({
   setPaymentMethod,
   onPayment,
   isProcessing,
+  lastBooking,
 }: BookingSummaryProps) {
   return (
     <Card className="p-5 border border-gray-200 shadow-md h-full flex flex-col sticky top-0">
@@ -44,14 +206,14 @@ export function BookingSummary({
         {/* Suất */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Suất</p>
+            <p className="text-xs text-gray-500 uppercase font-semibond mb-1">Suất</p>
             <Badge variant="outline" className="font-mono text-xs">
               {selectedSchedule ? selectedSchedule.startTime : '--:--'}
             </Badge>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Phòng</p>
-            <p className="text-sm">{selectedSchedule?.room.roomName || '--'}</p>
+            <p className="text-sm">{selectedSchedule?.room?.roomName || '--'}</p>
           </div>
         </div>
 
@@ -116,8 +278,14 @@ export function BookingSummary({
           <Button
             variant="outline"
             size="sm"
-            className="w-full border-primary text-primary hover:bg-primary/5"
-            disabled={selectedSeats.length === 0}
+            className={`w-full transition-all ${
+              lastBooking
+                ? 'border-green-500 text-green-600 hover:bg-green-50'
+                : 'border-gray-300 text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!lastBooking}
+            onClick={() => printTicket(lastBooking, selectedSchedule)}
+            title={!lastBooking ? 'Thanh toán xong mới in được' : 'Mở cửa sổ in vé'}
           >
             <Printer className="w-3.5 h-3.5 mr-1.5" /> In Vé
           </Button>
@@ -130,6 +298,16 @@ export function BookingSummary({
             {isProcessing ? <Loader2 className="animate-spin w-3.5 h-3.5" /> : 'Thanh Toán'}
           </Button>
         </div>
+
+        {lastBooking ? (
+          <p className="text-[10px] text-green-600 text-center mt-2 font-medium">
+            ✅ Đơn hàng đã tạo — nhấn In Vé để in
+          </p>
+        ) : selectedSeats.length > 0 ? (
+          <p className="text-[10px] text-gray-400 text-center mt-2">
+            Thanh toán xong để kích hoạt In Vé
+          </p>
+        ) : null}
       </div>
     </Card>
   )
