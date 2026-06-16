@@ -70,11 +70,13 @@ export default function TicketSales() {
   const { data: productsData, isLoading: isLoadingProducts } = useProducts({ isActive: true, inStock: true })
   const products = (productsData as any) || []
 
-  // Fetch Schedules theo 3 params: theaterId, movieId (nếu không phải ALL), date (nếu không showAllDates)
+  // Fetch Schedules
   const { data: schedulesData, isLoading: isLoadingSchedules } = useSchedules({
     theaterId: staffTheaterId || undefined,
     movieId: selectedMovieId !== 'ALL' ? selectedMovieId : undefined,
     showDate: !showAllDates ? selectedDate : undefined,
+    limit: 100,
+    includePast: true,
   })
 
   const schedules = schedulesData?.schedules || []
@@ -160,7 +162,7 @@ export default function TicketSales() {
         } else {
           const bookingResult = responseData?.booking || responseData
           setLastBooking(bookingResult)
-          setProductCart([]) // Reset giỏ sau khi tạo đơn
+          // Không reset productCart ở đây để in vé có dữ liệu bắp nước, sẽ reset ở onPrintDone
           showSuccess('Tạo đơn thành công! Nhấn "In Vé" để in.')
           queryClient.invalidateQueries({ queryKey: ['schedules'] })
           setSelectedSchedule(null)
