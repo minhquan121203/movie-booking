@@ -47,7 +47,8 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
     } else if (method?.toLowerCase() === 'momo') {
       createMoMoPayment(booking._id, { onSuccess })
     } else {
-      toast.info('Phương thức thanh toán này không hỗ trợ tiếp tục thanh toán trực tuyến.')
+      toast.info(`Phương thức thanh toán này (${method}) không hỗ trợ tiếp tục thanh toán trực tuyến.`)
+      console.log("PAYMENT DETAILS:", booking.paymentDetails)
     }
   }
   useEffect(() => {

@@ -803,7 +803,7 @@ const bookingController = {
           })),
           appliedVoucher: b.appliedVoucher, ticketsAmount: b.ticketsAmount, productsAmount: b.productsAmount,
           subtotal: b.subtotal, discountAmount: b.discountAmount, totalAmount: b.totalAmount, status: b.status,
-          qrCode: b.qrCode, createdAt: b.createdAt, updatedAt: b.updatedAt,
+          paymentDetails: b.paymentDetails, qrCode: b.qrCode, createdAt: b.createdAt, updatedAt: b.updatedAt,
         })),
         pagination: { currentPage: page, totalPages: Math.ceil(total / limit), totalItems: total },
       };
