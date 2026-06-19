@@ -102,19 +102,29 @@ export function useSeatSocket({ socket, scheduleId, isConnected, onHoldFailed }:
     if (!socket || !scheduleId || !isInRoom) return
     console.log('🔴 Leaving schedule:', scheduleId)
     socket.emit('leave-schedule', { scheduleId })
+    setIsInRoom(false)
+    setRealTimeSeats(new Map())
   }, [socket, scheduleId, isInRoom])
 
   useEffect(() => {
     if (!socket) return
-    const handleLeaveSchedule = (data: any) => {
-      console.log('✅ Left schedule successfully')
-      setIsInRoom(false)
-      setRealTimeSeats(new Map())
+
+    const handleViewerLeft = (data: any) => {
+      console.log('👥 A viewer left:', data.viewerCount)
       setViewerCount(data.viewerCount)
     }
-    socket.on('viewer-left', handleLeaveSchedule)
+
+    const handleViewerJoined = (data: any) => {
+      console.log('👥 A viewer joined:', data.viewerCount)
+      setViewerCount(data.viewerCount)
+    }
+
+    socket.on('viewer-left', handleViewerLeft)
+    socket.on('viewer-joined', handleViewerJoined)
+
     return () => {
-      socket.off('viewer-left', handleLeaveSchedule)
+      socket.off('viewer-left', handleViewerLeft)
+      socket.off('viewer-joined', handleViewerJoined)
     }
   }, [socket])
 
