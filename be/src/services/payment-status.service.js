@@ -378,7 +378,7 @@ class PaymentStatusService {
 
     try {
       await session.withTransaction(async () => {
-        booking.status = "Đã hủy";
+        booking.status = "Hết hạn";
         booking.paymentDetails.status = "Thất bại";
         await booking.save({ session });
 

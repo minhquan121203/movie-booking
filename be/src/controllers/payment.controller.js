@@ -273,11 +273,11 @@ async function handlePaymentFailure(booking) {
   try {
     await session.withTransaction(async () => {
       // Check nếu đã được cancel rồi
-      if (booking.status === BOOKING_STATUS.CANCELLED) {
+      if (booking.status === BOOKING_STATUS.CANCELLED || booking.status === BOOKING_STATUS.EXPIRED) {
         return;
       }
 
-      booking.status = BOOKING_STATUS.CANCELLED;
+      booking.status = BOOKING_STATUS.EXPIRED;
       if (booking.paymentDetails) {
         booking.paymentDetails.status = "Thất bại";
       }
