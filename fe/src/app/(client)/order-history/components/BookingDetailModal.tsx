@@ -121,6 +121,12 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                       ) : (
                         <QrCode className="w-full h-full text-gray-300 p-2" />
                       )
+                    ) : ['Đã hủy', 'CANCELLED'].includes(booking.status) ? (
+                      <div className="w-full h-full flex items-center justify-center bg-red-50 rounded border border-red-100">
+                        <span className="text-[10px] text-red-400 font-medium leading-tight text-center">
+                          Vé đã <br /> bị hủy
+                        </span>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded">
                         <span className="text-[10px] text-gray-400 font-medium leading-tight text-center">
@@ -131,6 +137,8 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                   </div>
                   {['Hoàn tất', 'COMPLETED', 'Đã sử dụng', 'USED'].includes(booking.status) ? (
                     <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
+                  ) : ['Đã hủy', 'CANCELLED'].includes(booking.status) ? (
+                    <span className="text-xs text-red-500 font-medium">Giao dịch đã huỷ</span>
                   ) : (
                     <span className="text-xs text-yellow-600 font-medium animate-pulse">Đang hóng Webhook...</span>
                   )}
