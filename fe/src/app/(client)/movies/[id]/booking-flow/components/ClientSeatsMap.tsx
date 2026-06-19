@@ -160,12 +160,13 @@ export function SeatMaps({
       let hasNewIsolated = false
       for (let i = 0; i < simulatedStates.length; i++) {
         if (simulatedStates[i] === 'O') {
-          const leftIsX = i === 0 || simulatedStates[i - 1] === 'X'
-          const rightIsX = i === simulatedStates.length - 1 || simulatedStates[i + 1] === 'X'
+          // Ghế bị kẹp giữa 2 ghế khác mới tính là lỗi
+          const leftIsX = i > 0 && simulatedStates[i - 1] === 'X'
+          const rightIsX = i < simulatedStates.length - 1 && simulatedStates[i + 1] === 'X'
 
           if (leftIsX && rightIsX) {
-            const leftWasX = i === 0 || currentStates[i - 1] === 'X'
-            const rightWasX = i === currentStates.length - 1 || currentStates[i + 1] === 'X'
+            const leftWasX = i > 0 && currentStates[i - 1] === 'X'
+            const rightWasX = i < currentStates.length - 1 && currentStates[i + 1] === 'X'
             const wasIsolated = currentStates[i] === 'O' && leftWasX && rightWasX
 
             if (!wasIsolated) {
@@ -177,7 +178,7 @@ export function SeatMaps({
       }
 
       if (hasNewIsolated) {
-        toast.warning('Không được để trống 1 ghế ở giữa hoặc ở rìa!', { duration: 3000 })
+        toast.warning('Không được để trống 1 ghế ở giữa 2 ghế đã chọn/đặt!', { duration: 3000 })
         return
       }
     }

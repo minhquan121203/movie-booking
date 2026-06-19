@@ -154,6 +154,12 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                           Vé đã <br /> bị hủy
                         </span>
                       </div>
+                    ) : ['Hết hạn', 'EXPIRED'].includes(booking.status) ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded border border-gray-200">
+                        <span className="text-[10px] text-gray-500 font-medium leading-tight text-center">
+                          Vé đã <br /> hết hạn
+                        </span>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded">
                         <span className="text-[10px] text-gray-400 font-medium leading-tight text-center">
@@ -166,6 +172,8 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                     <span className="text-xs text-text-secondary">Quét mã để vào rạp</span>
                   ) : ['Đã hủy', 'CANCELLED'].includes(booking.status) ? (
                     <span className="text-xs text-red-500 font-medium">Giao dịch đã huỷ</span>
+                  ) : ['Hết hạn', 'EXPIRED'].includes(booking.status) ? (
+                    <span className="text-xs text-gray-500 font-medium">Giao dịch hết hạn</span>
                   ) : (
                     <Button 
                       onClick={handleRepay} 
