@@ -99,6 +99,9 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
     socket,
     scheduleId: activeScheduleId,
     isConnected,
+    onHoldFailed: (failedSeats: string[]) => {
+      setSelectedSeats(prev => prev.filter(s => !failedSeats.includes(s.seatNumber)));
+    }
   })
 
   // --- API HOOKS ---

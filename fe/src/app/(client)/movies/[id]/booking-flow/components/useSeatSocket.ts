@@ -20,9 +20,10 @@ interface UseSeatSocketProps {
   socket: Socket | null
   scheduleId: string | null
   isConnected: boolean
+  onHoldFailed?: (seatNumbers: string[]) => void
 }
 
-export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocketProps) {
+export function useSeatSocket({ socket, scheduleId, isConnected, onHoldFailed }: UseSeatSocketProps) {
   const [realTimeSeats, setRealTimeSeats] = useState<Map<string, Seat>>(new Map())
   const [viewerCount, setViewerCount] = useState(0)
   const [isInRoom, setIsInRoom] = useState(false)
@@ -125,7 +126,7 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       }
       socket.emit('hold-seats', {
         scheduleId,
-        seatNumbers: seatNumbers.map(s => s.toLowerCase()),
+        seatNumbers: seatNumbers,
       })
     },
     [socket, scheduleId, isInRoom]
@@ -134,12 +135,13 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
   useEffect(() => {
     if (!socket || !scheduleId || !isInRoom) return
     const handleHoldSeats = (data: any) => {
-      if (data?.success) {
-        console.log('✅ Seats held successfully:', data?.seatNumbers.join(', '))
-        toast.success(`Đã giữ ghế: ${data?.seatNumbers.join(', ')}`)
-      } else {
-        console.error('❌ Failed to hold seats:', data?.message)
-        toast.error(data?.message || 'Không thể giữ ghế')
+      console.log('✅ Seats held successfully:', data?.seatNumbers?.join(', '))
+    }
+    const handleHoldSeatsFailed = (data: any) => {
+      console.error('❌ Failed to hold seats:', data)
+      toast.error(data?.unavailableSeats?.[0]?.reason || 'Ghế này đã có người nhanh tay chọn trước!')
+      if (onHoldFailed && data?.unavailableSeats) {
+        onHoldFailed(data.unavailableSeats.map((s: any) => s.seatNumber))
       }
     }
     const handleSeatsStatusChanged = (data: SeatStatusUpdate) => {
@@ -176,10 +178,12 @@ export function useSeatSocket({ socket, scheduleId, isConnected }: UseSeatSocket
       }
     }
     socket.on('seats-held', handleHoldSeats)
+    socket.on('seats-hold-failed', handleHoldSeatsFailed)
     socket.on('seats-status-changed', handleSeatsStatusChanged)
 
     return () => {
       socket.off('seats-held', handleHoldSeats)
+      socket.off('seats-hold-failed', handleHoldSeatsFailed)
       socket.off('seats-status-changed', handleSeatsStatusChanged)
     }
   }, [socket, scheduleId, isInRoom])
