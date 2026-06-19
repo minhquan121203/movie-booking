@@ -12,9 +12,13 @@ import {
   MonitorPlay,
   Armchair,
   Hash,
+  Loader2,
 } from 'lucide-react'
 import { Booking } from '@/types/booking'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { useCreateVNPayUrl, useCreateMoMoUrl } from '@/lib/api/payment'
+import { toast } from 'sonner'
 
 interface BookingDetailModalProps {
   booking: Booking | null
@@ -23,7 +27,29 @@ interface BookingDetailModalProps {
 
 export default function BookingDetailModal({ booking, onClose }: BookingDetailModalProps) {
   const router = useRouter()
+  const { mutate: createVNPayPayment, isPending: isCreatingVNPay } = useCreateVNPayUrl()
+  const { mutate: createMoMoPayment, isPending: isCreatingMoMo } = useCreateMoMoUrl()
 
+  const isProcessing = isCreatingVNPay || isCreatingMoMo
+
+  const handleRepay = () => {
+    if (!booking) return
+    const method = booking.paymentDetails?.paymentMethod
+    
+    const onSuccess = (res: any) => {
+      const url = res.paymentUrl || res.payUrl || res.checkoutUrl || res.data?.payUrl
+      if (url) window.location.href = url
+      else toast.error('Không tìm thấy link thanh toán, vui lòng thử lại sau!')
+    }
+
+    if (method === 'VNPAY') {
+      createVNPayPayment(booking._id, { onSuccess })
+    } else if (method === 'MoMo') {
+      createMoMoPayment(booking._id, { onSuccess })
+    } else {
+      toast.info('Phương thức thanh toán này không hỗ trợ tiếp tục thanh toán trực tuyến.')
+    }
+  }
   useEffect(() => {
     let intervalId: NodeJS.Timeout
 
@@ -140,7 +166,15 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
                   ) : ['Đã hủy', 'CANCELLED'].includes(booking.status) ? (
                     <span className="text-xs text-red-500 font-medium">Giao dịch đã huỷ</span>
                   ) : (
-                    <span className="text-xs text-yellow-600 font-medium animate-pulse">Đang hóng Webhook...</span>
+                    <Button 
+                      onClick={handleRepay} 
+                      disabled={isProcessing} 
+                      size="sm" 
+                      className="w-full mt-2 h-8 text-xs font-semibold bg-primary hover:bg-primary/90 text-white rounded-full shadow-md shadow-primary/20"
+                    >
+                      {isProcessing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                      Thanh toán ngay
+                    </Button>
                   )}
                 </div>
               </div>
