@@ -52,7 +52,7 @@ export function SeatMaps({
         })
 
         const mergedSeats: MergedSeat[] = []
-        
+
         for (let i = 0; i < sortedSeats.length; i++) {
           const currentSeat = sortedSeats[i]
           const nextSeat = sortedSeats[i + 1]
@@ -64,7 +64,7 @@ export function SeatMaps({
               pairedSeat: nextSeat,
               displayNumber: `${currentSeat.seatNumber.slice(1)}-${nextSeat.seatNumber.slice(1)}`
             })
-            i++ 
+            i++
           } else {
             mergedSeats.push({
               ...currentSeat,
@@ -104,7 +104,7 @@ export function SeatMaps({
 
     const isSelected1 = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
     const isSelected2 = seat.pairedSeat ? selectedSeats.some(s => s.seatNumber === seat.pairedSeat?.seatNumber) : false
-    
+
     if (isSelected1 || isSelected2) return 'selected'
 
     const isHeld = realTimeSeat1?.holdUntil || realTimeSeat2?.holdUntil
@@ -129,23 +129,23 @@ export function SeatMaps({
     // ---- CHECK: Không cho phép để trống 1 ghế đơn lẻ ----
     const rowLabel = seat.seatNumber.charAt(0)
     const row = rows.find(r => r.rowLabel === rowLabel)
-    
+
     if (row) {
       const isCurrentlySelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber)
-      
+
       const simulatedStates = row.seats.map(s => {
         const realTimeSeat1 = realTimeSeats?.get(s.seatNumber)
         const realTimeSeat2 = s.pairedSeat ? realTimeSeats?.get(s.pairedSeat.seatNumber) : null
-        
+
         if (s.isBooked || realTimeSeat1?.isBooked || s.pairedSeat?.isBooked || realTimeSeat2?.isBooked) return 'X'
         if (realTimeSeat1?.holdUntil || realTimeSeat2?.holdUntil) return 'X'
         if (isSeatAvailable && !isSeatAvailable(s as unknown as Seat)) return 'X'
 
-        let isSelected = selectedSeats.some(bk => bk.seatNumber === s.seatNumber) || 
-                         (s.pairedSeat ? selectedSeats.some(bk => bk.seatNumber === s.pairedSeat?.seatNumber) : false)
+        let isSelected = selectedSeats.some(bk => bk.seatNumber === s.seatNumber) ||
+          (s.pairedSeat ? selectedSeats.some(bk => bk.seatNumber === s.pairedSeat?.seatNumber) : false)
 
         if (s.seatNumber === seat.seatNumber || s.pairedSeat?.seatNumber === seat.seatNumber ||
-            seat.pairedSeat?.seatNumber === s.seatNumber) {
+          seat.pairedSeat?.seatNumber === s.seatNumber) {
           isSelected = !isCurrentlySelected
         }
 
@@ -162,12 +162,12 @@ export function SeatMaps({
         if (simulatedStates[i] === 'O') {
           const leftIsX = i === 0 || simulatedStates[i - 1] === 'X'
           const rightIsX = i === simulatedStates.length - 1 || simulatedStates[i + 1] === 'X'
-          
+
           if (leftIsX && rightIsX) {
             const leftWasX = i === 0 || currentStates[i - 1] === 'X'
             const rightWasX = i === currentStates.length - 1 || currentStates[i + 1] === 'X'
             const wasIsolated = currentStates[i] === 'O' && leftWasX && rightWasX
-            
+
             if (!wasIsolated) {
               hasNewIsolated = true
               break
@@ -218,18 +218,17 @@ export function SeatMaps({
                         ${/* 🚀 FIX CHIỀU RỘNG CHUẨN TOÁN HỌC */ ''}
                         ${isCouple ? 'w-[72px] sm:w-[90px] h-8 sm:h-10 rounded-xl' : 'w-8 sm:w-10 h-8 sm:h-10 rounded-lg'}
                         
-                        ${
-                          status === 'selected'
-                            ? 'bg-primary text-white border-primary shadow-lg scale-105 z-10'
-                            : status === 'booked'
-                              ? 'bg-muted text-muted-foreground border-transparent cursor-not-allowed opacity-60'
-                              : status === 'held'
-                                ? 'bg-yellow-500/20 text-yellow-700 border-yellow-500/50 opacity-80 animate-pulse'
-                                : status === 'vip'
-                                  ? 'bg-orange-500/10 text-orange-600 border-orange-500/40 hover:bg-orange-500/20 hover:scale-105'
-                                  : status === 'couple'
-                                    ? 'bg-pink-500/10 text-pink-600 border-pink-500/40 hover:bg-pink-500/20 hover:scale-105'
-                                    : 'bg-bg-secondary text-text-primary border-border hover:border-primary hover:bg-primary/5 hover:scale-105'
+                        ${status === 'selected'
+                          ? 'bg-primary text-white border-primary shadow-lg scale-105 z-10'
+                          : status === 'booked'
+                            ? 'bg-muted text-muted-foreground border-transparent cursor-not-allowed opacity-60'
+                            : status === 'held'
+                              ? 'bg-yellow-500/20 text-yellow-700 border-yellow-500/50 opacity-80 animate-pulse'
+                              : status === 'vip'
+                                ? 'bg-orange-500/10 text-orange-600 border-orange-500/40 hover:bg-orange-500/20 hover:scale-105'
+                                : status === 'couple'
+                                  ? 'bg-pink-500/10 text-pink-600 border-pink-500/40 hover:bg-pink-500/20 hover:scale-105'
+                                  : 'bg-bg-secondary text-text-primary border-border hover:border-primary hover:bg-primary/5 hover:scale-105'
                         }
                       `}
                     >
@@ -280,6 +279,10 @@ export function SeatMaps({
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-muted opacity-60"></div>
             <span className="text-sm text-text-secondary">Đã đặt</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-yellow-500/20 border border-yellow-500/50"></div>
+            <span className="text-sm text-text-secondary">Đang giữ chỗ</span>
           </div>
         </div>
       </div>
