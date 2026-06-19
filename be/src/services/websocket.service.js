@@ -210,22 +210,31 @@ class WebSocketService {
               $elemMatch: {
                 seatNumber: seatNum,
                 isBooked: false,
-                $or: [{ holdUntil: { $exists: false } }, { holdUntil: null }, { holdUntil: { $lt: new Date() } }],
+                $or: [
+                  { holdUntil: { $exists: false } }, 
+                  { holdUntil: null }, 
+                  { holdUntil: { $lt: new Date() } },
+                  { bookedBy: socket.userId }
+                ],
               },
             },
           })),
         },
         {
           $set: seatNumbers.reduce((update, seatNum) => {
-            update[`seatAvailability.$[seat_${seatNum}].holdUntil`] = holdUntil;
-            update[`seatAvailability.$[seat_${seatNum}].bookedBy`] = socket.userId;
+            const safeId = `seat${seatNum}`;
+            update[`seatAvailability.$[${safeId}].holdUntil`] = holdUntil;
+            update[`seatAvailability.$[${safeId}].bookedBy`] = socket.userId;
             return update;
           }, {}),
         },
         {
-          arrayFilters: seatNumbers.map((seatNum) => ({
-            [`seat_${seatNum}.seatNumber`]: seatNum,
-          })),
+          arrayFilters: seatNumbers.map((seatNum) => {
+            const safeId = `seat${seatNum}`;
+            return {
+              [`${safeId}.seatNumber`]: seatNum,
+            };
+          }),
           new: true,
         }
       );
