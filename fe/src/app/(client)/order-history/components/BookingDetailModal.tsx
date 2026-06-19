@@ -42,9 +42,9 @@ export default function BookingDetailModal({ booking, onClose }: BookingDetailMo
       else toast.error('Không tìm thấy link thanh toán, vui lòng thử lại sau!')
     }
 
-    if (method === 'VNPAY') {
+    if (method?.toLowerCase() === 'vnpay') {
       createVNPayPayment(booking._id, { onSuccess })
-    } else if (method === 'MoMo') {
+    } else if (method?.toLowerCase() === 'momo') {
       createMoMoPayment(booking._id, { onSuccess })
     } else {
       toast.info('Phương thức thanh toán này không hỗ trợ tiếp tục thanh toán trực tuyến.')
