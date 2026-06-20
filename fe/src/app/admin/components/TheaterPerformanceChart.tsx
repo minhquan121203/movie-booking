@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip as BarTooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Tooltip as PieTooltip, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip as BarTooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Tooltip as PieTooltip, Legend, LabelList } from 'recharts'
 import { MapPin, ChevronDown, Check, Store } from 'lucide-react'
 import { api } from '@/lib/api/axios'
 import { cn } from '@/lib/utils'
@@ -167,7 +167,9 @@ export function TheaterPerformanceChart() {
                                         />
                                         <XAxis type="number" hide />
                                         <BarTooltip cursor={{ fill: 'rgba(236, 72, 153, 0.05)' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-                                        <Bar dataKey="ticketsSold" name="Số vé" fill="url(#colorPink)" radius={[0, 6, 6, 0]} barSize={24} />
+                                        <Bar dataKey="ticketsSold" name="Số vé" fill="url(#colorPink)" radius={[0, 6, 6, 0]} barSize={24}>
+                                            <LabelList dataKey="ticketsSold" position="right" fill="#64748b" fontSize={12} fontWeight="bold" />
+                                        </Bar>
                                         <defs>
                                             <linearGradient id="colorPink" x1="0" y1="0" x2="1" y2="0">
                                                 <stop offset="0%" stopColor="#f472b6" />

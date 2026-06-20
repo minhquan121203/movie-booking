@@ -1221,7 +1221,7 @@ const statisticsController = {
         {
           $match: {
             showDate: { $gte: startOfYear, $lte: endOfYear },
-            status: "Đã chiếu",
+            status: { $in: ["Đã chiếu", "Đang mở bán vé", "Sắp đầy", "Hết vé"] },
           },
         },
         {
@@ -1352,7 +1352,7 @@ const statisticsController = {
         {
           $match: {
             showDate: { $gte: startOfYear, $lte: endOfYear },
-            status: "Đã chiếu",
+            status: { $in: ["Đã chiếu", "Đang mở bán vé", "Sắp đầy", "Hết vé"] },
           },
         },
         {
