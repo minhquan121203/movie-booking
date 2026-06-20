@@ -112,8 +112,7 @@ export function useBooking({ movieId, preSelectedScheduleId }: UseBookingProps) 
   // --- LOGIC TÍNH TOÁN TIỀN ---
   const subtotalAmount = useMemo(() => {
     const seatsTotal = selectedSeats.reduce((acc, seat) => {
-      const isCouple = seat.seatType?.toLowerCase().includes('đôi') || seat.seatType?.toLowerCase().includes('couple');
-      return acc + (isCouple ? seat.price / 2 : seat.price);
+      return acc + seat.price;
     }, 0);
 
     const combosTotal = cartItems.reduce(

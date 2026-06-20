@@ -86,6 +86,13 @@ const voucherController = {
       return successResponse(res, newVoucher, "Tạo voucher thành công", 201);
     } catch (error) {
       console.error("Create voucher error:", error);
+      if (error.name === "ValidationError") {
+        const messages = Object.values(error.errors).map((err) => err.message);
+        return errorResponse(res, messages.join(", "), 400);
+      }
+      if (error.code === 11000) {
+        return errorResponse(res, "Mã voucher đã tồn tại", 400);
+      }
       return errorResponse(res, "Lỗi server", 500);
     }
   },
@@ -104,6 +111,13 @@ const voucherController = {
       return successResponse(res, voucher, "Cập nhật voucher thành công");
     } catch (error) {
       console.error("Update voucher error:", error);
+      if (error.name === "ValidationError") {
+        const messages = Object.values(error.errors).map((err) => err.message);
+        return errorResponse(res, messages.join(", "), 400);
+      }
+      if (error.code === 11000) {
+        return errorResponse(res, "Mã voucher đã tồn tại", 400);
+      }
       return errorResponse(res, "Lỗi server", 500);
     }
   },
