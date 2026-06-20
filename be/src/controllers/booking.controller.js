@@ -154,7 +154,9 @@ const bookingController = {
               price = schedule.ticketPrices.vip;
               break;
             case "Ghế đôi":
-              price = schedule.ticketPrices.couple;
+              // Giá Ghế đôi là giá của CẢ CẶP, nhưng Frontend gửi lên cả 2 ghế (vd: K3, K4)
+              // Nên mỗi ghế sẽ chịu 1/2 giá để khi cộng lại bằng đúng giá gốc
+              price = schedule.ticketPrices.couple / 2;
               break;
             default:
               price = schedule.ticketPrices.standard;
