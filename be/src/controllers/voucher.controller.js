@@ -80,6 +80,10 @@ const voucherController = {
     try {
       const voucherData = req.body;
 
+      if (new Date(voucherData.endDate) <= new Date(voucherData.startDate)) {
+        return errorResponse(res, "Ngày kết thúc phải sau ngày bắt đầu", 400);
+      }
+
       const newVoucher = new Voucher(voucherData);
       await newVoucher.save();
 
@@ -101,6 +105,12 @@ const voucherController = {
     try {
       const { id } = req.params;
       const updateData = req.body;
+
+      if (updateData.startDate && updateData.endDate) {
+        if (new Date(updateData.endDate) <= new Date(updateData.startDate)) {
+          return errorResponse(res, "Ngày kết thúc phải sau ngày bắt đầu", 400);
+        }
+      }
 
       const voucher = await Voucher.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 

@@ -94,11 +94,11 @@ export function VoucherDialog({ isOpen, onClose, mode, initialData, onSave }: Pr
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Bắt đầu từ *</label>
-              <input type="datetime-local" min={todayDateTimeStr} required value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <input type="date" min={todayDateTimeStr.slice(0, 10)} required value={formData.startDate.slice(0, 10)} onChange={e => setFormData({...formData, startDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Hết hạn vào *</label>
-              <input type="datetime-local" min={formData.startDate || todayDateTimeStr} required value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <input type="date" min={formData.startDate?.slice(0, 10) || todayDateTimeStr.slice(0, 10)} required value={formData.endDate.slice(0, 10)} onChange={e => setFormData({...formData, endDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Giới hạn số lượt dùng *</label>

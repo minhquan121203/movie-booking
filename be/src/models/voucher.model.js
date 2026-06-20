@@ -59,12 +59,6 @@ const voucherSchema = new Schema(
     endDate: {
       type: Date,
       required: [true, "Ngày kết thúc là bắt buộc"],
-      validate: {
-        validator: function (endDate) {
-          return endDate > this.startDate;
-        },
-        message: "Ngày kết thúc phải sau ngày bắt đầu",
-      },
       index: true,
     },
     usageLimit: {
