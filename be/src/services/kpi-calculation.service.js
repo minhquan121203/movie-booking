@@ -138,7 +138,7 @@ class KPICalculationService {
           endDate,
           staff: staffId,
           staffName: staff.fullName,
-          position: staff.staffInfo?.position,
+          position: staff.staffInfo?.position || "Nhân viên bán vé",
           theater: staff.staffInfo?.assignedTheater?._id,
           theaterName: staff.staffInfo?.assignedTheater?.name,
         });
