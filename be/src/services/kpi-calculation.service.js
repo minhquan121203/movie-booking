@@ -231,6 +231,52 @@ class KPICalculationService {
   }
 
   /**
+   * Calculate monthly KPIs (run by cron to keep current month updated)
+   */
+  async calculateMonthlyKPIs() {
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+      // Get all active theaters
+      const Theater = (await import("../models/theater.model.js")).default;
+      const theaters = await Theater.find({ isActive: true });
+
+      let totalCalculated = 0;
+
+      for (const theater of theaters) {
+        const kpis = await this.calculateTheaterKPIs(theater._id, "monthly", startDate, endDate);
+        totalCalculated += kpis.length;
+      }
+
+      console.log(`📊 Calculated ${totalCalculated} monthly KPIs`);
+      return totalCalculated;
+    } catch (error) {
+      console.error("Calculate monthly KPIs error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start Cron Job for KPI Calculation
+   */
+  startCron() {
+    import("node-cron").then((cron) => {
+      // Chạy vào 23:55 mỗi ngày
+      cron.default.schedule("55 23 * * *", async () => {
+        console.log("⏰ Running automated KPI calculation...");
+        await this.calculateDailyKPIs();
+        await this.calculateMonthlyKPIs();
+      });
+      console.log("⏰ KPI Calculation Cron Job scheduled at 23:55 daily");
+    });
+  }
+
+  /**
    * Get staff performance summary
    */
   async getPerformanceSummary(staffId, period = "monthly") {

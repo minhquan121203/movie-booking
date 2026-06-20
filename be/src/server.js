@@ -66,6 +66,11 @@ async function startServer() {
         movieStatusService.start();
       }
 
+      // Tự động chốt sổ KPI hàng ngày/hàng tháng
+      import("./services/kpi-calculation.service.js").then((kpiModule) => {
+        kpiModule.default.startCron();
+      });
+
       console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
     });
 
