@@ -1315,7 +1315,19 @@ const statisticsController = {
         });
       }
 
-      return successResponse(res, kpi);
+      return successResponse(res, {
+        period: "monthly",
+        month,
+        year,
+        staffId: employeeId,
+        message: "Thành công",
+        kpiData: {
+          kpi: kpi.performance?.overallScore || 0,
+          completion: kpi.sales?.revenueAchievement || 0,
+          shifts: kpi.attendance?.daysWorked || 22,
+          performance: kpi.quality?.qualityScore || 0,
+        }
+      });
     } catch (error) {
       console.error("Get employee KPI error:", error);
       return errorResponse(res, "Lỗi server", 500);
