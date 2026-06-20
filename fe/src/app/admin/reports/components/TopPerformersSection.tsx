@@ -49,7 +49,7 @@ export const TopPerformersSection = ({ selectedYear, onYearChange }: TopPerforme
           icon={Film}
           title="Phim hiệu suất tốt"
           performers={movies}
-          valueLabel="vé"
+          valueLabel="⭐"
           iconColor="bg-purple-100 text-purple-600"
           isLoading={isLoadingMovies}
         />
@@ -57,7 +57,7 @@ export const TopPerformersSection = ({ selectedYear, onYearChange }: TopPerforme
           icon={Building2}
           title="Rạp hiệu quả nhất"
           performers={cinemas}
-          valueLabel="₫"
+          valueLabel="%"
           iconColor="bg-green-100 text-green-600"
           isLoading={isLoadingCinemas}
         />

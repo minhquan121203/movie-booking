@@ -192,9 +192,19 @@ export function TheaterPerformanceChart() {
                                             outerRadius={80}
                                             paddingAngle={3}
                                             dataKey="value"
-                                            label={({ percent }: any) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+                                                if (percent < 0.05) return null;
+                                                const RADIAN = Math.PI / 180;
+                                                const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                                return (
+                                                    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="text-xs font-bold">
+                                                        {`${(percent * 100).toFixed(0)}%`}
+                                                    </text>
+                                                );
+                                            }}
                                             labelLine={false}
-                                            className="text-xs font-bold fill-white"
                                         >
                                             {genreData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
