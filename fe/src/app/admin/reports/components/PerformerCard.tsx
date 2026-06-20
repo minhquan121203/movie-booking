@@ -47,13 +47,12 @@ export const PerformerCard = ({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {item.subValue.toLocaleString('vi-VN')} {valueLabel}
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 ml-3">
-              <span className="text-sm font-semibold text-foreground">{item.value}</span>
+              <span className="text-sm font-semibold text-foreground">
+                {item.value.toLocaleString('vi-VN')} {valueLabel}
+              </span>
               {item.trend === 'up' ? (
                 <TrendingUp className="w-4 h-4 text-green-500" />
               ) : (

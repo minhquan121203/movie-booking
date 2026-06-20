@@ -184,24 +184,24 @@ export function TheaterPerformanceChart() {
                             <h4 className="text-center font-semibold text-slate-700 mb-2 shrink-0">Tỉ Trọng Thể Loại</h4>
                             <div className="flex-1 w-full min-h-[250px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart margin={{ top: 20, right: 110, bottom: 20, left: 110 }}>
+                                    <PieChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
                                         <Pie
                                             data={genreData}
-                                            cx="50%" cy="50%"
-                                            innerRadius={42}  /* Ép vòng trong nhỏ lại */
-                                            outerRadius={63}  /* Ép vòng ngoài nhỏ lại nhường chỗ cho chữ */
-                                            paddingAngle={5}
+                                            cx="50%" cy="45%"
+                                            innerRadius={50}
+                                            outerRadius={80}
+                                            paddingAngle={3}
                                             dataKey="value"
-                                            label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            label={({ percent }: any) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
                                             labelLine={false}
-                                            className="text-xs font-medium fill-slate-600 dark:fill-slate-400"
+                                            className="text-xs font-bold fill-white"
                                         >
                                             {genreData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
                                         <PieTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-                                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>

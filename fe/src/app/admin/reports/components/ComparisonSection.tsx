@@ -98,12 +98,18 @@ export const ComparisonSection = ({
   const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444']
 
   if (comparisonData?.comparison) {
-    const metrics = ['Sales', 'Service', 'Operations', 'Attendance', 'Quality']
+    const metrics = [
+      { key: 'Sales', label: 'Bán hàng' },
+      { key: 'Service', label: 'CSKH' },
+      { key: 'Operations', label: 'Vận hành' },
+      { key: 'Attendance', label: 'Chuyên cần' },
+      { key: 'Quality', label: 'Chất lượng' }
+    ]
 
-    metrics.forEach(metric => {
-      const row: ComparisonDataRow = { metric }
+    metrics.forEach(m => {
+      const row: ComparisonDataRow = { metric: m.label }
       comparisonData.comparison.forEach(emp => {
-        row[emp.staffName] = emp.stats[metric as keyof typeof emp.stats]
+        row[emp.staffName] = emp.stats[m.key as keyof typeof emp.stats]
       })
       chartData.push(row)
     })
@@ -276,7 +282,7 @@ export const ComparisonSection = ({
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis dataKey="metric" stroke="#6b7280" style={{ fontSize: '11px' }} />
-                <YAxis stroke="#6b7280" style={{ fontSize: '11px' }} />
+                <YAxis domain={[0, 100]} stroke="#6b7280" style={{ fontSize: '11px' }} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',
@@ -299,7 +305,7 @@ export const ComparisonSection = ({
               <RadarChart data={chartData}>
                 <PolarGrid stroke="#e5e7eb" />
                 <PolarAngleAxis dataKey="metric" stroke="#6b7280" style={{ fontSize: '11px' }} />
-                <PolarRadiusAxis stroke="#6b7280" style={{ fontSize: '11px' }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#6b7280" style={{ fontSize: '11px' }} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',

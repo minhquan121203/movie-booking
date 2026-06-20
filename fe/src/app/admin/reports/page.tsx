@@ -4,7 +4,6 @@ import { TopPerformersSection } from './components/TopPerformersSection'
 import { KPIDetailSection } from './components/KPIDetailSection'
 import { TrendsSection } from './components/TrendsSection'
 import { ComparisonSection } from './components/ComparisonSection'
-import { AlertsSection } from './components/AlertsSection'
 import { ProductSalesSection } from './components/ProductSalesSection'
 import { useUsers } from '@/lib/api/user'
 import { useEmployeeKPI } from '@/lib/api/dashboard'
@@ -172,7 +171,6 @@ export default function Performance() {
         {/* 🆕 Product Sales Section - Added after Comparison Section */}
         <ProductSalesSection selectedYear={productSalesYear} onYearChange={setProductSalesYear} />
 
-        <AlertsSection />
       </div>
     </div>
   )
