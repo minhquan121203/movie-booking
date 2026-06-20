@@ -1290,16 +1290,15 @@ const statisticsController = {
       const month = req.query.month ? parseInt(req.query.month) : now.getMonth() + 1;
       const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
 
-      // Create start and end date for the query period (entire month)
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      // Dùng ngày giữa tháng để tránh lỗi lệch múi giờ UTC với server thật
+      const midMonth = new Date(Date.UTC(year, month - 1, 15));
 
       // Try to find existing KPI record
       let kpi = await StaffKPI.findOne({
         staff: employeeId,
         period: "monthly",
-        startDate: { $gte: startDate },
-        endDate: { $lte: endDate },
+        startDate: { $lte: midMonth },
+        endDate: { $gte: midMonth },
       }).populate("staff", "fullName email position");
 
       if (!kpi) {
@@ -1521,14 +1520,13 @@ const statisticsController = {
       const queryYear = parseInt(year) || new Date().getFullYear();
       const queryMonth = parseInt(month) || new Date().getMonth() + 1;
 
-      const startDate = new Date(queryYear, queryMonth - 1, 1);
-      const endDate = new Date(queryYear, queryMonth, 0, 23, 59, 59, 999);
+      const midMonth = new Date(Date.UTC(queryYear, queryMonth - 1, 15));
 
       const kpiData = await StaffKPI.find({
         staff: { $in: ids },
         period: "monthly",
-        startDate: { $gte: startDate },
-        endDate: { $lte: endDate },
+        startDate: { $lte: midMonth },
+        endDate: { $gte: midMonth },
       }).populate("staff", "fullName");
 
       const kpiMap = new Map();
